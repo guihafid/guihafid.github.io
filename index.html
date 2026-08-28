@@ -2263,6 +2263,30 @@ function tdTexto(valor, onSet, altMin){
   ta.style.height = (altMin || 22) + "px";
   ta.title = texto;                       // passando o mouse dá para ler tudo sem esticar
   ta.addEventListener("input", () => { onSet(ta.value); ta.title = ta.value; salvar(); });
+  // Ctrl+B insere ou remove marcação de negrito **texto**
+  ta.addEventListener("keydown", ev => {
+    if ((ev.ctrlKey || ev.metaKey) && (ev.key === "b" || ev.key === "B")){
+      ev.preventDefault();
+      const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+      if (s === e) return;                        // nada selecionado
+      const sel = v.slice(s, e);
+      const jaNeg = sel.startsWith("**") && sel.endsWith("**") && sel.length > 4;
+      const foiNeg = s >= 2 && v.slice(s-2, s) === "**" && v.slice(e, e+2) === "**";
+      let novo, pos;
+      if (jaNeg){
+        novo = v.slice(0, s) + sel.slice(2, -2) + v.slice(e);
+        pos = [s, e - 4];
+      } else if (foiNeg){
+        novo = v.slice(0, s-2) + sel + v.slice(e+2);
+        pos = [s-2, e-2];
+      } else {
+        novo = v.slice(0, s) + "**" + sel + "**" + v.slice(e);
+        pos = [s, e + 4];
+      }
+      ta.value = novo; onSet(novo); salvar();
+      ta.setSelectionRange(pos[0], pos[1]);
+    }
+  });
   td.appendChild(ta);
   return td;
 }
@@ -3100,6 +3124,7 @@ function aplicarDoTec(dados, mod){
     if (!mat) semMat++;
     lista.push({
       sim: String(d.sim ?? "").trim(),
+      conc: String(d.conc ?? "").trim(),
       data: d.data || hojeISO,
       mat,
       q,
@@ -3316,18 +3341,29 @@ function telaCaderno(mod){
   const cab = semRev
     ? ["Nº caderno","Data","Nº Questão","Conteúdo","Motivo do Erro",
        "Anotação","Status",""]
-    : [op.semSim ? "Nº do caderno" : "Nº Simulado","Data","Matéria","Nº da Questão",
+    : [op.semSim ? "Nº do caderno" : "Nº S","Nº C","Data","Matéria","Nº Q",
        "Assunto / Tema específico","Motivo do Erro","O que eu aprendi / anotação","Status",
        "Data da Revisão",""];
   const larg = semRev
     ? [64,68,64,"24%",130,"40%",96,28]
-    : [64,68,150,64,"22%",130,"36%",96,68,28];
+    : [42,42,68,140,42,"18%",130,"40%",96,68,28];
   const bl = op.semSim ? [] : blocos(mod);
-  const dataDoSim = num => { const b = bl.find(x => x.tipo === "SIM" && x.ordem === num);
-    return b ? dataBR(fichaDe(mod, b.cod).data) : ""; };
+  // data puxada do concurso + simulado: Nº S diz qual simulado, Nº C diz qual concurso
+  const dataDoSim = (numSim, numConc) => {
+    if (!numSim) return "";
+    // se tem Nº C, procura o bloco daquele concurso específico
+    if (numConc){
+      const bConc = bl.filter(x => x.tipo === "SIM" && x.conc && n(x.conc.num) === n(numConc));
+      const b = bConc.find(x => x.ordem === n(numSim));
+      return b ? dataBR(fichaDe(mod, b.cod).data) : "";
+    }
+    // sem Nº C, procura pelo número sequencial geral (comportamento anterior)
+    const b = bl.find(x => x.tipo === "SIM" && x.ordem === n(numSim));
+    return b ? dataBR(fichaDe(mod, b.cod).data) : "";
+  };
 
   const novaLinha = mat => {
-    lista.push({ sim:"", data:"", mat, q:"", assunto:"", motivo:"", aprendi:"",
+    lista.push({ sim:"", conc:"", data:"", mat, q:"", assunto:"", motivo:"", aprendi:"",
       status:"Pendente", dataRev:"" });
     salvar(); render();
   };
@@ -3387,13 +3423,17 @@ function telaCaderno(mod){
         const tr = el("tr", li % 2 === 0 ? "zebC" : "zebW");
         tr.appendChild(tdEdit(e.sim, v => e.sim = v, render));
         if (op.semSim) tr.appendChild(tdData(e.data, v => e.data = v));
-        else tr.appendChild(el("td","calc", dataDoSim(n(e.sim))));
+        else {
+          tr.appendChild(tdEdit(e.conc || "", v => { e.conc = v; salvar(); render(); }));
+          tr.appendChild(el("td","calc", dataDoSim(n(e.sim), e.conc)));
+        }
         if (!semRev) tr.appendChild(tdSelect(e.mat, matsVisiveis(), v => e.mat = v, render));
         tr.appendChild(comLink(tdEdit(e.q, v => e.q = v), e.qUrl));
         const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
         tr.appendChild(tdAssunto);
         tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
         const tdAprendi = tdTexto(e.aprendi, v => e.aprendi = v);
+        tdAprendi.style.color = "#000";
         tr.appendChild(tdAprendi);
         emparelharAltura([tdAssunto, tdAprendi]);
         const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -3453,12 +3493,16 @@ function telaCaderno(mod){
       tr.appendChild(tdSelect(e.mat, conhecidas, v => e.mat = v, render));
       tr.appendChild(tdEdit(e.sim, v => e.sim = v, render));
       if (op.semSim) tr.appendChild(tdData(e.data, v => e.data = v));
-      else tr.appendChild(el("td","calc", dataDoSim(n(e.sim))));
+      else {
+        tr.appendChild(tdEdit(e.conc || "", v => { e.conc = v; salvar(); render(); }));
+        tr.appendChild(el("td","calc", dataDoSim(n(e.sim), e.conc)));
+      }
       tr.appendChild(comLink(tdEdit(e.q, v => e.q = v), e.qUrl));
       const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
         tr.appendChild(tdAssunto);
       tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
       const tdAprendi = tdTexto(e.aprendi, v => e.aprendi = v);
+        tdAprendi.style.color = "#000";
         tr.appendChild(tdAprendi);
         emparelharAltura([tdAssunto, tdAprendi]);
       const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -3473,6 +3517,16 @@ function telaCaderno(mod){
       t.tbody.appendChild(tr);
     });
     tela.appendChild(t);
+  }
+
+  // legenda das abreviações, no fim de tudo
+  if (!semRev){
+    const leg = el("div","nota centro");
+    leg.style.fontSize = "10px"; leg.style.color = "#8794a8";
+    leg.style.margin = "14px 10px 4px";
+    leg.textContent = "Nº S = Número do simulado · Nº C = Número do concurso " +
+      "(puxa a data do concurso correspondente) · Nº Q = Número da questão";
+    tela.appendChild(leg);
   }
 }
 
@@ -5975,10 +6029,10 @@ function linhasEstudo(){
   return L;
 }
 function linhasCaderno(){
-  const L = [["Módulo","Nº Simulado","Matéria","Nº da Questão","Assunto / Tema",
+  const L = [["Módulo","Nº S","Nº C","Matéria","Nº Q","Assunto / Tema",
     "Motivo do Erro","O que eu aprendi","Status","Data da Revisão"]];
   ["O","D"].forEach(mod => (DB.caderno[mod] || []).forEach(e =>
-    L.push([ mod === "O" ? "Objetiva" : "Discursiva", e.sim || "", e.mat || "", e.q || "",
+    L.push([ mod === "O" ? "Objetiva" : "Discursiva", e.sim || "", e.conc || "", e.mat || "", e.q || "",
       e.assunto || "", e.motivo || "", e.aprendi || "", e.status || "",
       dataBR(e.dataRev) ])));
   return L;
