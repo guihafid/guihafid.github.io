@@ -616,6 +616,15 @@ table.g td.txt{white-space:normal;vertical-align:top;padding:0;text-align:justif
 table.g td.txt textarea{width:100%;min-height:22px;border:0;background:transparent;
   color:var(--azulTexto);font:12px/16px Arial,Helvetica,sans-serif;padding:3px 6px;
   text-align:justify;text-justify:inter-word;resize:vertical;overflow:hidden;display:block}
+table.g td.txt.preto textarea{color:#000}
+table.g td.txt.rico .cxRico{width:100%;height:22px;min-height:22px;border:0;
+  background:transparent;color:#000;font:12px/16px Arial,Helvetica,sans-serif;
+  padding:3px 6px;text-align:justify;text-justify:inter-word;overflow:hidden;
+  outline:none;word-break:break-word;overflow-wrap:anywhere;resize:vertical;display:block}
+table.g td.txt.rico .cxRico:focus{background:#fffbe6;outline:1.5px solid var(--azulMedio);
+  outline-offset:-2px;overflow-y:auto}
+table.g td.txt.rico .cxRico b,table.g td.txt.rico .cxRico strong{font-weight:bold}
+table.g.cadZeb th{white-space:nowrap;font-size:10px;padding:3px 4px}
 table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulMedio);
   outline-offset:-2px;overflow-y:auto}
 /* matérias ainda sem anotação: viram etiquetas, não tabelas vazias */
@@ -2261,39 +2270,48 @@ function tdTexto(valor, onSet, altMin){
   ta.textContent = texto; ta.value = texto;
   ta.spellcheck = false; ta.rows = 1;
   ta.style.height = (altMin || 22) + "px";
-  ta.title = texto;                       // passando o mouse dá para ler tudo sem esticar
+  ta.title = texto;
   ta.addEventListener("input", () => { onSet(ta.value); ta.title = ta.value; salvar(); });
-  // Ctrl+B insere ou remove marcação de negrito **texto**
-  ta.addEventListener("keydown", ev => {
+  td.appendChild(ta);
+  return td;
+}
+/* campo de texto com negrito real: usa contenteditable em vez de textarea.
+   O conteúdo é guardado como HTML (com <b>). Ctrl+B aplica/tira negrito. */
+function tdTextoRico(valor, onSet, altMin){
+  const td = el("td","ed txt rico");
+  const cx = document.createElement("div");
+  cx.className = "cxRico";
+  cx.contentEditable = "true";
+  cx.spellcheck = false;
+  cx.style.height = (altMin || 22) + "px";
+  cx.innerHTML = valor ?? "";
+  cx.title = (cx.textContent || "").trim();
+  cx.addEventListener("input", () => {
+    onSet(cx.innerHTML); cx.title = (cx.textContent || "").trim(); salvar();
+  });
+  cx.addEventListener("keydown", ev => {
     if ((ev.ctrlKey || ev.metaKey) && (ev.key === "b" || ev.key === "B")){
       ev.preventDefault();
-      const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
-      if (s === e) return;                        // nada selecionado
-      const sel = v.slice(s, e);
-      const jaNeg = sel.startsWith("**") && sel.endsWith("**") && sel.length > 4;
-      const foiNeg = s >= 2 && v.slice(s-2, s) === "**" && v.slice(e, e+2) === "**";
-      let novo, pos;
-      if (jaNeg){
-        novo = v.slice(0, s) + sel.slice(2, -2) + v.slice(e);
-        pos = [s, e - 4];
-      } else if (foiNeg){
-        novo = v.slice(0, s-2) + sel + v.slice(e+2);
-        pos = [s-2, e-2];
-      } else {
-        novo = v.slice(0, s) + "**" + sel + "**" + v.slice(e);
-        pos = [s, e + 4];
-      }
-      ta.value = novo; onSet(novo); salvar();
-      ta.setSelectionRange(pos[0], pos[1]);
+      document.execCommand("bold");
     }
+    // bloqueia outros formatos que o navegador poderia tentar
+    if ((ev.ctrlKey || ev.metaKey) && /^[iuIU]$/.test(ev.key)) ev.preventDefault();
   });
-  td.appendChild(ta);
+  // ao colar, só texto puro (sem trazer formatação de fora)
+  cx.addEventListener("paste", ev => {
+    ev.preventDefault();
+    const t = (ev.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, t);
+  });
+  td.appendChild(cx);
   return td;
 }
 /* Duas colunas de texto que andam juntas: esticar uma estica a outra, para a
    linha não ficar com uma caixa alta e a vizinha espremida. */
 function emparelharAltura(celulas){
-  const caixas = celulas.map(td => td && td.querySelector("textarea")).filter(Boolean);
+  const caixas = celulas.map(td =>
+    td && (td.querySelector("textarea") || td.querySelector(".cxRico"))
+  ).filter(Boolean);
   if (caixas.length < 2 || typeof ResizeObserver === "undefined") return;
   let ocupado = false;
   const obs = new ResizeObserver(entradas => {
@@ -3346,7 +3364,7 @@ function telaCaderno(mod){
        "Data da Revisão",""];
   const larg = semRev
     ? [64,68,64,"24%",130,"40%",96,28]
-    : [42,42,68,140,42,"18%",130,"40%",96,68,28];
+    : [32,32,68,110,32,"16%",148,"38%",96,68,28];
   const bl = op.semSim ? [] : blocos(mod);
   // data puxada do concurso + simulado: Nº S diz qual simulado, Nº C diz qual concurso
   const dataDoSim = (numSim, numConc) => {
@@ -3432,8 +3450,7 @@ function telaCaderno(mod){
         const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
         tr.appendChild(tdAssunto);
         tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
-        const tdAprendi = tdTexto(e.aprendi, v => e.aprendi = v);
-        tdAprendi.style.color = "#000";
+        const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
         tr.appendChild(tdAprendi);
         emparelharAltura([tdAssunto, tdAprendi]);
         const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -3501,8 +3518,7 @@ function telaCaderno(mod){
       const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
         tr.appendChild(tdAssunto);
       tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
-      const tdAprendi = tdTexto(e.aprendi, v => e.aprendi = v);
-        tdAprendi.style.color = "#000";
+      const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
         tr.appendChild(tdAprendi);
         emparelharAltura([tdAssunto, tdAprendi]);
       const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -3872,7 +3888,7 @@ function telaJuris(){
       tr.appendChild(comLink(tdEdit(e.info, v => e.info = v), e.infoUrl,
         "Abrir o informativo comentado"));
       tr.appendChild(tdSelect(e.trib, DB.tribunais, v => e.trib = v));
-      const tdObs = tdTexto(e.obs, v => e.obs = v);
+      const tdObs = tdTextoRico(e.obs, v => e.obs = v);
       tr.appendChild(tdObs);
       emparelharAltura([tdTese, tdObs]);
       const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -3920,7 +3936,7 @@ function telaJuris(){
       tr.appendChild(comLink(tdEdit(e.info, v => e.info = v), e.infoUrl,
         "Abrir o informativo comentado"));
       tr.appendChild(tdSelect(e.trib, DB.tribunais, v => e.trib = v));
-      const tdObs = tdTexto(e.obs, v => e.obs = v);
+      const tdObs = tdTextoRico(e.obs, v => e.obs = v);
       tr.appendChild(tdObs);
       emparelharAltura([tdTese, tdObs]);
       const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -4059,7 +4075,7 @@ function telaTeses(){
     const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
       "Abrir a edição nesta tese");
     tr.appendChild(tdTese);
-    const tdObs = tdTexto(e.obs, v => e.obs = v);
+    const tdObs = tdTextoRico(e.obs, v => e.obs = v);
     tr.appendChild(tdObs);
     emparelharAltura([tdTese, tdObs]);
     const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -4263,7 +4279,7 @@ function telaSumulas(){
     const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
       "Abrir a súmula no Buscador");
     tr.appendChild(tdTese);
-    const tdObs = tdTexto(e.obs, v => e.obs = v);
+    const tdObs = tdTextoRico(e.obs, v => e.obs = v);
     tr.appendChild(tdObs);
     emparelharAltura([tdTese, tdObs]);
     const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
