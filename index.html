@@ -3446,8 +3446,12 @@ function telaCaderno(mod){
           tr.appendChild(el("td","calc", dataDoSim(n(e.sim), e.conc)));
         }
         if (!semRev) tr.appendChild(tdSelect(e.mat, matsVisiveis(), v => e.mat = v, render));
-        tr.appendChild(comLink(tdEdit(e.q, v => e.q = v), e.qUrl));
-        const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
+        // no caderno dos simulados não há link para abrir: só o número e o texto
+        tr.appendChild(semRev ? comLink(tdEdit(e.q, v => e.q = v), e.qUrl)
+                              : tdEdit(e.q, v => e.q = v));
+        const tdAssunto = semRev
+          ? comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl)
+          : tdTexto(e.assunto, v => e.assunto = v);
         tr.appendChild(tdAssunto);
         tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
         const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
@@ -3514,8 +3518,11 @@ function telaCaderno(mod){
         tr.appendChild(tdEdit(e.conc || "", v => { e.conc = v; salvar(); render(); }));
         tr.appendChild(el("td","calc", dataDoSim(n(e.sim), e.conc)));
       }
-      tr.appendChild(comLink(tdEdit(e.q, v => e.q = v), e.qUrl));
-      const tdAssunto = comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl);
+      tr.appendChild(semRev ? comLink(tdEdit(e.q, v => e.q = v), e.qUrl)
+                            : tdEdit(e.q, v => e.q = v));
+      const tdAssunto = semRev
+        ? comLink(tdTexto(e.assunto, v => e.assunto = v), e.assuntoUrl)
+        : tdTexto(e.assunto, v => e.assunto = v);
         tr.appendChild(tdAssunto);
       tr.appendChild(tdSelect(e.motivo, DB.motivos, v => e.motivo = v));
       const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
