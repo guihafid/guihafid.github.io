@@ -3087,8 +3087,15 @@ function aplicarDoTec(dados, mod){
 
   dados.forEach(d => {
     const q = String(d.q ?? "").trim();
-    vistos.push(q);
-    if (q && lista.some(e => String(e.q).trim() === q)){ repetidas++; return; }
+    // no TEC o número da questão é único; no simulado ele se repete a cada
+    // prova, então a dupla simulado+questão é que identifica a linha
+    const chave = String(d.id || q);
+    vistos.push(chave);
+    const jaTem = mod === "T"
+      ? (q && lista.some(e => String(e.q).trim() === q))
+      : (q && lista.some(e => String(e.q).trim() === q &&
+           String(e.sim ?? "").trim() === String(d.sim ?? "").trim()));
+    if (jaTem){ repetidas++; return; }
     const mat = normalizarMat(d.mat);
     if (!mat) semMat++;
     lista.push({
@@ -3096,7 +3103,8 @@ function aplicarDoTec(dados, mod){
       data: d.data || hojeISO,
       mat,
       q,
-      qUrl: d.qUrl || (q ? "https://www.tecconcursos.com.br/discussao/questoes/" + q : ""),
+      qUrl: d.qUrl || (mod === "T" && q
+        ? "https://www.tecconcursos.com.br/discussao/questoes/" + q : ""),
       assunto: d.assunto || "",
       assuntoUrl: d.assuntoUrl || "",
       motivo: DB.motivos.includes(d.motivo) ? d.motivo : "",
@@ -3171,6 +3179,19 @@ window.addEventListener("message", ev => {
     }
     window.postMessage({ fonte:"controle-simulados", tipo:"recebido", ids:vistos }, "*");
     avisoTec(partes.join(" · "));
+    return;
+  }
+  if (d.tipo === "simulados" && Array.isArray(d.fila) && d.fila.length){
+    garantirCadernos();
+    // erros de simulado do Delta: entram no caderno da OBJETIVA
+    const r = aplicarDoTec(d.fila, "O");
+    window.postMessage({ fonte:"controle-simulados", tipo:"recebido", ids:r.vistos }, "*");
+    let t = r.novas + (r.novas === 1 ? " questão do simulado entrou" :
+                                       " questões do simulado entraram")
+          + " no caderno da objetiva";
+    if (r.repetidas) t += " · " + r.repetidas + " já estava(m) lá";
+    if (r.semMat) t += " · " + r.semMat + " sem matéria reconhecida";
+    avisoTec(t);
     return;
   }
   if (d.tipo === "fila" && Array.isArray(d.fila) && d.fila.length){
