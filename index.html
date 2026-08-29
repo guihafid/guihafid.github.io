@@ -957,6 +957,11 @@ td.calDia.hoje{border-color:#ED7D31;box-shadow:0 0 0 2px #ED7D31 inset}
 .cronoEtiq{color:#9fb6d6;font-size:12px;margin-top:8px;min-height:16px}
 .cronoBotoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
 /* pausar / retomar, dentro do relógio */
+/* botão para voltar à tela cheia depois que o aparelho a derrubou */
+.voltarCheia{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:2147483000;
+  background:#1F6F6B;color:#fff;border:0;border-radius:22px;padding:11px 22px;
+  font:bold 13px Arial;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.3)}
+.voltarCheia:hover{background:#28857f}
 .cronoDentro{display:flex;justify-content:center;padding:2px 0 0;margin:0}
 .cronoDentro .cronoBtn{padding:8px 22px;font-size:12.5px;
   box-shadow:0 3px 10px rgba(0,0,0,.28)}
@@ -6863,7 +6868,7 @@ function cronoComecar(mat, cont, tipo, obs, alvo, repetir, pausar){
   c.repetir = !!repetir; c.pausarAoTocar = !!pausar;
   c.acum = 0; c.iniMs = Date.now(); c.dia = hojeISO();
   c.horaIni = horaAgora();                  // fica no registro do histórico
-  salvar(); render();
+  salvar(); cuidarDaTela(); render();
 }
 // deixa o cronômetro carregado (matéria + alarme), porém PARADO: só começa a
 // contar quando a pessoa apertar Retomar. Usado pelo botão "Iniciar" do ciclo.
@@ -6900,21 +6905,21 @@ function cronoPausar(){
   const c = crono();
   if (!c.iniMs) return;
   c.acum = cronoMs(); c.iniMs = null;
-  salvar();
+  salvar(); cuidarDaTela();
   if (emTelaCheia()) atualizarBotaoCrono(); else render();
 }
 function cronoRetomar(){
   const c = crono();
   if (c.iniMs) return;
   c.iniMs = Date.now();
-  salvar();
+  salvar(); cuidarDaTela();
   if (emTelaCheia()) atualizarBotaoCrono(); else render();
 }
 function cronoLargar(){
   if (!confirm("Descartar este cronômetro sem registrar o tempo?")) return;
   const c = crono();
   c.ativo = false; c.iniMs = null; c.acum = 0; c.prox = 0;
-  pararAlarme(); salvar(); render();
+  pararAlarme(); salvar(); cuidarDaTela(); render();
 }
 function cronoEncerrar(){
   const c = crono();
@@ -6922,7 +6927,7 @@ function cronoEncerrar(){
   // não corre mais. Se você cancelar, ele fica pausado no ponto exato e dá
   // para retomar depois sem perder nada.
   if (c.iniMs){ c.acum = cronoMs(); c.iniMs = null; }
-  pararAlarme();
+  pararAlarme(); cuidarDaTela();
   salvar(); render();
   const min = Math.max(1/60, Math.round(cronoMs()/1000)/60);   // minutos com os segundos
   const base = { data:c.dia || hojeISO(), mat:c.mat, cont:c.cont, tipo:c.tipo,
@@ -7361,6 +7366,8 @@ function painelRelogio(){
     () => { c.repetir = !c.repetir; salvar(); render(); });
   chaveDe("Pausar ao tocar", c.pausarAoTocar,
     () => { c.pausarAoTocar = !c.pausarAoTocar; salvar(); render(); });
+  chaveDe("Manter a tela ligada", c.telaAcesa !== false,
+    () => { c.telaAcesa = c.telaAcesa === false; salvar(); render(); cuidarDaTela(); });
 
   const pe = el("div","pezinho");
   const bOuvir = el("button",null,"🔊 ouvir o alarme");
@@ -11600,9 +11607,52 @@ document.getElementById("btnInicio").onclick = abrirCapa;
 document.getElementById("btnDesfazer").onclick = desfazer;
 document.getElementById("btnRefazer").onclick = refazerAgora;
 
+/* ---------- manter a tela ligada enquanto o cronômetro corre ----------
+   Bloquear a tela do aparelho derruba a tela cheia, e o navegador não deixa
+   voltar sozinho: só um toque seu pode reabrir. Então evitamos o problema na
+   raiz, pedindo ao aparelho para não apagar a tela enquanto o tempo corre. */
+let travaTela = null;
+async function cuidarDaTela(){
+  const c = crono();
+  const querer = !!(c.ativo && c.iniMs && c.telaAcesa !== false);
+  try{
+    if (querer && !travaTela && navigator.wakeLock){
+      travaTela = await navigator.wakeLock.request("screen");
+      travaTela.addEventListener("release", () => { travaTela = null; });
+    } else if (!querer && travaTela){
+      await travaTela.release(); travaTela = null;
+    }
+  }catch(e){ travaTela = null; }   // aparelho ou navegador sem suporte: segue a vida
+}
+
+/* se mesmo assim a tela cheia cair (bloqueio, troca de app), deixamos um
+   botão à mão para voltar num toque — exigência do próprio navegador. */
+let caiuTelaCheia = false, momentoEscondido = 0;
+function ofereceVoltarTelaCheia(){
+  if (document.getElementById("voltarTelaCheia")) return;
+  const b = el("button", "voltarCheia", "⛶  Voltar à tela cheia");
+  b.id = "voltarTelaCheia";
+  b.onclick = () => {
+    const alvo = document.getElementById("cronoTela");
+    if (alvo && alvo.requestFullscreen) alvo.requestFullscreen().catch(() => {});
+    b.remove(); caiuTelaCheia = false;
+  };
+  document.body.appendChild(b);
+  setTimeout(() => { if (b.parentNode && !document.fullscreenElement) b.remove(); }, 20000);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden){ momentoEscondido = Date.now(); return; }
+  cuidarDaTela();                       // voltando, a trava precisa ser refeita
+  if (caiuTelaCheia && crono().ativo) ofereceVoltarTelaCheia();
+});
+
 /* saindo da tela cheia, a tela se redesenha para pegar o que mudou lá dentro */
 document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) render();
+  if (document.fullscreenElement){ caiuTelaCheia = false; return; }
+  // saiu por bloqueio de tela ou troca de app? guardamos para oferecer a volta
+  caiuTelaCheia = document.hidden || (Date.now() - momentoEscondido < 3000);
+  render();
 });
 
 /* qualquer campo novo que apareça na tela já nasce com a máscara ligada */
@@ -11613,6 +11663,7 @@ if (typeof MutationObserver !== "undefined"){
 
 carregar().then(() => {
   render(); botoesHistorico(); abrirCapa();
+  cuidarDaTela();          // cronômetro já rodando: a tela fica acesa
   nuvemAoAbrir();          // se houver sincronização configurada, confere a nuvem
   // sem lugar para gravar (acontece ao abrir direto do Drive ou do Dropbox):
   // o aviso fica na tela, porque tudo o que for digitado se perde ao fechar
