@@ -6877,17 +6877,38 @@ function cronoPreparar(mat, cont, tipo, obs, alvo, repetir, pausar){
   c.horaIni = horaAgora();
   salvar(); render();
 }
+/* em tela cheia, redesenhar a tela toda destruiria o elemento expandido e o
+   navegador sairia do modo. Nesse caso trocamos só o que muda, no lugar. */
+function emTelaCheia(){
+  const alvo = document.getElementById("cronoTela");
+  return !!(document.fullscreenElement && alvo &&
+    (document.fullscreenElement === alvo || alvo.contains(document.fullscreenElement)));
+}
+function atualizarBotaoCrono(){
+  const c = crono();
+  const svg = document.getElementById("cronoSvg");
+  if (svg) svg.setAttribute("class",
+    "cronoSvg" + (c.ativo && !c.iniMs ? " pausado" : ""));
+  const b = document.querySelector("#cronoTela .cronoDentro .cronoBtn");
+  if (b){
+    b.className = "cronoBtn " + (c.iniMs ? "pausa" : "ir");
+    b.textContent = c.iniMs ? "❚❚  Pausar" : "▶  Retomar";
+  }
+  mostrarRelogio(textoRelogio());
+}
 function cronoPausar(){
   const c = crono();
   if (!c.iniMs) return;
   c.acum = cronoMs(); c.iniMs = null;
-  salvar(); render();
+  salvar();
+  if (emTelaCheia()) atualizarBotaoCrono(); else render();
 }
 function cronoRetomar(){
   const c = crono();
   if (c.iniMs) return;
   c.iniMs = Date.now();
-  salvar(); render();
+  salvar();
+  if (emTelaCheia()) atualizarBotaoCrono(); else render();
 }
 function cronoLargar(){
   if (!confirm("Descartar este cronômetro sem registrar o tempo?")) return;
@@ -7014,21 +7035,23 @@ function janelaAlarme(){
 
   const rodape = el("div","modalRodape");
   const desligar = () => { pararAlarme();
-    if (fundo.parentNode) document.body.removeChild(fundo); };
+    if (fundo.parentNode) fundo.parentNode.removeChild(fundo); };
 
   const bSoneca = el("button","btn","+5 min");
   bSoneca.title = "Desliga e avisa de novo daqui a 5 minutos";
   bSoneca.onclick = () => {
     c.prox = Math.round(cronoMs()/60000) + 5;
     if (!c.iniMs) cronoRetomar();
-    salvar(); desligar(); render();
+    salvar(); desligar();
+    if (emTelaCheia()) atualizarBotaoCrono(); else render();
   };
   const bSeguir = el("button","btn","Desligar e continuar");
   bSeguir.onclick = () => {
     // se marcou repetir, o próximo aviso é um intervalo adiante
     c.prox = c.repetir ? n(c.prox) + minDe(c.alvo) : 0;
     if (!c.iniMs) cronoRetomar();
-    salvar(); desligar(); render();
+    salvar(); desligar();
+    if (emTelaCheia()) atualizarBotaoCrono(); else render();
   };
   const bFim = el("button","btn","Encerrar e registrar");
   bFim.onclick = () => { desligar(); cronoEncerrar(); };
@@ -7038,7 +7061,8 @@ function janelaAlarme(){
   rodape.appendChild(bSoneca); rodape.appendChild(bSeguir); rodape.appendChild(bFim);
   cx.appendChild(rodape);
   fundo.appendChild(cx);
-  document.body.appendChild(fundo);
+  // em tela cheia, só o que está dentro do elemento expandido aparece
+  (document.fullscreenElement || document.body).appendChild(fundo);
 }
 
 /* ===================== sequência de dias (foguinho) ===================== */
@@ -11575,6 +11599,11 @@ document.addEventListener("click", ev => {
 document.getElementById("btnInicio").onclick = abrirCapa;
 document.getElementById("btnDesfazer").onclick = desfazer;
 document.getElementById("btnRefazer").onclick = refazerAgora;
+
+/* saindo da tela cheia, a tela se redesenha para pegar o que mudou lá dentro */
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) render();
+});
 
 /* qualquer campo novo que apareça na tela já nasce com a máscara ligada */
 if (typeof MutationObserver !== "undefined"){
