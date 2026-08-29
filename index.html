@@ -7891,14 +7891,36 @@ function janelaExportarAgenda(){
     };
     linha.appendChild(bCop);
     cxAss.appendChild(linha);
+
+    // no iPhone o toque no webcal:// abre o Calendário já perguntando se assina
+    const linhaW = el("div","linhaLink");
+    const bWeb = el("a","btn verdinho","📲  Assinar no iPhone");
+    bWeb.href = linkAgenda.replace(/^https:\/\//,"webcal://");
+    bWeb.title = "Abre o Calendário do iPhone já com o endereço preenchido";
+    bWeb.style.textDecoration = "none";
+    linhaW.appendChild(bWeb);
+    const bCopW = el("button","btn","Copiar o webcal://");
+    bCopW.onclick = () => {
+      const w = linkAgenda.replace(/^https:\/\//,"webcal://");
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(w).then(() => bCopW.textContent = "Copiado!");
+    };
+    linhaW.appendChild(bCopW);
+    cxAss.appendChild(linhaW);
+
     const comoAss = el("div","p");
     comoAss.innerHTML =
       "<b>Google Agenda:</b> em calendar.google.com, ao lado de “Outras agendas”, " +
-      "clique no + → <i>De URL</i> → cole o endereço. Ele sincroniza para o tablet " +
-      "sozinho.<br>" +
-      "<b>iPhone:</b> Ajustes → Aplicativos → Calendário → Contas → Adicionar conta " +
-      "→ Outras → Adicionar calendário assinado → cole o endereço.";
+      "clique no + → <i>De URL</i> → cole o endereço de cima. Ele sincroniza para o " +
+      "tablet sozinho.<br>" +
+      "<b>iPhone:</b> abra este app no Safari do próprio iPhone e toque no botão " +
+      "verde acima — o Calendário abre já perguntando se quer assinar.";
     cxAss.appendChild(comoAss);
+    cxAss.appendChild(el("div","p miudo",
+      "Deu “não foi possível conectar usando SSL” no iPhone? Ele costuma se perder " +
+      "no redirecionamento do endereço. Duas saídas: use o botão verde em vez de " +
+      "digitar o endereço à mão, ou assine no Google Agenda e ponha a sua conta " +
+      "Google no iPhone — aí o calendário chega por ela, sem esse problema."));
     cxAss.appendChild(el("div","p miudo",
       "A agenda releva o endereço de tempos em tempos: o iPhone dá para pôr de hora " +
       "em hora, e o Google costuma levar de algumas horas até um dia. Para ver uma " +
