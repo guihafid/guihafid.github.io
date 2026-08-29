@@ -228,6 +228,14 @@ button.mini{display:inline-flex;align-items:center;justify-content:center;paddin
 .nivelCx .nCab{display:flex;align-items:center;gap:7px}
 .nivelCx .nCab .ic{font-size:15px}
 .nivelCx .nCab .nm{font-weight:bold;font-size:13.5px;color:var(--azulEscuro)}
+/* botões de proporção: no cabeçalho de cada nível e no da seção */
+.btnProp{border:1px solid #c9d4e3;background:#f3f6fb;color:#5a6a80;border-radius:14px;
+  padding:3px 10px;font-size:11px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.btnProp:hover{background:#e6edf7}
+.btnProp.on{background:#1F6F6B;border-color:#1F6F6B;color:#fff}
+.btnProp.mini{padding:2px 7px;font-size:12px;line-height:1}
+.secaoCx{display:flex;align-items:center;gap:10px;margin:0 10px}
+.secaoCx .secao{flex:1;margin-left:0;margin-right:0}
 .nivelCx .nDes{font-size:11px;color:#7a8595;font-style:italic;margin:2px 0 9px}
 .nivelCx.nMin{border-top:3px solid #1E8E3E}
 .nivelCx.nIdeal{border-top:3px solid #E8B10A}
@@ -684,13 +692,23 @@ svg.chart{display:block;background:#fff}
 .modal{background:#fff;border:2px solid var(--azulEscuro);width:100%;max-width:720px}
 .modalTit{background:var(--azulEscuro);color:#fff;font-size:14pt;font-weight:bold;padding:8px 14px}
 .modalSub{color:#404040;font-style:italic;font-size:12px;padding:8px 14px 0}
-.modalGrade{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:12px 14px}
-.modalCampo{display:flex;flex-direction:column;gap:3px}
-.modalCampo label{font-size:11px;font-weight:bold;color:var(--azulEscuro)}
-.modalCampo input,.modalCampo select{border:1px solid var(--borda);background:var(--amarelo);
-  color:var(--azulTexto);padding:4px 6px;font-size:12px;width:100%}
-.modalCampo input:focus,.modalCampo select:focus{outline:2px solid var(--azulMedio);outline-offset:-2px}
-.modalCampo small{color:#808080;font-size:10px;line-height:12px}
+.modalGrade{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:14px}
+.modalCampo{display:flex;flex-direction:column;gap:4px}
+.modalCampo label{font-size:10.5px;font-weight:bold;color:#5a6a80;
+  text-transform:uppercase;letter-spacing:.4px}
+.modalCampo input,.modalCampo select{border:1px solid #c9d4e3;background:#fff;
+  color:#1F3864;padding:6px 8px;font-size:12.5px;width:100%;border-radius:4px}
+.modalCampo input::placeholder{color:#a9b3c1;font-style:italic}
+.modalCampo input:focus,.modalCampo select:focus{outline:none;
+  border-color:var(--azulMedio);box-shadow:0 0 0 2px rgba(47,85,151,.15)}
+.modalCampo small{color:#8794a8;font-size:10px;line-height:12px}
+/* anotação de várias linhas */
+.modalCampo textarea.campoObs{border:1px solid #c9d4e3;background:#fff;color:#1F3864;
+  padding:6px 8px;font:12.5px Arial,Helvetica,sans-serif;width:100%;border-radius:4px;
+  resize:vertical;min-height:56px;line-height:17px}
+.modalCampo textarea.campoObs::placeholder{color:#a9b3c1;font-style:italic}
+.modalCampo textarea.campoObs:focus{outline:none;border-color:var(--azulMedio);
+  box-shadow:0 0 0 2px rgba(47,85,151,.15)}
 /* linha de marcação (tem objetiva / tem discursiva) no Novo concurso */
 .modalCampo.campoMarca{background:#EAF1FB;border:1px solid #cfdcee;border-radius:5px;
   padding:6px 8px;display:grid;grid-template-columns:auto 18px;align-items:center;
@@ -724,7 +742,8 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
 .notaCol{color:#808080;font-style:italic;font-size:11px;margin-top:5px;max-width:250px;line-height:14px}
 .vazioAviso{margin:14px 10px;padding:10px;background:var(--cinza);color:#808080;
   font-style:italic;font-size:12px;border:1px solid var(--borda)}
-.acoes{margin:10px}
+.acoes{margin:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.acoes .flex{flex:1}
 .acoes .btn{background:#e8ecf2;color:#1F3864;border:1px solid #9aa7b8;padding:4px 10px;font-size:12px}
 .acoes .btn:hover{background:#dce4ee}
 /* ---------- capa de abertura ---------- */
@@ -937,6 +956,10 @@ td.calDia.hoje{border-color:#ED7D31;box-shadow:0 0 0 2px #ED7D31 inset}
 .cronoRel.pausado{color:#FFD166}
 .cronoEtiq{color:#9fb6d6;font-size:12px;margin-top:8px;min-height:16px}
 .cronoBotoes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+/* pausar / retomar, dentro do relógio */
+.cronoDentro{display:flex;justify-content:center;padding:2px 0 0;margin:0}
+.cronoDentro .cronoBtn{padding:8px 22px;font-size:12.5px;
+  box-shadow:0 3px 10px rgba(0,0,0,.28)}
 .cronoBtn{border:0;border-radius:22px;padding:10px 24px;font:bold 13px Arial;cursor:pointer;
   color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:background .12s,transform .1s}
 .cronoBtn:active{transform:scale(.97)}
@@ -944,14 +967,24 @@ td.calDia.hoje{border-color:#ED7D31;box-shadow:0 0 0 2px #ED7D31 inset}
 .cronoBtn.pausa{background:#A0521A}.cronoBtn.pausa:hover{background:#c4671f}
 .cronoBtn.fim{background:#ED7D31}  .cronoBtn.fim:hover{background:#f28e4b}
 .cronoBtn.larga{background:#5a6a80}.cronoBtn.larga:hover{background:#6f8199}
-.cronoForm{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:10px;
-  padding:10px;background:#eef2f8;border:1px solid var(--borda);border-radius:6px}
-.cronoForm .c{display:flex;flex-direction:column;gap:3px}
-.cronoForm label{font-size:10.5px;font-weight:bold;color:var(--azulEscuro);
-  text-transform:uppercase;letter-spacing:.3px}
-.cronoForm select,.cronoForm input{border:1px solid var(--borda);background:var(--amarelo);
-  color:var(--azulTexto);padding:4px 6px;font-size:12px;min-width:130px}
-.cronoForm .larguinho input{min-width:280px}
+/* formulário de iniciar atividade */
+.cronoForm{margin:10px;padding:0;background:#fff;border:1px solid var(--borda);
+  border-radius:6px;overflow:hidden}
+.cronoForm .cfGrade{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;
+  padding:14px}
+.cronoForm .c{display:flex;flex-direction:column;gap:4px}
+.cronoForm .c.largo{grid-column:1 / -1}
+.cronoForm label{font-size:10.5px;font-weight:bold;color:#5a6a80;
+  text-transform:uppercase;letter-spacing:.4px}
+.cronoForm select,.cronoForm input{border:1px solid #c9d4e3;background:#fff;
+  color:#1F3864;padding:6px 8px;font-size:12.5px;width:100%;min-width:0;
+  border-radius:4px}
+.cronoForm input::placeholder{color:#a9b3c1;font-style:italic}
+.cronoForm select:focus,.cronoForm input:focus{outline:none;border-color:var(--azulMedio);
+  box-shadow:0 0 0 2px rgba(47,85,151,.15)}
+.cronoForm .cfRodape{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#f6f8fb;border-top:1px solid #e3e8f0}
+.cronoForm .cfRodape .dica{flex:1;font-size:11px;color:#8794a8;font-style:italic}
 /* ---------- alarme ---------- */
 .modal.alarme{border:2px solid #ED7D31;max-width:460px}
 .modal.alarme .modalTit{background:#ED7D31;font-size:15px}
@@ -1077,6 +1110,14 @@ button.seta:hover{background:var(--azulMedio);color:#fff;border-color:var(--azul
 .cicloAdd select{border:1px solid var(--borda);background:var(--amarelo);padding:4px 6px;
   font-size:12px;min-width:190px;color:var(--azulTexto)}
 .cicloRei{display:flex;align-items:center;gap:6px;font-size:12px;color:#4a5568;margin:10px 0 2px}
+/* as duas perguntas de comportamento, lado a lado */
+.cicloDuplas{display:flex;gap:22px;flex-wrap:wrap}
+/* voltas anteriores, abertas pelo clique duplo: amarelo bem claro */
+table.g tr.voltaVelha td{background:#FFFBEA}
+table.g tr.voltaVelha:hover td{background:#FFF6D5}
+.cicloMeia{flex:1;min-width:290px}
+.cicloMeia .cicloRei{margin-top:2px;flex-wrap:wrap}
+.cicloMeia .nota{margin:4px 0 0}
 button.alt{border:1px solid #c3ccd9;background:#fff;color:#4a5568;border-radius:3px;
   padding:3px 12px;font:bold 11px Arial;cursor:pointer}
 button.alt.on{background:#5a6a80;color:#fff;border-color:#5a6a80}
@@ -1199,7 +1240,7 @@ table.g tr.matOculta td button.mini.olho{opacity:1}
 table.tabLimpa td{padding:4px 7px}
 table.tabLimpa td.matCel{font-weight:bold;color:var(--azulEscuro);white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
-table.tabLimpa td.txtCel{white-space:normal;color:#4a5568;line-height:15px;
+table.tabLimpa td.txtCel{white-space:pre-wrap;color:#4a5568;line-height:15px;
   text-align:justify}
 table.tabLimpa td.dataCel{color:#5a6a80;font-size:11.5px;white-space:nowrap}
 table.tabLimpa td.hojeCel{color:#C0570F;font-weight:bold}
@@ -1278,7 +1319,7 @@ td.maisReg:hover{text-decoration:underline}
 .hdItem .mat{font-weight:bold;color:var(--azulEscuro)}
 .hdItem .tempo{color:#5a6a80;white-space:nowrap;font-weight:bold}
 .hdObs{font-size:11px;color:#8794a8;font-style:italic;padding:0 4px 6px 21px;
-  line-height:15px}
+  line-height:15px;white-space:pre-wrap}
 /* célula com barrinha de tempo */
 table.tabLimpa td.celBarra{position:relative;padding:0 8px;text-align:right;
   white-space:nowrap;overflow:hidden}
@@ -1405,6 +1446,9 @@ table.tabCentro{margin-left:auto;margin-right:auto;width:auto}
 #cronoTela:fullscreen{display:flex;flex-direction:column;align-items:center;
   justify-content:center;border:0;border-radius:0;padding:30px}
 #cronoTela:fullscreen .cronoSvg{max-width:min(88vw,1500px)}
+/* em tela cheia o botão respira mais e cresce um pouco */
+#cronoTela:fullscreen .cronoDentro{padding-top:38px}
+#cronoTela:fullscreen .cronoDentro .cronoBtn{padding:12px 34px;font-size:15px}
 /* ---------- janela de editar matéria ---------- */
 button.mini.engre{background:#e8eefa;border-color:#a9bcd8}
 button.mini.engre:hover{background:#cfdcf0}
@@ -1630,8 +1674,11 @@ const num2 = v => (v === "" || v == null) ? "" : (Math.round(v*100)/100).toStrin
 function horaLimpa(v){
   const t = String(v ?? "").trim();
   if (!t) return "";
-  let m = t.match(/^(\d{1,2})\s*[:h.]\s*(\d{1,2})$/) || t.match(/^(\d{1,2})\s*h?$/);
+  // com segundos (14:30:12) guardamos só a hora e o minuto
+  let m = t.match(/^(\d{1,2})\s*[:h.]\s*(\d{1,2})\s*[:m.]\s*\d{1,2}s?$/);
+  if (!m) m = t.match(/^(\d{1,2})\s*[:h.]\s*(\d{1,2})$/) || t.match(/^(\d{1,2})\s*h?$/);
   if (!m && /^\d{4}$/.test(t)) m = [t, t.slice(0,2), t.slice(2)];
+  if (!m && /^\d{6}$/.test(t)) m = [t, t.slice(0,2), t.slice(2,4)];
   if (!m) return "";
   const h = Math.min(23, n(m[1])), mi = Math.min(59, n(m[2] || 0));
   return String(h).padStart(2,"0") + ":" + String(mi).padStart(2,"0");
@@ -1639,6 +1686,58 @@ function horaLimpa(v){
 const horaAgora = () => { const d = new Date();
   return String(d.getHours()).padStart(2,"0") + ":" +
          String(d.getMinutes()).padStart(2,"0"); };
+
+/* ---------- máscaras: o campo vai se formatando enquanto você digita ----------
+   Valem só quando você digita apenas números. Escrevendo "1h30m" ou colando
+   algo com pontuação, o texto fica exatamente como veio — a máscara não
+   atrapalha quem prefere outro formato. Apagar também funciona normalmente. */
+function mascaraData(txt){
+  const d = String(txt).replace(/\D/g,"").slice(0,8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return d.slice(0,2) + "/" + d.slice(2);
+  return d.slice(0,2) + "/" + d.slice(2,4) + "/" + d.slice(4);
+}
+function mascaraHora(txt){
+  const d = String(txt).replace(/\D/g,"").slice(0,6);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return d.slice(0,2) + ":" + d.slice(2);
+  return d.slice(0,2) + ":" + d.slice(2,4) + ":" + d.slice(4);
+}
+// tempo estudado: 3+ dígitos viram h:mm:ss; até 2 continuam sendo minutos soltos
+function mascaraTempo(txt){
+  const d = String(txt).replace(/\D/g,"").slice(0,6);
+  if (d.length <= 2) return d;                       // "90" segue valendo 90 minutos
+  if (d.length <= 4) return d.slice(0,-2) + ":" + d.slice(-2);
+  return d.slice(0,-4) + ":" + d.slice(-4,-2) + ":" + d.slice(-2);
+}
+
+/* liga a máscara num campo, preservando a posição do cursor no fim */
+function ligarMascara(inp, fn){
+  if (!inp || inp.dataset.mascarado) return inp;
+  inp.dataset.mascarado = "1";
+  inp.addEventListener("input", () => {
+    const bruto = inp.value;
+    // só formata quando o que está lá é só número: quem escreve "1h30m" fica livre
+    if (!/^\d*$/.test(bruto.replace(/[:/]/g,""))) return;
+    const noFim = inp.selectionStart === bruto.length;
+    const novo = fn(bruto);
+    if (novo === bruto) return;
+    inp.value = novo;
+    if (noFim) inp.setSelectionRange(novo.length, novo.length);
+  });
+  return inp;
+}
+
+/* pega os campos de data e hora pelo texto de exemplo e liga a máscara neles */
+function ligarMascarasEm(raiz){
+  (raiz || document).querySelectorAll("input").forEach(i => {
+    const p = String(i.placeholder || "");
+    if (/dd\/mm/i.test(p)) ligarMascara(i, mascaraData);
+    else if (/^ex\.:\s*\d{1,2}:\d{2}$/.test(p) || /hh:mm/i.test(p))
+      ligarMascara(i, mascaraHora);
+    else if (/^ex\.:\s*\d{1,2}:\d{2}:\d{2}$/.test(p)) ligarMascara(i, mascaraTempo);
+  });
+}
 const dataBR = d => !d ? "" : (d.length === 10 && d[4] === "-")
   ? d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4) : d;
 const segundos = t => { const p = String(t||"").split(":").map(Number);
@@ -5773,8 +5872,11 @@ function janelaSessao(base, aoSalvar){
   const linhaObs = el("div","modalCampo");
   linhaObs.style.padding = "0 14px 12px";
   linhaObs.appendChild(el("label",null,"Anotação"));
-  const obs = document.createElement("input");
+  // caixa de várias linhas: Enter quebra a linha, como no caderno de erros
+  const obs = document.createElement("textarea");
+  obs.className = "campoObs";
   obs.value = s.obs || ""; obs.placeholder = "o que você viu, onde parou…";
+  obs.rows = 3;
   linhaObs.appendChild(obs);
   cx.appendChild(linhaObs);
 
@@ -7253,6 +7355,18 @@ function painelRelogio(){
   svg.id = "cronoSvg";
   svg.setAttribute("class","cronoSvg" + (c.ativo && !c.iniMs ? " pausado" : ""));
   cx.appendChild(svg);
+
+  /* ---- pausar / retomar mora dentro do relógio ---- */
+  if (c.ativo){
+    const cxP = el("div","cronoDentro");
+    const b = c.iniMs
+      ? el("button","cronoBtn pausa","❚❚  Pausar")
+      : el("button","cronoBtn ir","▶  Retomar");
+    b.onclick = ev => { ev.stopPropagation(); (c.iniMs ? cronoPausar : cronoRetomar)(); };
+    cxP.appendChild(b);
+    cx.appendChild(cxP);
+  }
+
   relogioSvg = svg; relogioForma = "";
   mostrarRelogio(textoRelogio());
   return cx;
@@ -7273,16 +7387,23 @@ function painelCicloAtividade(){
     const m = el("div","cfMeio");
     m.appendChild(el("div","r","CICLO DE ESTUDOS"));
     m.appendChild(el("div","v","Nenhuma matéria no ciclo"));
-    m.appendChild(el("div","f",'Monte a sequência em "Configurações do ciclo".'));
+    m.appendChild(el("div","f",'Monte a sequência em "Ajustes".'));
     cx.appendChild(m); cx.appendChild(b);
     return cx;
   }
-  const pr = Math.min(1, T.feito / T.meta);
   const prox = itensCiclo().find(i => n(i.feito) < n(i.meta));
+  // o anel mostra o andamento DA MATÉRIA que vem a seguir, não do ciclo inteiro:
+  // é ela que você vai estudar agora, então é o número que interessa aqui
+  const pr = prox
+    ? (n(prox.meta) > 0 ? Math.min(1, n(prox.feito) / n(prox.meta)) : 0)
+    : 1;
 
   const anel = el("div","cfPct");
   anel.appendChild(el("span","n", pct1(pr)));
   anel.style.background = "conic-gradient(#1F6F6B " + (pr*360) + "deg, #dde3ec 0deg)";
+  anel.title = prox
+    ? prox.mat + ": " + hMin(n(prox.feito)) + " de " + hMin(n(prox.meta))
+    : "Todas as matérias do ciclo bateram a meta";
   cx.appendChild(anel);
 
   const meio = el("div","cfMeio");
@@ -7389,11 +7510,12 @@ function telaCrono(){
   let cxUlt = null, pintarUlt = null;
   if (!c.ativo){
     const f = el("div","cronoForm");
+    const grade = el("div","cfGrade");
     const campo = (rot, montar, cls) => {
       const box = el("div","c" + (cls ? " " + cls : ""));
       box.appendChild(el("label",null,rot));
       box.appendChild(montar());
-      f.appendChild(box);
+      grade.appendChild(box);
       return box;
     };
     const lista = (opcoes, valor) => () => {
@@ -7426,8 +7548,13 @@ function telaCrono(){
       const i = document.createElement("input");
       i.placeholder = "opcional — ex.: caderno de intervenção, arts. 121 a 154";
       return i;
-    }, "larguinho");
+    }, "largo");
+    f.appendChild(grade);
 
+    // rodapé com o botão à direita, como na janela de registrar
+    const rodape = el("div","cfRodape");
+    rodape.appendChild(el("span","dica",
+      "O tempo e o modo ficam na engrenagem, no canto do relógio."));
     const bIr = el("button","cronoBtn ir","▶  COMEÇAR");
     bIr.style.padding = "9px 26px";
     bIr.onclick = () => cronoComecar(
@@ -7436,7 +7563,8 @@ function telaCrono(){
       bTipo.querySelector("select").value,
       bObs.querySelector("input").value,
       c.alvo, c.repetir, c.pausarAoTocar);
-    f.appendChild(bIr);
+    rodape.appendChild(bIr);
+    f.appendChild(rodape);
     tela.appendChild(f);
   }
 
@@ -7461,14 +7589,8 @@ function telaCrono(){
           (c.repetir ? " (repetindo)" : "") : "  ·  sem alarme") +
       (c.iniMs ? "" : "   —   PAUSADO")));
 
+    // pausar e retomar ficam dentro do relógio; aqui só encerrar e descartar
     const bts = el("div","cronoBotoes");
-    if (c.iniMs){
-      const b = el("button","cronoBtn pausa","❚❚  Pausar"); b.onclick = cronoPausar;
-      bts.appendChild(b);
-    } else {
-      const b = el("button","cronoBtn ir","▶  Retomar"); b.onclick = cronoRetomar;
-      bts.appendChild(b);
-    }
     const bFim = el("button","cronoBtn fim","■  Encerrar e registrar");
     bFim.onclick = cronoEncerrar;
     const bLarga = el("button","cronoBtn larga","Descartar");
@@ -8989,7 +9111,7 @@ function montarRodizio(tela, CR){
     const mats = itensCiclo().map(i => i.mat);
     if (!mats.length){
       alert('O ciclo ainda não tem matérias. Monte a sequência em ' +
-            '"Configurações do ciclo" e depois volte aqui.');
+            '"Ajustes" e depois volte aqui.');
       return;
     }
     const r = prompt("Em quantos blocos você quer repartir as " + mats.length +
@@ -9126,7 +9248,7 @@ function montarRodizio(tela, CR){
 function janelaDistribuir(){
   const mats = itensCiclo().map(i => i.mat);
   if (!mats.length){
-    alert('O ciclo ainda não tem matérias. Monte a sequência em "Configurações do ciclo" ' +
+    alert('O ciclo ainda não tem matérias. Monte a sequência em "Ajustes" ' +
           'e depois volte aqui para espalhá-la pelos dias.');
     return;
   }
@@ -9296,11 +9418,11 @@ function telaCiclo(secao){
       "O modo do cronograma, como o rodízio avança e a montagem dos dias e dos blocos."],
     atual:  [nm,
       "Cada matéria recebe um tempo por volta. O que você registra desconta sozinho daqui."],
-    hist:   ["CICLO — HISTÓRICO",
+    hist:   ["HISTÓRICO",
       "Cada volta concluída fica guardada aqui, agrupada pelo nome do ciclo."],
     metas:  ["METAS DE CICLO",
       "Quantas voltas você quer fechar por semana, por mês e no ano — e como está indo."],
-    config: ["CONFIGURAÇÕES DO CICLO",
+    config: ["AJUSTES DO CICLO",
       "As matérias e o tempo de cada volta, o comportamento do ciclo e a projeção."]
   };
   const [tit, sub] = titulos[secao] || titulos.atual;
@@ -9319,8 +9441,33 @@ function telaCiclo(secao){
    Três níveis, do mínimo aceitável ao máximo. As horas equivalentes
    saem do tamanho do ciclo que você montou em Configurações.
 --------------------------------------------------------------- */
-const NIVEIS_CICLO = [
-  { k:"min",   rot:"Meta mínima", ico:"🟢", cls:"nMin",
+/* meia volta é válida: 0,5 · 1,5 · 2,5. Mostra sem casa quando é inteiro. */
+const numCiclos = v => {
+  const x = n(v);
+  return (Math.abs(x - Math.round(x)) < 0.001)
+    ? String(Math.round(x))
+    : x.toFixed(1).replace(".", ",");
+};
+// arredonda ao meio ciclo mais próximo, nunca abaixo de zero
+const meioCiclo = v => Math.max(0, Math.round(n(v) * 2) / 2);
+/* mensal e anual saem da meta semanal: 4 semanas no mês, 48 no ano */
+function espalharSemana(nivel){
+  const sem = n(nivel.semana);
+  nivel.mes = meioCiclo(sem * 4);
+  nivel.ano = meioCiclo(sem * 48);
+}
+/* a ideal vale uma vez e meia a mínima; a máxima, o dobro */
+function aplicarProporcoes(C){
+  const M = C.metasCiclo, props = C.propPeriodo || {};
+  ["semana","mes","ano"].forEach(k => {
+    M.ideal[k] = meioCiclo(n(M.min[k]) * 1.5);
+    M.max[k]   = meioCiclo(n(M.min[k]) * 2);
+  });
+  // se o nível também estiver proporcional por período, refaz a partir da semana
+  if (props.ideal) espalharSemana(M.ideal);
+  if (props.max)   espalharSemana(M.max);
+}
+const NIVEIS_CICLO = [  { k:"min",   rot:"Meta mínima", ico:"🟢", cls:"nMin",
     d:"A que você cumpre mesmo numa semana ruim." },
   { k:"ideal", rot:"Meta ideal",  ico:"🟡", cls:"nIdeal",
     d:"O seu objetivo normal, de semana comum." },
@@ -9359,7 +9506,7 @@ function cicloMetas(tela, E, C){
   if (!T.meta){
     tela.appendChild(el("div","vazioAviso",
       "O ciclo ainda não tem matérias, então não dá para calcular as horas equivalentes. " +
-      'Monte a sequência em "Configurações do ciclo".'));
+      'Monte a sequência em "Ajustes".'));
   }
 
   /* ---- nível em destaque ---- */
@@ -9376,9 +9523,10 @@ function cicloMetas(tela, E, C){
   /* ---- os três níveis, editáveis ---- */
   tela.appendChild(el("div","secao","METAS DE VOLTAS"));
   tela.appendChild(el("div","nota",
-    "Digite quantas voltas do ciclo você quer fechar em cada período. " +
-    "As horas equivalentes são calculadas com o tamanho do seu ciclo (" +
-    (T.meta ? hMin(T.meta) : "ainda sem matérias") + " por volta)."));
+    "Quantas voltas do ciclo você quer fechar em cada período. As horas equivalentes " +
+    "saem do tamanho do seu ciclo (" +
+    (T.meta ? hMin(T.meta) : "ainda sem matérias") + " por volta). " +
+    "Para alterar estes números, vá em Ajustes › Metas de ciclo."));
 
   const wrap = el("div","metasNiveis");
   NIVEIS_CICLO.forEach(nv => {
@@ -9395,24 +9543,8 @@ function cicloMetas(tela, E, C){
     PERIODOS_CICLO.forEach(p => {
       const tr = el("tr");
       tr.appendChild(el("td","esq", p.rot));
-      const tdQ = el("td","ed");
-      const cxq = el("div","horasCx");
-      const inp = document.createElement("input");
-      inp.value = String(n(M[nv.k][p.k]));
-      inp.onchange = () => {
-        M[nv.k][p.k] = Math.max(0, Math.round(n(inp.value)));
-        salvar(); render();
-      };
-      inp.onkeydown = ev => { if (ev.key === "Enter") inp.blur(); };
-      cxq.appendChild(inp);
-      const passo = k => () => {
-        M[nv.k][p.k] = Math.max(0, Math.round(n(M[nv.k][p.k])) + k);
-        salvar(); render();
-      };
-      const bM = el("button","seta","▲"); bM.title = "+1 ciclo"; bM.onclick = passo(1);
-      const bm = el("button","seta","▼"); bm.title = "−1 ciclo"; bm.onclick = passo(-1);
-      cxq.appendChild(bM); cxq.appendChild(bm);
-      tdQ.appendChild(cxq); tr.appendChild(tdQ);
+      // aqui é só leitura: quem altera é a seção METAS DE CICLO, em Configurações
+      tr.appendChild(el("td","calc", numCiclos(M[nv.k][p.k])));
       tr.appendChild(el("td",null, T.meta
         ? hMin(n(M[nv.k][p.k]) * T.meta) : "—"));
       t.tbody.appendChild(tr);
@@ -9422,11 +9554,11 @@ function cicloMetas(tela, E, C){
     // coerência entre os períodos, sem obrigar nada
     const sem = n(M[nv.k].semana), mes = n(M[nv.k].mes), ano = n(M[nv.k].ano);
     const linhas = [];
-    if (sem) linhas.push(sem + " ciclos/semana → cerca de " +
+    if (sem) linhas.push(numCiclos(sem) + " ciclos/semana → cerca de " +
       (T.meta ? hMin(sem * T.meta) : "—") + " de estudo");
-    if (mes && sem) linhas.push(mes + " ciclos/mês → " +
+    if (mes && sem) linhas.push(numCiclos(mes) + " ciclos/mês → " +
       (mes/4.345).toFixed(2).replace(".",",") + " ciclos por semana");
-    if (ano) linhas.push(ano + " ciclos/ano → média de " +
+    if (ano) linhas.push(numCiclos(ano) + " ciclos/ano → média de " +
       (ano/12).toFixed(1).replace(".",",") + " ciclos por mês");
     if (linhas.length){
       const leg = el("div","nLeg");
@@ -9444,7 +9576,7 @@ function cicloMetas(tela, E, C){
   PERIODOS_CICLO.forEach(p => {
     const meta = n(alvo[p.k]);
     cards.appendChild(cartao(p.rot,
-      n(feito[p.k]) + (meta ? " / " + meta : ""),
+      n(feito[p.k]) + (meta ? " / " + numCiclos(meta) : ""),
       meta ? "voltas concluídas" : "sem meta definida"));
   });
   tela.appendChild(cards);
@@ -9462,7 +9594,7 @@ function cicloMetas(tela, E, C){
     sp.style.width = (pr*100) + "%";
     bg.appendChild(sp);
     L.appendChild(bg);
-    L.appendChild(el("span","v", f + " de " + meta + "  (" + pct1(pr) + ")"));
+    L.appendChild(el("span","v", f + " de " + numCiclos(meta) + "  (" + pct1(pr) + ")"));
     barras.appendChild(L);
   });
   tela.appendChild(barras);
@@ -9519,6 +9651,7 @@ function concluirVoltaCiclo(E, C, jaPerguntado){
 }
 
 /* todas as matérias do ciclo bateram a meta da volta? */
+let voltasAbertas = {};      // ciclos com as voltas antigas à mostra
 function cicloCompleto(){
   const itens = itensCiclo();
   return itens.length > 0 &&
@@ -9526,7 +9659,8 @@ function cicloCompleto(){
 }
 
 /* aparece assim que a última matéria fecha a meta: pergunta se começa a próxima.
-   Pergunta uma vez por volta — recusando, ela não volta a incomodar. */
+   Pergunta uma vez por volta — recusando, ela não volta a incomodar.
+   Se a configuração mandar reiniciar sozinho, fecha a volta sem perguntar. */
 function avisarCicloCompleto(){
   const E = garantirEstudo(), C = E.ciclo;
   if (!cicloCompleto()) return;
@@ -9534,9 +9668,19 @@ function avisarCicloCompleto(){
   if (n(C.avisadaVolta) === daVolta) return;
   C.avisadaVolta = daVolta; salvar();
 
+  // configuração: "auto" fecha sozinho, "perguntar" (padrão) abre esta janela
+  if (C.aoCompletar === "auto"){
+    if (String(C.nome || "").trim()){
+      concluirVoltaCiclo(E, C, true);
+      avisoTec("Volta " + daVolta + " concluída automaticamente. Começou a volta " +
+        (daVolta + 1) + ".");
+      return;
+    }
+  }
+
   const T = cicloTotais();
   const fundo = el("div","modalFundo");
-  const cx = el("div","modal"); cx.style.maxWidth = "520px";
+  const cx = el("div","modal"); cx.style.maxWidth = "540px";
   cx.appendChild(el("div","modalTit","🎉  Volta " + daVolta + " completa!"));
   cx.appendChild(el("div","modalSub",
     "Todas as matérias do " + nomeDoCiclo() + " bateram a meta desta volta."));
@@ -9546,23 +9690,29 @@ function avisarCicloCompleto(){
     " matéria(s), sobre uma meta de " + hMin(T.meta) + "." +
     (C.iniciado ? "  A volta começou em " + dataBR(C.iniciado) + "." : "")));
   corpo.appendChild(el("div","p",
-    "Começar a próxima volta guarda esta no histórico e " +
+    "Começar uma nova volta guarda esta no histórico e " +
     (C.reiniciar === "sim"
       ? "zera o tempo de todas as matérias."
       : "leva o tempo que passou da meta para a volta seguinte.")));
+  corpo.appendChild(el("div","p",
+    "Continuar no mesmo ciclo deixa tudo como está: o que você estudar daqui " +
+    "para a frente entra como tempo extra, aparecendo como \"Extra\" em cada matéria."));
   cx.appendChild(corpo);
 
   const rodape = el("div","modalRodape");
   rodape.appendChild(el("span","modalNota",
-    "Você também pode fechar a volta depois, no botão Concluir ciclo de estudos."));
-  const bDepois = el("button","btn","Agora não");
-  const bJa = el("button","btn laranjinha","✔  Começar a próxima volta");
-  rodape.appendChild(bDepois); rodape.appendChild(bJa);
+    "Dá para mudar esta pergunta em Ajustes."));
+  const bSegue = el("button","btn","↷  Continuar no mesmo ciclo");
+  const bJa = el("button","btn laranjinha","✔  Começar uma nova volta");
+  rodape.appendChild(bSegue); rodape.appendChild(bJa);
   cx.appendChild(rodape);
   fundo.appendChild(cx); document.body.appendChild(fundo);
 
   const fechar = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
-  bDepois.onclick = fechar;
+  bSegue.onclick = () => {
+    fechar();
+    avisoTec("Seguindo no mesmo ciclo — o tempo daqui para frente conta como extra.");
+  };
   fundo.onclick = ev => { if (ev.target === fundo) fechar(); };
   bJa.onclick = () => {
     fechar();
@@ -9582,22 +9732,28 @@ function cicloEtapas(tela, E, C){
   }
 
   const acoes = el("div","acoes");
-  const bCfg = el("button","btn azulzinho","⚙  Configurações do ciclo");
-  bCfg.title = "Matérias e tempo de cada volta, comportamento e projeção";
-  bCfg.onclick = () => { grupos.CICLO = false; abaAtual = "cicloConfig";
-    render(); window.scrollTo(0,0); };
   const bMet = el("button","btn","🎯  Metas de ciclo");
   bMet.title = "Quantas voltas você quer fechar por semana, mês e ano";
   bMet.onclick = () => { grupos.CICLO = false; abaAtual = "cicloMetas";
     render(); window.scrollTo(0,0); };
-  const bRen = el("button","btn","✎  Renomear ciclo");
-  bRen.onclick = () => nomearCiclo();
-  acoes.appendChild(bCfg); acoes.appendChild(bMet); acoes.appendChild(bRen);
+  const bConc = el("button","btn laranjinha","✔  Concluir ciclo");
+  bConc.disabled = !itensCiclo().length;
+  bConc.title = "Fecha a volta atual, guarda no histórico e começa a próxima";
+  bConc.onclick = () => concluirVoltaCiclo(E, C);
+  acoes.appendChild(bMet); acoes.appendChild(bConc);
+  // a engrenagem vai para o canto direito
+  acoes.appendChild(el("span","flex"));
+  const bCfg = el("button","btn azulzinho","⚙");
+  bCfg.title = "Ajustes do ciclo — matérias, tempo por volta, metas e comportamento";
+  bCfg.style.padding = "5px 11px"; bCfg.style.fontSize = "14px";
+  bCfg.onclick = () => { grupos.CICLO = false; abaAtual = "cicloConfig";
+    render(); window.scrollTo(0,0); };
+  acoes.appendChild(bCfg);
   tela.appendChild(acoes);
 
   if (!itensCiclo().length){
     tela.appendChild(el("div","vazioAviso",
-      'Ciclo vazio. Abra "Configurações do ciclo" para montar a sua sequência de matérias.'));
+      'Ciclo vazio. Abra "Ajustes" para montar a sua sequência de matérias.'));
     return;
   }
 
@@ -9700,14 +9856,38 @@ function cicloHistorico(tela, E, C){
   cards.appendChild(cartao("Cumprimento médio", pct1(mediaPct), "da meta por volta"));
   tela.appendChild(cards);
 
-  const bLimpar = el("div","acoes");
-  const bl = el("button","btn vermelhinho","🗑  Limpar histórico");
-  bl.onclick = () => {
-    if (!confirm("Apagar todo o histórico de ciclos? Isso não afeta a volta atual.")) return;
-    E.ciclo.historico = []; salvar(); render();
+  const acoesH = el("div","acoes");
+  const bFin = el("button","btn laranjinha","🏁  Finalizar voltas");
+  bFin.title = "Encerra a contagem: as voltas param em " + totalVoltas +
+    " e o ciclo recomeça do zero";
+  bFin.onclick = () => {
+    janelaConfirmarDigitando({
+      titulo: "Finalizar voltas",
+      aviso: "As " + totalVoltas + " volta(s) já concluídas continuam no histórico. " +
+        "O contador volta para zero e a volta em andamento é descartada, começando " +
+        "uma contagem nova a partir de agora.",
+      frase: "FINALIZAR",
+      rotulo: "🏁  Finalizar voltas",
+      nota: "O histórico não é apagado — só a contagem recomeça.",
+      aoConfirmar: () => {
+        C.voltas = 0;
+        C.iniciado = hojeISO();
+        C.avisadaVolta = 0;
+        itensCiclo().forEach(i => i.feito = 0);
+        salvar(); render();
+        avisoTec("Contagem de voltas finalizada. O histórico continua guardado.");
+      }
+    });
   };
-  bLimpar.appendChild(bl);
-  tela.appendChild(bLimpar);
+  acoesH.appendChild(bFin);
+  acoesH.appendChild(el("span","flex"));
+  const bIrCfg = el("button","btn azulzinho","⚙");
+  bIrCfg.title = "Ajustes do ciclo — renomear e apagar voltas ficam lá";
+  bIrCfg.style.padding = "5px 11px"; bIrCfg.style.fontSize = "14px";
+  bIrCfg.onclick = () => { grupos.CICLO = false; abaAtual = "cicloConfig";
+    render(); window.scrollTo(0,0); };
+  acoesH.appendChild(bIrCfg);
+  tela.appendChild(acoesH);
 
   /* ---- as voltas ficam agrupadas pelo nome do ciclo a que pertencem ----
      Cada grupo vira "VOLTAS CONCLUÍDAS - PCDF", com as suas voltas dentro.
@@ -9780,15 +9960,7 @@ function cicloHistorico(tela, E, C){
     card.appendChild(verDet);
     card.appendChild(det);
 
-    const del = el("button","chDel","✕");
-    del.title = "Apagar esta volta do histórico";
-    del.onclick = () => {
-      if (!confirm("Apagar a Volta " + n(v.volta) + " do histórico?")) return;
-      const idx = E.ciclo.historico.indexOf(v);
-      if (idx >= 0) E.ciclo.historico.splice(idx, 1);
-      salvar(); render();
-    };
-    card.appendChild(del);
+    // apagar e renomear ficam em Ajustes, não aqui
     return card;
   };
 
@@ -9804,20 +9976,6 @@ function cicloHistorico(tela, E, C){
     cab.appendChild(el("span","hgPct" +
       (g.media >= 1 ? " ok" : g.media >= .7 ? " meio" : " baixo"), pct1(g.media)));
 
-    // dá para batizar um grupo depois: útil para as voltas antigas, sem nome
-    const bRen = el("button","hgRen", g.nome === "SEM NOME" ? "dar nome" : "renomear");
-    bRen.title = "Mudar o nome deste ciclo no histórico";
-    bRen.onclick = ev => {
-      ev.stopPropagation();
-      const r = prompt("Nome deste ciclo no histórico:",
-        g.nome === "SEM NOME" ? "" : g.nome);
-      if (r === null) return;
-      const novo = r.trim();
-      if (!novo) return;
-      g.voltas.forEach(v => v.nome = novo);
-      salvar(); render();
-    };
-    cab.appendChild(bRen);
     cxG.appendChild(cab);
 
     const corpo = el("div","hgCorpo");
@@ -10012,11 +10170,26 @@ function cicloEdicao(tela, E, C, secao){
   tela.appendChild(painel);
   }
 
+  tela.appendChild(el("div","secao","BOAS PRÁTICAS"));
+  const dicas = el("div","cicloDicas");
+  [ "Prefira blocos entre 1h e 2h30 por matéria. Blocos curtos demais não deixam engrenar; " +
+    "longos demais derrubam o rendimento no fim.",
+    "Alterne matérias de natureza diferente ao ordenar o ciclo — depois de uma que exige " +
+    "cálculo ou leitura de lei, ponha uma mais discursiva. Trocar o tipo de esforço cansa menos.",
+    "Deixe as matérias de maior peso na prova aparecendo mais de uma vez no ciclo, em vez " +
+    "de dar um bloco enorme a elas." ]
+    .forEach(x => dicas.appendChild(el("div","d","★  " + x)));
+  tela.appendChild(dicas);
+
   /* ============ COMPORTAMENTO E PROJEÇÃO ============ */
   const T = cicloTotais();
 
   tela.appendChild(el("div","secao","COMPORTAMENTO A CADA VOLTA"));
   const box = el("div","cicloCfgBox");
+  const duplas = el("div","cicloDuplas");
+
+  // esquerda: reiniciar a contagem
+  const ladoRei = el("div","cicloMeia");
   const rei = el("div","cicloRei");
   rei.appendChild(el("span",null,"Reiniciar a contagem a cada nova volta"));
   [["sim","Sim"],["nao","Não"]].forEach(([v,r]) => {
@@ -10024,11 +10197,33 @@ function cicloEdicao(tela, E, C, secao){
     b.onclick = () => { C.reiniciar = v; salvar(); render(); };
     rei.appendChild(b);
   });
-  box.appendChild(rei);
-  box.appendChild(el("div","nota",
+  ladoRei.appendChild(rei);
+  ladoRei.appendChild(el("div","nota",
     (C.reiniciar === "sim")
       ? "Ao concluir a volta, o tempo feito de todas as matérias volta a zero."
       : "Ao concluir a volta, o tempo que passou da meta é levado para a volta seguinte."));
+  duplas.appendChild(ladoRei);
+
+  // direita: o que fazer quando a última matéria fecha a meta
+  const ladoFim = el("div","cicloMeia");
+  const aoFim = el("div","cicloRei");
+  aoFim.appendChild(el("span",null,"Quando o ciclo se completa"));
+  [["perguntar","Perguntar"],["auto","Reiniciar sozinho"]].forEach(([v,r]) => {
+    const b = el("button","alt" + ((C.aoCompletar || "perguntar") === v ? " on" : ""), r);
+    b.onclick = () => { C.aoCompletar = v; salvar(); render(); };
+    aoFim.appendChild(b);
+  });
+  ladoFim.appendChild(aoFim);
+  ladoFim.appendChild(el("div","nota",
+    (C.aoCompletar === "auto")
+      ? "Assim que a última matéria bater a meta, a volta é fechada e a próxima começa " +
+        "sozinha, sem perguntar nada."
+      : "Assim que a última matéria bater a meta, aparece uma janela perguntando se você " +
+        "quer começar uma volta nova ou continuar no mesmo ciclo — nesse caso o tempo " +
+        "seguinte conta como extra."));
+  duplas.appendChild(ladoFim);
+
+  box.appendChild(duplas);
   tela.appendChild(box);
 
   tela.appendChild(el("div","secao","PROJEÇÃO DE ESTUDOS"));
@@ -10047,7 +10242,7 @@ function cicloEdicao(tela, E, C, secao){
   const fator = (C.verPor === "mes") ? voltasSem * 4.345 : voltasSem;
   if (!T.meta || !metaSem){
     dir.appendChild(el("div","vazioAviso",
-      "Defina a meta semanal em Planejamento › Semana e monte o ciclo em Metas de ciclo para ver a projeção."));
+      "Defina a meta semanal em Planejamento › Semana e monte o ciclo para ver a projeção."));
   } else {
     dir.appendChild(el("div","legProg",
       "Com a sua meta de " + hMin(metaSem) + " por semana, o ciclo de " + hMin(T.meta) +
@@ -10068,16 +10263,314 @@ function cicloEdicao(tela, E, C, secao){
   }
   tela.appendChild(dir);
 
-  tela.appendChild(el("div","secao","BOAS PRÁTICAS"));
-  const dicas = el("div","cicloDicas");
-  [ "Prefira blocos entre 1h e 2h30 por matéria. Blocos curtos demais não deixam engrenar; " +
-    "longos demais derrubam o rendimento no fim.",
-    "Alterne matérias de natureza diferente ao ordenar o ciclo — depois de uma que exige " +
-    "cálculo ou leitura de lei, ponha uma mais discursiva. Trocar o tipo de esforço cansa menos.",
-    "Deixe as matérias de maior peso na prova aparecendo mais de uma vez no ciclo, em vez " +
-    "de dar um bloco enorme a elas." ]
-    .forEach(x => dicas.appendChild(el("div","d","★  " + x)));
-  tela.appendChild(dicas);
+  /* ============ METAS DE CICLO (editável) ============ */
+  {
+    const Tm = cicloTotais();
+    const M = C.metasCiclo;
+
+    // cabeçalho da seção com o botão de proporção entre os níveis, à direita
+    const cabSec = el("div","secaoCx");
+    cabSec.appendChild(el("div","secao","METAS DE CICLO"));
+    const bNiveis = el("button","btnProp" + (C.propNiveis ? " on" : ""),
+      "⇄  Níveis proporcionais");
+    bNiveis.title = "A meta ideal vira uma vez e meia a mínima, e a máxima vira o dobro";
+    bNiveis.onclick = () => {
+      C.propNiveis = !C.propNiveis;
+      if (C.propNiveis) aplicarProporcoes(C);
+      salvar(); render();
+    };
+    cabSec.appendChild(bNiveis);
+    tela.appendChild(cabSec);
+
+    tela.appendChild(el("div","nota",
+      "Quantas voltas do ciclo você quer fechar em cada período. Meia volta vale: " +
+      "dá para pôr 0,5 · 1,5 · 2,5. As horas equivalentes saem do tamanho do ciclo (" +
+      (Tm.meta ? hMin(Tm.meta) : "ainda sem matérias") + " por volta)." +
+      (C.propNiveis
+        ? "  Com os níveis proporcionais ligados, só a meta mínima é digitada: a ideal " +
+          "vale uma vez e meia ela, e a máxima o dobro."
+        : "")));
+
+    const wrapM = el("div","metasNiveis");
+    NIVEIS_CICLO.forEach(nv => {
+      const bloco = el("div","nivelCx " + nv.cls + (C.nivel === nv.k ? " emFoco" : ""));
+      const cab = el("div","nCab");
+      cab.appendChild(el("span","ic", nv.ico));
+      cab.appendChild(el("span","nm", nv.rot));
+      cab.appendChild(el("span","flex"));
+      // proporção dentro do nível: mensal e anual saem da meta semanal
+      const props = C.propPeriodo || (C.propPeriodo = {});
+      const bProp = el("button","btnProp mini" + (props[nv.k] ? " on" : ""),"⇄");
+      bProp.title = props[nv.k]
+        ? "Proporcional ligado: mensal = 4 semanas, anual = 48 semanas"
+        : "Ligar proporção: mensal e anual passam a sair da meta semanal";
+      bProp.onclick = () => {
+        props[nv.k] = !props[nv.k];
+        if (props[nv.k]) espalharSemana(M[nv.k]);
+        salvar(); render();
+      };
+      cab.appendChild(bProp);
+      bloco.appendChild(cab);
+      bloco.appendChild(el("div","nDes", nv.d));
+
+      // com os níveis proporcionais, ideal e máxima só acompanham a mínima
+      const preso = !!(C.propNiveis && nv.k !== "min");
+
+      const t = tabela(["Período","Meta de ciclos","Horas equivalentes"], [96,120,"auto"]);
+      t.classList.add("cadZeb","tabLimpa");
+      t.style.margin = "0";
+      PERIODOS_CICLO.forEach(p => {
+        const tr = el("tr");
+        tr.appendChild(el("td","esq", p.rot));
+        // preso pela proporção: vira número calculado, sem campo para digitar
+        const calculado = preso || (C.propPeriodo[nv.k] && p.k !== "semana");
+        if (calculado){
+          const td = el("td","calc", numCiclos(M[nv.k][p.k]));
+          td.title = preso
+            ? "Sai da meta mínima — desligue “Níveis proporcionais” para digitar"
+            : "Sai da meta semanal — desligue o ⇄ deste nível para digitar";
+          tr.appendChild(td);
+        } else {
+          const tdQ = el("td","ed");
+          const cxq = el("div","horasCx");
+          const inp = document.createElement("input");
+          inp.value = numCiclos(M[nv.k][p.k]);
+          inp.title = "Aceita meia volta: 0,5 · 1,5 · 2,5";
+          // arredonda ao meio ciclo mais próximo, nunca abaixo de zero
+          const guardar = x => {
+            M[nv.k][p.k] = Math.max(0, Math.round(n(x) * 2) / 2);
+            if (C.propPeriodo[nv.k] && p.k === "semana") espalharSemana(M[nv.k]);
+            if (C.propNiveis && nv.k === "min") aplicarProporcoes(C);
+            salvar(); render();
+          };
+          inp.onchange = () => guardar(inp.value);
+          inp.onkeydown = ev => { if (ev.key === "Enter") inp.blur(); };
+          cxq.appendChild(inp);
+          const passo = k => () => guardar(n(M[nv.k][p.k]) + k);
+          const bM = el("button","seta","▲"); bM.title = "+meia volta"; bM.onclick = passo(0.5);
+          const bm = el("button","seta","▼"); bm.title = "−meia volta"; bm.onclick = passo(-0.5);
+          cxq.appendChild(bM); cxq.appendChild(bm);
+          tdQ.appendChild(cxq); tr.appendChild(tdQ);
+        }
+        tr.appendChild(el("td",null, Tm.meta
+          ? hMin(n(M[nv.k][p.k]) * Tm.meta) : "—"));
+        t.tbody.appendChild(tr);
+      });
+      bloco.appendChild(t);
+      wrapM.appendChild(bloco);
+    });
+    tela.appendChild(wrapM);
+  }
+
+  /* ============ CICLOS CONCLUÍDOS ============ */
+  {
+    const H = C.historico || [];
+    tela.appendChild(el("div","secao","CICLOS CONCLUÍDOS"));
+    const cxC = el("div","cicloCfgBox");
+    if (!H.length){
+      cxC.appendChild(el("div","vazioAviso",
+        "Nenhum ciclo concluído ainda. Cada nome de ciclo aparece aqui com as voltas " +
+        "que você fechou nele."));
+    } else {
+      // agrupa as voltas pelo nome do ciclo a que pertencem
+      const porNome = {}; const ordem = [];
+      H.forEach(v => {
+        const nm = String(v.nome || "").trim() || "SEM NOME";
+        if (!porNome[nm]){ porNome[nm] = { nome:nm, voltas:[] }; ordem.push(porNome[nm]); }
+        porNome[nm].voltas.push(v);
+      });
+      ordem.forEach(g => {
+        g.ini = g.voltas.reduce((a,v) =>
+          (!a || String(v.ini || "") < a) ? String(v.ini || "") : a, "");
+        g.fim = g.voltas.reduce((a,v) =>
+          String(v.fim || "") > a ? String(v.fim || "") : a, "");
+        g.feito = g.voltas.reduce((a,v) => a + n(v.feitoTot), 0);
+        g.pct = g.voltas.reduce((a,v) => a + n(v.pct), 0) / g.voltas.length;
+      });
+      ordem.sort((a,b) => String(b.fim).localeCompare(String(a.fim)));
+
+      const tC = tabela(["Voltas","Ciclo","Período","Feito","Cumprimento",""],
+        [64,"32%",170,110,110,120]);
+      tC.classList.add("cadZeb","tabLimpa");
+      tC.style.margin = "0 0 10px";
+      ordem.forEach(g => {
+        const tr = el("tr");
+        tr.appendChild(el("td",null, String(g.voltas.length)));
+        tr.appendChild(el("td","esq", g.nome));
+        tr.appendChild(el("td",null,
+          (g.ini ? dataBR(g.ini) : "?") + " → " + (g.fim ? dataBR(g.fim) : "?")));
+        tr.appendChild(el("td",null, hMin(g.feito)));
+        tr.appendChild(el("td",null, pct1(g.pct)));
+        const tdA = el("td");
+        const bR = el("button","mini","✎");
+        bR.title = "Renomear este ciclo em todas as suas voltas";
+        bR.onclick = () => {
+          const novo = prompt("Novo nome para o ciclo \"" + g.nome + "\"\n" +
+            "(muda em todas as " + g.voltas.length + " volta(s) dele):", g.nome);
+          if (novo === null) return;
+          const nm = novo.trim();
+          if (!nm){ alert("O nome não pode ficar vazio."); return; }
+          g.voltas.forEach(v => v.nome = nm);
+          // o ciclo em andamento também muda, se for o mesmo nome
+          if (String(C.nome || "").trim() === g.nome) C.nome = nm;
+          salvar(); render();
+        };
+        tdA.appendChild(bR);
+        const bX = el("button","mini","🗑");
+        bX.title = "Apagar este ciclo inteiro do histórico";
+        bX.style.marginLeft = "5px";
+        bX.onclick = () => {
+          janelaConfirmarDigitando({
+            titulo: "Excluir o ciclo " + g.nome,
+            aviso: "As " + g.voltas.length + " volta(s) deste ciclo, com " +
+              hMin(g.feito) + " estudados no total, saem do histórico de uma vez. " +
+              "Não existe desfazer para esta exclusão: os registros são apagados e " +
+              "não há como recuperá-los depois.",
+            frase: "EXCLUIR",
+            rotulo: "🗑  Excluir ciclo",
+            nota: "Sem volta. Considere baixar uma cópia de segurança antes.",
+            aoConfirmar: () => {
+              C.historico = C.historico.filter(v =>
+                (String(v.nome || "").trim() || "SEM NOME") !== g.nome);
+              salvar(); render();
+              avisoTec("Ciclo " + g.nome + " excluído do histórico.");
+            }
+          });
+        };
+        tdA.appendChild(bX);
+        tr.appendChild(tdA);
+        tC.tbody.appendChild(tr);
+      });
+      cxC.appendChild(tC);
+      cxC.appendChild(el("div","nota",
+        "Cada linha reúne todas as voltas fechadas com aquele nome. Renomear aqui muda " +
+        "o nome em todas as voltas do ciclo de uma vez."));
+    }
+    tela.appendChild(cxC);
+  }
+
+  /* ============ VOLTAS CONCLUÍDAS ============ */
+  {
+    const H = C.historico || [];
+    tela.appendChild(el("div","secao","VOLTAS CONCLUÍDAS"));
+    const cxV = el("div","cicloCfgBox");
+    if (!H.length){
+      cxV.appendChild(el("div","vazioAviso",
+        "Nenhuma volta concluída ainda. Quando você concluir um ciclo, ele aparece aqui."));
+    } else {
+      const tV = tabela(["Volta","Ciclo","Período","Feito","Cumprimento",""],
+        [64,"32%",170,110,110,120]);
+      tV.classList.add("cadZeb","tabLimpa");
+      tV.style.margin = "0 0 10px";
+
+      /* uma linha por ciclo: a volta mais recente dele. Clique duplo na linha
+         abre as voltas anteriores daquele ciclo, em amarelo claro. */
+      const porCiclo = {}; const ordemC = [];
+      H.forEach(v => {
+        const nm = String(v.nome || "").trim() || "SEM NOME";
+        if (!porCiclo[nm]){ porCiclo[nm] = { nome:nm, voltas:[] }; ordemC.push(porCiclo[nm]); }
+        porCiclo[nm].voltas.push(v);
+      });
+      ordemC.forEach(g => {
+        g.voltas.sort((a,b) => n(b.volta) - n(a.volta));   // da mais nova para a mais velha
+        g.fim = g.voltas.reduce((a,v) =>
+          String(v.fim || "") > a ? String(v.fim || "") : a, "");
+      });
+      ordemC.sort((a,b) => String(b.fim).localeCompare(String(a.fim)));
+
+      // monta a linha de uma volta; "velha" pinta de amarelo claro
+      const linhaVolta = (v, velha, grupo) => {
+        const tr = el("tr", velha ? "voltaVelha" : "");
+        if (grupo && grupo.voltas.length > 1){
+          tr.style.cursor = "pointer";
+          const aberto = !!voltasAbertas[grupo.nome];
+          tr.title = aberto
+            ? "Clique duas vezes para recolher as voltas do " + grupo.nome
+            : "Clique duas vezes para ver as outras " + (grupo.voltas.length - 1) +
+              " volta(s) do " + grupo.nome;
+          tr.ondblclick = ev => {
+            if (ev.target.closest("button")) return;   // os ✎ e 🗑 seguem seu caminho
+            voltasAbertas[grupo.nome] = !voltasAbertas[grupo.nome];
+            render();
+          };
+        }
+        tr.appendChild(el("td",null,String(n(v.volta))));
+        tr.appendChild(el("td","esq", String(v.nome || "SEM NOME")));
+        tr.appendChild(el("td",null,
+          (v.ini ? dataBR(v.ini) : "?") + " → " + (v.fim ? dataBR(v.fim) : "?")));
+        tr.appendChild(el("td",null, hMin(v.feitoTot)));
+        tr.appendChild(el("td",null, pct1(v.pct)));
+        const tdA = el("td");
+        const bR = el("button","mini","✎");
+        bR.title = "Renomear o ciclo desta volta";
+        bR.onclick = () => {
+          const nv = prompt("Novo nome para o ciclo desta volta:", v.nome || "");
+          if (nv === null) return;
+          const nm = nv.trim();
+          if (!nm){ alert("O nome não pode ficar vazio."); return; }
+          v.nome = nm; salvar(); render();
+        };
+        tdA.appendChild(bR);
+        const bX = el("button","mini","🗑");
+        bX.title = "Apagar esta volta do histórico";
+        bX.style.marginLeft = "5px";
+        bX.onclick = () => {
+          janelaConfirmarDigitando({
+            titulo: "Excluir a volta " + n(v.volta),
+            aviso: "Esta volta do " + (v.nome || "ciclo") + ", com " + hMin(v.feitoTot) +
+              " estudados, sai do histórico para sempre. Não existe desfazer para esta " +
+              "exclusão: o registro é apagado e não há como recuperá-lo depois.",
+            frase: "EXCLUIR",
+            rotulo: "🗑  Excluir volta",
+            nota: "Sem volta. O registro é apagado em definitivo.",
+            aoConfirmar: () => {
+              const i = C.historico.indexOf(v);
+              if (i >= 0) C.historico.splice(i,1);
+              salvar(); render();
+              avisoTec("Volta excluída do histórico.");
+            }
+          });
+        };
+        tdA.appendChild(bX);
+        tr.appendChild(tdA);
+        return tr;
+      };
+
+      let escondidas = 0;
+      ordemC.forEach(g => {
+        const aberto = !!voltasAbertas[g.nome];
+        tV.tbody.appendChild(linhaVolta(g.voltas[0], false, g));
+        if (aberto) g.voltas.slice(1).forEach(v =>
+          tV.tbody.appendChild(linhaVolta(v, true, g)));
+        else escondidas += g.voltas.length - 1;
+      });
+      cxV.appendChild(tV);
+      if (escondidas || ordemC.some(g => voltasAbertas[g.nome])){
+        const dica = el("div","nota");
+        dica.style.margin = "0 0 8px";
+        dica.textContent = escondidas
+          ? "Cada ciclo mostra só a volta mais recente. Clique duas vezes na linha de um " +
+            "ciclo para ver as anteriores dele — há " + escondidas + " escondida(s)."
+          : "Clique duas vezes na linha de um ciclo para recolher as voltas anteriores.";
+        cxV.appendChild(dica);
+      }
+      const bLimpaH = el("button","btn vermelhinho","🗑  Limpar todo o histórico");
+      bLimpaH.title = "Apaga todas as voltas guardadas; não afeta a volta em andamento";
+      bLimpaH.onclick = () => {
+        janelaConfirmarDigitando({
+          titulo: "Limpar todo o histórico de voltas",
+          aviso: "Todas as " + H.length + " volta(s) guardadas serão apagadas de uma vez. " +
+            "A volta em andamento não é afetada. Não há como recuperar depois.",
+          frase: "EXCLUIR",
+          rotulo: "🗑  Limpar histórico",
+          nota: "Sem volta. Considere baixar uma cópia de segurança antes.",
+          aoConfirmar: () => { C.historico = []; salvar(); render(); }
+        });
+      };
+      cxV.appendChild(bLimpaH);
+    }
+    tela.appendChild(cxV);
+  }
 
   /* ---- encerrar o ciclo: o contador de voltas volta a zero ---- */
   tela.appendChild(el("div","secao","ENCERRAR O CICLO"));
@@ -10476,9 +10969,9 @@ const ABAS_EST = [
   { id:"cronConfig",  nome:"Configurações de cronograma", cls:"cron", fn:() => telaCiclo("cronCfg") },
   { grupo:"CICLO", cls:"cic" },
   { id:"cicloAtual",  nome:"Ciclo de estudos",        cls:"cic", fn:() => telaCiclo("atual") },
-  { id:"cicloHist",   nome:"Ciclo histórico",         cls:"cic", fn:() => telaCiclo("hist") },
-  { id:"cicloMetas",  nome:"Metas de ciclo",          cls:"cic", fn:() => telaCiclo("metas") },
-  { id:"cicloConfig", nome:"Configurações do ciclo",  cls:"cic", fn:() => telaCiclo("config") },
+  { id:"cicloHist",   nome:"Histórico",               cls:"cic", fn:() => telaCiclo("hist") },
+  { id:"cicloMetas",  nome:"Metas",                   cls:"cic", fn:() => telaCiclo("metas") },
+  { id:"cicloConfig", nome:"Ajustes",                 cls:"cic", fn:() => telaCiclo("config") },
   { grupo:"ATIVIDADES", cls:"ativ" },
   { id:"eCrono",   nome:"Iniciar atividade", cls:"ativ", fn: telaCrono },
   { id:"eHist",    nome:"Histórico",         cls:"ativ", fn: telaHistorico },
@@ -11073,6 +11566,12 @@ document.addEventListener("click", ev => {
 document.getElementById("btnInicio").onclick = abrirCapa;
 document.getElementById("btnDesfazer").onclick = desfazer;
 document.getElementById("btnRefazer").onclick = refazerAgora;
+
+/* qualquer campo novo que apareça na tela já nasce com a máscara ligada */
+if (typeof MutationObserver !== "undefined"){
+  const vigia = new MutationObserver(() => ligarMascarasEm(document));
+  vigia.observe(document.body, { childList:true, subtree:true });
+}
 
 carregar().then(() => {
   render(); botoesHistorico(); abrirCapa();
