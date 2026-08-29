@@ -236,6 +236,13 @@ button.mini{display:inline-flex;align-items:center;justify-content:center;paddin
 .btnProp.mini{padding:2px 7px;font-size:12px;line-height:1}
 .secaoCx{display:flex;align-items:center;gap:10px;margin:0 10px}
 .secaoCx .secao{flex:1;margin-left:0;margin-right:0}
+/* faixa azul de seção com um botão dentro, alinhado à direita */
+.secao.secaoBtn{display:flex;align-items:center;gap:10px;padding-top:3px;padding-bottom:3px}
+.secao.secaoBtn > span:first-child{flex:1}
+.btnProp.naFaixa{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);
+  color:#e6edf7;font-size:11px;padding:3px 11px}
+.btnProp.naFaixa:hover{background:rgba(255,255,255,.26)}
+.btnProp.naFaixa.on{background:#fff;border-color:#fff;color:var(--azulEscuro)}
 .nivelCx .nDes{font-size:11px;color:#7a8595;font-style:italic;margin:2px 0 9px}
 .nivelCx.nMin{border-top:3px solid #1E8E3E}
 .nivelCx.nIdeal{border-top:3px solid #E8B10A}
@@ -733,6 +740,15 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
 .confDigita input:focus{outline:none;border-color:#C0392B;background:#FFFDF3}
 .confDigita input.ok{border-color:#1F6F6B;background:#F1FAF3}
 .confDigita .erro{min-height:14px;font-size:11px;color:#C0392B;margin-top:5px}
+/* bloco da assinatura da agenda */
+.assinaAgenda{background:#F1F7F6;border:1px solid #cfe2df;border-left:4px solid #1F6F6B;
+  border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.assinaAgenda .rot{font-size:11px;font-weight:bold;color:#14504d;text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:5px}
+.assinaAgenda .linhaLink{display:flex;gap:6px;align-items:center;margin:7px 0}
+.assinaAgenda .linhaLink input{flex:1;min-width:0;padding:5px 8px;font:11px Consolas,monospace;
+  border:1px solid #c9d4e3;border-radius:4px;background:#fff;color:#1F3864}
+.confDigita .p.miudo{font-size:11px;color:#8794a8}
 .modalRodape .btn[disabled]{opacity:.45;cursor:not-allowed}
 .modalRodape .btn{padding:5px 14px;font-size:12px}
 .listasWrap{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;margin:10px}
@@ -758,6 +774,16 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
 .capaRegua{height:3px;width:90px;background:#ED7D31;margin:14px auto 20px;border-radius:2px}
 .capaProx{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
   border-radius:8px;padding:12px 16px;margin-bottom:14px}
+/* balão de atalhos rápidos, logo abaixo das próximas provas */
+.capaBalao{display:flex;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:10px 12px;
+  margin-bottom:14px}
+.capaBalao .bAtalho{flex:1 1 150px;display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);
+  border-radius:7px;padding:9px 12px;color:#e6edf7;font:bold 12px Arial;
+  cursor:pointer;text-align:left}
+.capaBalao .bAtalho:hover{background:#ED7D31;border-color:#ED7D31;color:#fff}
+.capaBalao .bAtalho .ic{font-size:15px;flex:0 0 auto}
 .capaProx .rot{color:#9fb6d6;font-size:11px;letter-spacing:.6px;font-weight:bold;
   text-transform:uppercase}
 .capaLinhaProx{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -2083,7 +2109,8 @@ async function carregar(){
    aparelho gravou algo mais novo, para nada ser sobrescrito às escondidas.
 ======================================================================== */
 const NUVEM_ARQ = "controle-simulados.json";
-const NUV = { token:"", gist:"", auto:true };
+const AGENDA_ARQ = "agenda.ics";        // a agenda que a sua agenda assina
+const NUV = { token:"", gist:"", dono:"", auto:true };
 let carimboLocal = "";          // carimbo da versão que este aparelho já conhece
 let nuvemTimer = null, nuvemOcupada = false;
 
@@ -2091,6 +2118,7 @@ function nuvemLerCfg(){
   try{
     NUV.token = localStorage.getItem("cs_gh_token") || "";
     NUV.gist  = localStorage.getItem("cs_gh_gist")  || "";
+    NUV.dono  = localStorage.getItem("cs_gh_dono")  || "";
     NUV.auto  = localStorage.getItem("cs_gh_auto") !== "0";
     carimboLocal = localStorage.getItem("cs_gh_carimbo") || "";
   }catch(e){}
@@ -2099,6 +2127,7 @@ function nuvemGravarCfg(){
   try{
     localStorage.setItem("cs_gh_token", NUV.token);
     localStorage.setItem("cs_gh_gist",  NUV.gist);
+    localStorage.setItem("cs_gh_dono",  NUV.dono || "");
     localStorage.setItem("cs_gh_auto",  NUV.auto ? "1" : "0");
     localStorage.setItem("cs_gh_carimbo", carimboLocal);
   }catch(e){}
@@ -2145,6 +2174,9 @@ async function gh(caminho, metodo, corpo){
 // devolve { carimbo, aparelho, dados } do que está guardado na nuvem
 async function nuvemLerRemoto(){
   const g = await gh("/gists/" + NUV.gist);
+  if (g.owner && g.owner.login && NUV.dono !== g.owner.login){
+    NUV.dono = g.owner.login; nuvemGravarCfg();
+  }
   const f = g.files && g.files[NUVEM_ARQ];
   if (!f) throw new Error("o gist não tem o arquivo " + NUVEM_ARQ);
   let texto = f.content;
@@ -2171,8 +2203,13 @@ async function nuvemEnviar(forcar){
       }
     }
     const carimbo = new Date().toISOString();
-    await gh("/gists/" + NUV.gist, "PATCH", { files: { [NUVEM_ARQ]:
-      { content: JSON.stringify({ v:1, carimbo, dados: DB }) } } });
+    // junto dos dados vai a agenda em .ics, para quem assinou o endereço fixo
+    // receber as datas novas sem precisar exportar nada à mão
+    const arquivos = { [NUVEM_ARQ]:
+      { content: JSON.stringify({ v:1, carimbo, dados: DB }) } };
+    try{ arquivos[AGENDA_ARQ] = { content: textoICS(todosOsEventos()) }; }catch(e){}
+    const g = await gh("/gists/" + NUV.gist, "PATCH", { files: arquivos });
+    if (g && g.owner && g.owner.login){ NUV.dono = g.owner.login; }
     carimboLocal = carimbo; nuvemGravarCfg();
     nuvemAviso("enviado às " + horaCurta(carimbo));
     return true;
@@ -5720,6 +5757,15 @@ function relDe(min){
   const dp = String(s).padStart(2,"0");
   return h ? h + ":" + String(m).padStart(2,"0") + ":" + dp : m + ":" + dp;
 }
+/* para preencher o campo "Tempo estudado" usamos sempre h:mm:ss.
+   Sem a hora na frente, "45:00" seria lido de volta como 45 HORAS, e não
+   como 45 minutos — era assim que o tempo inflava ao encerrar. */
+function relCheio(min){
+  let seg = Math.round(n(min)*60);
+  const h = Math.floor(seg/3600); seg -= h*3600;
+  const m = Math.floor(seg/60), s = seg - m*60;
+  return h + ":" + String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
 const sessoes = () => garantirEstudo().sessoes;
 
 /* etiqueta do horário em que a atividade COMEÇOU: relógio + 08:03.
@@ -5830,7 +5876,7 @@ function janelaSessao(base, aoSalvar){
   const cx = el("div","modal");
   cx.appendChild(el("div","modalTit", novo ? "Registrar estudo" : "Editar registro"));
   cx.appendChild(el("div","modalSub",
-    "O tempo aceita 1:30:45, 1h30m45s, 1:30 ou 90 (minutos)."));
+    "O tempo aceita 1:30:45, 1h30m45s, 1:30 ou 90 (minutos). Até 15h por registro."));
   const grade = el("div","modalGrade");
   const ent = {};
   const campo = (chave, rot, tipo, opcoes, dica) => {
@@ -5845,7 +5891,7 @@ function janelaSessao(base, aoSalvar){
     } else {
       e = document.createElement("input");
       e.value = chave === "data" ? dataBR(s.data)
-              : chave === "min" ? (s.min ? relDe(s.min) : "")
+              : chave === "min" ? (s.min ? relCheio(s.min) : "")
               : (s[chave] ?? "");
       if (dica) e.placeholder = dica;
     }
@@ -5894,7 +5940,10 @@ function janelaSessao(base, aoSalvar){
   cx.appendChild(rodape);
   fundo.appendChild(cx);
   document.body.appendChild(fundo);
-  ent.min.focus();
+  // vindo do cronômetro o tempo já vem pronto, então o cursor vai direto para
+  // a anotação; num lançamento manual ele começa no tempo, que está vazio
+  if (String(ent.min.value || "").trim()) obs.focus();
+  else ent.min.focus();
 
   const fechar = () => { document.body.removeChild(fundo);
     document.removeEventListener("keydown", tecla); };
@@ -5909,6 +5958,14 @@ function janelaSessao(base, aoSalvar){
   function confirmar(){
     const min = minDe(ent.min.value);
     if (!min){ alert("Informe o tempo estudado (ex.: 1:30)."); ent.min.focus(); return; }
+    // teto de 15h por registro: acima disso é quase sempre erro de digitação
+    if (min > 15*60){
+      alert("O tempo passou de 15 horas (" + hMin(min) + ").\n\n" +
+        "O limite por registro é 15h. Se você estudou mais que isso no dia, " +
+        "lance em dois registros — o total do dia continua somando igual.");
+      ent.min.focus(); ent.min.select();
+      return;
+    }
     const reg = {
       id: s.id || ("s" + Date.now() + Math.floor(Math.random()*1000)),
       data: paraISO(ent.data.value) || hojeISO(),
@@ -7721,6 +7778,164 @@ function eventosDoMes(mes){
   return lista.sort((a,b) => String(a.data).localeCompare(String(b.data)));
 }
 
+/* ---------- exportar para a agenda do aparelho (arquivo .ics) ----------
+   O .ics é o formato que Google Agenda, Calendário do iPhone e Outlook
+   entendem. Cada evento vira um compromisso de dia inteiro com dois
+   lembretes: um na véspera de manhã e outro na hora, de manhã cedo.
+   Quem avisa passa a ser o próprio aparelho, mesmo com o app fechado. */
+function todosOsEventos(){
+  const meses = new Set();
+  DB.concursos.forEach(c => {
+    [c.dataObj, c.dataDis].forEach(d => { if (d) meses.add(String(d).slice(0,7)); });
+  });
+  const CR = garantirCronogramas();
+  DB.concursos.forEach(c => {
+    const dados = CR[c.num] || {};
+    Object.values(dados).forEach(reg => {
+      [reg && reg.ini, reg && reg.fim].forEach(d => {
+        if (d) meses.add(String(d).slice(0,7));
+      });
+    });
+  });
+  (garantirEstudo().eventos || []).forEach(e => {
+    if (e.data) meses.add(String(e.data).slice(0,7));
+  });
+  const lista = [];
+  [...meses].sort().forEach(m => lista.push(...eventosDoMes(m)));
+  return lista;
+}
+
+function textoICS(lista){
+  const esc = t => String(t || "")
+    .replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,")
+    .replace(/\r?\n/g,"\\n");
+  const soData = iso => String(iso).replace(/-/g,"");         // 20261011
+  const diaSeguinte = iso => {                                // o .ics termina no dia seguinte
+    const d = dataDeISO(iso); d.setDate(d.getDate()+1);
+    return isoDeData(d).replace(/-/g,"");
+  };
+  const carimbo = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+  const L = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Central de Estudos//PT-BR",
+             "CALSCALE:GREGORIAN","METHOD:PUBLISH",
+             "X-WR-CALNAME:Central de Estudos"];
+  lista.forEach((e,i) => {
+    if (!e.data) return;
+    const uid = "ce-" + soData(e.data) + "-" + i + "@central-de-estudos";
+    L.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + carimbo,
+      "DTSTART;VALUE=DATE:" + soData(e.data),
+      "DTEND;VALUE=DATE:" + diaSeguinte(e.data),
+      "SUMMARY:" + esc((e.tipo === "Prova" ? "📝 " : "") + e.titulo),
+      "CATEGORIES:" + esc(e.tipo || "Compromisso"));
+    if (e.obs) L.push("DESCRIPTION:" + esc(e.obs));
+    // lembrete na véspera às 9h e no próprio dia às 7h
+    L.push("BEGIN:VALARM","TRIGGER:-PT15H","ACTION:DISPLAY",
+      "DESCRIPTION:" + esc(e.titulo), "END:VALARM");
+    L.push("BEGIN:VALARM","TRIGGER:-P1DT15H","ACTION:DISPLAY",
+      "DESCRIPTION:" + esc("Amanhã: " + e.titulo), "END:VALARM");
+    L.push("END:VEVENT");
+  });
+  L.push("END:VCALENDAR");
+  return L.join("\r\n");                    // o formato exige quebra de linha dupla
+}
+
+function exportarAgenda(soFuturos){
+  let lista = todosOsEventos();
+  const hoje = hojeISO();
+  if (soFuturos) lista = lista.filter(e => String(e.data) >= hoje);
+  if (!lista.length){
+    alert("Não há eventos para exportar." +
+      (soFuturos ? "  Tente incluindo os que já passaram." : ""));
+    return;
+  }
+  const ok = baixarArquivo("central-de-estudos.ics", textoICS(lista), "text/calendar");
+  if (ok) avisoTec(lista.length + " evento(s) no arquivo. Abra-o para levar à sua agenda.");
+  else alert("Não consegui gerar o arquivo neste navegador.");
+}
+
+function janelaExportarAgenda(){
+  const fundo = el("div","modalFundo");
+  const cx = el("div","modal"); cx.style.maxWidth = "560px";
+  cx.appendChild(el("div","modalTit","📅  Levar para a sua agenda"));
+  cx.appendChild(el("div","modalSub",
+    "Gera um arquivo .ics com as provas, as etapas do cronograma e os seus eventos. " +
+    "Serve para o Google Agenda, para o Calendário do iPhone e para o Outlook."));
+  const corpo = el("div","confDigita");
+
+  /* ---- assinatura: a agenda busca sozinha, sem você exportar nada ---- */
+  const linkAgenda = (NUV.dono && NUV.gist)
+    ? "https://gist.githubusercontent.com/" + NUV.dono + "/" + NUV.gist +
+      "/raw/" + AGENDA_ARQ
+    : "";
+  const cxAss = el("div","assinaAgenda");
+  cxAss.appendChild(el("div","rot","Automático — assine uma vez e esqueça"));
+  if (!linkAgenda){
+    cxAss.appendChild(el("div","p",
+      "Para isso é preciso ter a sincronização ligada, no ☁ da barra de cima. " +
+      "É ela que mantém um endereço fixo com a sua agenda sempre atualizada."));
+  } else {
+    cxAss.appendChild(el("div","p",
+      "Este é o endereço da sua agenda. Assinando ele, cada data nova que você " +
+      "cadastrar aqui aparece sozinha no seu calendário, sem exportar nada."));
+    const linha = el("div","linhaLink");
+    const inp = document.createElement("input");
+    inp.value = linkAgenda; inp.readOnly = true;
+    inp.onclick = () => inp.select();
+    linha.appendChild(inp);
+    const bCop = el("button","btn azulzinho","Copiar");
+    bCop.onclick = () => {
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(linkAgenda)
+          .then(() => bCop.textContent = "Copiado!")
+          .catch(() => { inp.select(); bCop.textContent = "copie à mão"; });
+      else { inp.select(); bCop.textContent = "copie à mão"; }
+    };
+    linha.appendChild(bCop);
+    cxAss.appendChild(linha);
+    const comoAss = el("div","p");
+    comoAss.innerHTML =
+      "<b>Google Agenda:</b> em calendar.google.com, ao lado de “Outras agendas”, " +
+      "clique no + → <i>De URL</i> → cole o endereço. Ele sincroniza para o tablet " +
+      "sozinho.<br>" +
+      "<b>iPhone:</b> Ajustes → Aplicativos → Calendário → Contas → Adicionar conta " +
+      "→ Outras → Adicionar calendário assinado → cole o endereço.";
+    cxAss.appendChild(comoAss);
+    cxAss.appendChild(el("div","p miudo",
+      "A agenda releva o endereço de tempos em tempos: o iPhone dá para pôr de hora " +
+      "em hora, e o Google costuma levar de algumas horas até um dia. Para ver uma " +
+      "data nova na hora, use o arquivo aqui embaixo."));
+  }
+  corpo.appendChild(cxAss);
+
+  corpo.appendChild(el("div","p",
+    "Cada compromisso entra como dia inteiro, com dois lembretes: um na véspera " +
+    "e outro na manhã do dia. Quem avisa passa a ser o seu aparelho, então o " +
+    "alerta chega mesmo com este app fechado."));
+  const passos = el("div","p");
+  passos.innerHTML =
+    "<b>Baixando o arquivo</b> em vez de assinar: no iPhone, toque nele e escolha " +
+    "o calendário; no Google Agenda, use Configurações → Importar e exportar. " +
+    "Nesse caminho você precisa repetir a cada mudança de data.";
+  corpo.appendChild(passos);
+  corpo.appendChild(el("div","p miudo",
+    "Reexportando depois de mudar alguma data, os compromissos são atualizados " +
+    "no lugar, sem duplicar."));
+  cx.appendChild(corpo);
+
+  const rodape = el("div","modalRodape");
+  rodape.appendChild(el("span","modalNota","O arquivo vai para a sua pasta de downloads."));
+  const bCancel = el("button","btn","Cancelar");
+  const bTudo = el("button","btn","Tudo");
+  const bFuturo = el("button","btn azulzinho","Só o que ainda vem");
+  const fechar = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
+  bCancel.onclick = fechar;
+  bTudo.onclick = () => { fechar(); exportarAgenda(false); };
+  bFuturo.onclick = () => { fechar(); exportarAgenda(true); };
+  rodape.appendChild(bCancel); rodape.appendChild(bTudo); rodape.appendChild(bFuturo);
+  cx.appendChild(rodape);
+  fundo.appendChild(cx); document.body.appendChild(fundo);
+  fundo.onclick = ev => { if (ev.target === fundo) fechar(); };
+}
+
 function janelaEvento(base){
   const E = garantirEstudo();
   const ev = Object.assign({ data:hojeISO(), titulo:"", tipo:"Compromisso", obs:"" }, base||{});
@@ -7833,6 +8048,11 @@ function telaCalendario(){
   const bNovo = el("button","btn azulzinho","+ Novo evento");
   bNovo.onclick = () => janelaEvento({ data: calMes + "-01" });
   lado.appendChild(bNovo);
+  const bIcs = el("button","btn","📅  Levar para a agenda");
+  bIcs.title = "Gera um arquivo .ics para o Google Agenda ou o Calendário do iPhone";
+  bIcs.style.marginTop = "6px";
+  bIcs.onclick = janelaExportarAgenda;
+  lado.appendChild(bIcs);
   if (!eventos.length){
     lado.appendChild(el("div","semEv",
       "Nada marcado neste mês. Use o botão acima para anotar uma prova, " +
@@ -10308,10 +10528,10 @@ function cicloEdicao(tela, E, C, secao){
     const Tm = cicloTotais();
     const M = C.metasCiclo;
 
-    // cabeçalho da seção com o botão de proporção entre os níveis, à direita
-    const cabSec = el("div","secaoCx");
-    cabSec.appendChild(el("div","secao","METAS DE CICLO"));
-    const bNiveis = el("button","btnProp" + (C.propNiveis ? " on" : ""),
+    // o botão de proporção entre os níveis mora dentro da faixa azul
+    const faixa = el("div","secao secaoBtn");
+    faixa.appendChild(el("span",null,"METAS DE CICLO"));
+    const bNiveis = el("button","btnProp naFaixa" + (C.propNiveis ? " on" : ""),
       "⇄  Níveis proporcionais");
     bNiveis.title = "A meta ideal vira uma vez e meia a mínima, e a máxima vira o dobro";
     bNiveis.onclick = () => {
@@ -10319,8 +10539,8 @@ function cicloEdicao(tela, E, C, secao){
       if (C.propNiveis) aplicarProporcoes(C);
       salvar(); render();
     };
-    cabSec.appendChild(bNiveis);
-    tela.appendChild(cabSec);
+    faixa.appendChild(bNiveis);
+    tela.appendChild(faixa);
 
     tela.appendChild(el("div","nota",
       "Quantas voltas do ciclo você quer fechar em cada período. Meia volta vale: " +
@@ -11231,10 +11451,7 @@ function montarCapa(){
   elCapa.appendChild(cx);
 
   cx.appendChild(el("div","capaTit","CENTRAL DE ESTUDOS"));
-  const cargo = (DB.concursos.find(c => c.cargo) || {}).cargo || "";
-  cx.appendChild(el("div","capaSub", cargo
-    ? cargo + "  ·  simulados, estudos e cadernos"
-    : "Simulados, estudos e cadernos"));
+  cx.appendChild(el("div","capaSub","Simulados, estudos e cadernos"));
   cx.appendChild(el("div","capaRegua"));
 
   // ---- próximas provas ----
@@ -11271,6 +11488,20 @@ function montarCapa(){
     cxProx.appendChild(L);
   });
   cx.appendChild(cxProx);
+
+  // ---- balão de atalhos: o que se costuma fazer ao abrir o app ----
+  const balao = el("div","capaBalao");
+  [ ["eCrono", "▶", "Iniciar atividade"],
+    ["gradeO", "✎", "Lançar simulados"],
+    ["cicloCron", "🗓", "Cronograma de estudos"],
+    ["eCal", "📅", "Calendário"] ].forEach(([id, ico, rot]) => {
+    const b = el("button","bAtalho");
+    b.appendChild(el("span","ic", ico));
+    b.appendChild(el("span",null, rot));
+    b.onclick = () => fecharCapa(id);
+    balao.appendChild(b);
+  });
+  cx.appendChild(balao);
 
   // ---- um cartão por módulo, com os números e os atalhos de cada um ----
   const N = numerosDaCapa();
@@ -11491,12 +11722,15 @@ document.getElementById("nvCriar").onclick = async () => {
     nuvemAviso("criando…");
     const carimbo = new Date().toISOString();
     NUV.gist = "";                       // POST não usa número
+    const arquivos = { [NUVEM_ARQ]: { content: JSON.stringify({ v:1, carimbo, dados: DB }) } };
+    try{ arquivos[AGENDA_ARQ] = { content: textoICS(todosOsEventos()) }; }catch(e){}
     const g = await gh("/gists", "POST", {
       description: "Controle de Simulados — dados",
       public: false,
-      files: { [NUVEM_ARQ]: { content: JSON.stringify({ v:1, carimbo, dados: DB }) } }
+      files: arquivos
     });
     NUV.gist = g.id; carimboLocal = carimbo;
+    if (g.owner && g.owner.login) NUV.dono = g.owner.login;
     nvGist.value = g.id; nuvemGravarCfg();
     nuvemAviso("gist criado. Leve este número e a chave para o outro aparelho: " + g.id);
   }catch(e){ nuvemAviso("não criou: " + e.message, true); }
@@ -11582,7 +11816,19 @@ document.getElementById("cronoBar").addEventListener("click", ev => {
   if (b.dataset.a === "pausa") crono().iniMs ? cronoPausar() : cronoRetomar();
   else cronoEncerrar();
 });
-setInterval(pulsoCrono, 1000);
+/* o pulso de cada segundo. Se ele voltar muito atrasado, é porque o aparelho
+   congelou a aba: nesse caso vale redesenhar, e não só mexer no mostrador. */
+let ultimoPulso = Date.now();
+setInterval(() => {
+  const agora = Date.now();
+  const atraso = agora - ultimoPulso;
+  ultimoPulso = agora;
+  pulsoCrono();
+  // mais de 5 segundos sem pulsar com o cronômetro correndo: estava suspenso
+  if (atraso > 5000 && crono().ativo && !document.hidden){
+    if (emTelaCheia()) atualizarBotaoCrono(); else render();
+  }
+}, 1000);
 // com milissegundos ligados o relógio anda a cada quadro, não a cada segundo
 (function laçoFino(){
   const c = garantirEstudo().crono;
@@ -11641,11 +11887,26 @@ function ofereceVoltarTelaCheia(){
   setTimeout(() => { if (b.parentNode && !document.fullscreenElement) b.remove(); }, 20000);
 }
 
+/* ---------- acordar o cronômetro depois de a tela ficar suspensa ----------
+   Com a aba em segundo plano o navegador congela os pulsos de 1 segundo. O
+   tempo em si não se perde, porque ele é calculado pelo relógio do sistema,
+   mas o mostrador fica parado e o alarme atrasa. Ao voltar, refazemos tudo
+   na hora: o pulso, o mostrador e, se for o caso, o alarme que já venceu. */
+function acordarCrono(){
+  ultimoPulso = Date.now();
+  pulsoCrono();                       // atualiza mostrador, barra e checa o alarme
+  if (emTelaCheia()) atualizarBotaoCrono(); else render();
+}
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden){ momentoEscondido = Date.now(); return; }
   cuidarDaTela();                       // voltando, a trava precisa ser refeita
+  acordarCrono();
   if (caiuTelaCheia && crono().ativo) ofereceVoltarTelaCheia();
 });
+// o aparelho pode ter devolvido a página do congelador, sem passar por cima
+window.addEventListener("pageshow", () => { if (crono().ativo) acordarCrono(); });
+window.addEventListener("focus",   () => { if (crono().ativo) acordarCrono(); });
 
 /* saindo da tela cheia, a tela se redesenha para pegar o que mudou lá dentro */
 document.addEventListener("fullscreenchange", () => {
