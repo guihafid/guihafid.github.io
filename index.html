@@ -10117,7 +10117,16 @@ function cicloEdicao(tela, E, C, secao){
     salvar(); render();
   };
   const bTodas = el("button","btn","+ Adicionar todas as matérias");
+  bTodas.disabled = !fora.length;
+  bTodas.title = fora.length
+    ? "Põe as " + fora.length + " matérias que ainda não estão no ciclo"
+    : "Todas as matérias já estão no ciclo";
   bTodas.onclick = () => {
+    if (!fora.length) return;
+    const horas = hMin(fora.length * 60);
+    if (!confirm("Adicionar as " + fora.length + " matérias que faltam ao ciclo?\n\n" +
+      "Cada uma entra com 1h de meta, somando " + horas + " ao ciclo. " +
+      "Você ajusta o tempo de cada uma depois, na tabela acima.")) return;
     fora.forEach(m => C.itens.push({ mat:m, meta:60, feito:0 }));
     salvar(); render();
   };
@@ -10964,6 +10973,10 @@ const ABAS_SIM = [
 ];
 const ABAS_EST = [
   { id:"eInicio",  nome:"Início",            cls:"est",  fn: telaEstInicio },
+  { grupo:"ATIVIDADES", cls:"ativ" },
+  { id:"eCrono",   nome:"Iniciar atividade", cls:"ativ", fn: telaCrono },
+  { id:"eHist",    nome:"Histórico",         cls:"ativ", fn: telaHistorico },
+  { id:"eMat",     nome:"Matérias",          cls:"ativ", fn: telaMateriasEstudo },
   { grupo:"CRONOGRAMA", cls:"cron" },
   { id:"cicloCron",   nome:"Cronograma de estudos",      cls:"cron", fn:() => telaCiclo("cron") },
   { id:"cronConfig",  nome:"Configurações de cronograma", cls:"cron", fn:() => telaCiclo("cronCfg") },
@@ -10972,10 +10985,6 @@ const ABAS_EST = [
   { id:"cicloHist",   nome:"Histórico",               cls:"cic", fn:() => telaCiclo("hist") },
   { id:"cicloMetas",  nome:"Metas",                   cls:"cic", fn:() => telaCiclo("metas") },
   { id:"cicloConfig", nome:"Ajustes",                 cls:"cic", fn:() => telaCiclo("config") },
-  { grupo:"ATIVIDADES", cls:"ativ" },
-  { id:"eCrono",   nome:"Iniciar atividade", cls:"ativ", fn: telaCrono },
-  { id:"eHist",    nome:"Histórico",         cls:"ativ", fn: telaHistorico },
-  { id:"eMat",     nome:"Matérias",          cls:"ativ", fn: telaMateriasEstudo },
   { grupo:"PLANEJAMENTO", cls:"plan" },
   { id:"pSem",     nome:"Semana",            cls:"plan", fn:() => telaPlano("semana") },
   { id:"pMes",     nome:"Mês",               cls:"plan", fn:() => telaPlano("mes") },
