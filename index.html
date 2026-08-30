@@ -636,9 +636,6 @@ table.g td.txt.rico .cxRico{width:100%;height:22px;min-height:22px;border:0;
   background:transparent;color:#000;font:12px/16px Arial,Helvetica,sans-serif;
   padding:3px 6px;text-align:left;overflow:hidden;
   outline:none;word-break:break-word;overflow-wrap:anywhere;resize:vertical;display:block}
-/* com listas ou vários parágrafos, a caixa abre no tamanho do conteúdo */
-table.g td.txt.rico .cxRico.aberto{height:auto;min-height:22px;max-height:340px;
-  overflow-y:auto}
 table.g td.txt.rico .cxRico:focus{background:#fffbe6;outline:1.5px solid var(--azulMedio);
   outline-offset:-2px;overflow-y:auto}
 table.g td.txt.rico .cxRico b,table.g td.txt.rico .cxRico strong{font-weight:bold}
@@ -2658,6 +2655,37 @@ function textoParaHTML(txt){
   fechar();
   return saida.join("");
 }
+/* ---------- limpar o HTML que veio da área de transferência ----------
+   Copiando de uma página já formatada, a lista vem pronta no HTML — e o
+   texto puro costuma vir SEM os "1." e sem as bolinhas, porque eles são
+   desenho, não texto. Então preferimos o HTML e ficamos só com o que
+   interessa: listas, itens, parágrafos, quebras e negrito. */
+const TAGS_OK = { UL:1, OL:1, LI:1, DIV:1, P:1, BR:1, B:1, STRONG:1 };
+function limparHTMLColado(html){
+  const molde = document.createElement("div");
+  molde.innerHTML = String(html || "");
+  molde.querySelectorAll("script,style,meta,link,img,svg").forEach(x => x.remove());
+  const limpar = no => {
+    [...no.childNodes].forEach(f => {
+      if (f.nodeType === 3) return;                       // texto passa direto
+      if (f.nodeType !== 1){ f.remove(); return; }
+      limpar(f);
+      if (!TAGS_OK[f.tagName]){
+        // troca a etiqueta desconhecida pelo conteúdo dela
+        while (f.firstChild) no.insertBefore(f.firstChild, f);
+        f.remove();
+        return;
+      }
+      const tipo = f.tagName === "OL" ? f.getAttribute("type") : null;
+      [...f.attributes].forEach(a => f.removeAttribute(a.name));
+      if (tipo) f.setAttribute("type", tipo);
+    });
+  };
+  limpar(molde);
+  const texto = (molde.textContent || "").trim();
+  if (!texto) return "";
+  return molde.innerHTML;
+}
 /* insere HTML no ponto do cursor. Tenta o caminho do navegador e, se ele
    recusar, monta os nós à mão — assim a colagem nunca fica sem efeito. */
 function inserirHTML(alvo, html){
@@ -2677,22 +2705,21 @@ function inserirHTML(alvo, html){
     alvo.appendChild(frag);
   }
 }
-/* depois de colar, a caixa cresce para caber o que entrou */
-function crescerCaixa(cx){
-  if (!cx) return;
-  cx.classList.add("aberto");
-  cx.style.height = "auto";
-}
-/* colar: o texto entra formatado, sem trazer cores nem fontes de fora */
+/* colar: primeiro tenta aproveitar a formatação de origem; não havendo,
+   lê os marcadores do texto puro. */
 function colarLimpo(ev){
   ev.preventDefault();
   const cx = ev.currentTarget;
-  const t = (ev.clipboardData || window.clipboardData).getData("text/plain");
-  const html = textoParaHTML(t);
-  if (/<(ul|ol)[ >]/.test(html) || /\n/.test(t)) inserirHTML(cx, html);
-  else document.execCommand("insertText", false, t);
-  crescerCaixa(cx);
-  // avisa quem guarda o valor de que o conteúdo mudou
+  const dados = ev.clipboardData || window.clipboardData;
+  const puro = dados.getData("text/plain");
+  let html = "";
+  try{
+    const vindo = dados.getData("text/html");
+    if (vindo && /<(ul|ol|li)\b/i.test(vindo)) html = limparHTMLColado(vindo);
+  }catch(e){}
+  if (!html) html = textoParaHTML(puro);
+  if (/<(ul|ol)[ >]/.test(html) || /\n/.test(puro)) inserirHTML(cx, html);
+  else document.execCommand("insertText", false, puro);
   cx.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
@@ -2702,16 +2729,9 @@ function tdTextoRico(valor, onSet, altMin){
   cx.className = "cxRico";
   cx.contentEditable = "true";
   cx.spellcheck = false;
-  const conteudo = valor ?? "";
-  // com listas ou vários parágrafos a célula abre no tamanho do conteúdo:
-  // presa em 22px, a anotação entrava mas ficava escondida abaixo do corte
-  if (/<(ul|ol|li|div|p|br)\b/i.test(conteudo)){
-    cx.classList.add("aberto");
-    cx.style.height = "auto";
-  } else {
-    cx.style.height = (altMin || 22) + "px";
-  }
-  cx.innerHTML = conteudo;
+  // a célula continua com uma linha; você estica pela alcinha quando quiser
+  cx.style.height = (altMin || 22) + "px";
+  cx.innerHTML = valor ?? "";
   cx.title = (cx.textContent || "").trim();
   cx.addEventListener("input", () => {
     onSet(cx.innerHTML); cx.title = (cx.textContent || "").trim(); salvar();
