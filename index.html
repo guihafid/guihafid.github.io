@@ -636,6 +636,9 @@ table.g td.txt.rico .cxRico{width:100%;height:22px;min-height:22px;border:0;
   background:transparent;color:#000;font:12px/16px Arial,Helvetica,sans-serif;
   padding:3px 6px;text-align:left;overflow:hidden;
   outline:none;word-break:break-word;overflow-wrap:anywhere;resize:vertical;display:block}
+/* com listas ou vários parágrafos, a caixa abre no tamanho do conteúdo */
+table.g td.txt.rico .cxRico.aberto{height:auto;min-height:22px;max-height:340px;
+  overflow-y:auto}
 table.g td.txt.rico .cxRico:focus{background:#fffbe6;outline:1.5px solid var(--azulMedio);
   outline-offset:-2px;overflow-y:auto}
 table.g td.txt.rico .cxRico b,table.g td.txt.rico .cxRico strong{font-weight:bold}
@@ -823,17 +826,19 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
   transition:background .12s}
 .capaAtalho:hover{background:rgba(255,255,255,.20);color:#fff}
 /* ---------- capa: um cartão por módulo ---------- */
-.capaMods{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));
-  gap:12px;margin-bottom:16px;align-items:stretch}
-.capaMod{display:flex;flex-direction:column;
+.capaMods{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:stretch}
+.capaMod{flex:1 1 285px;display:flex;flex-direction:column;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
   border-radius:10px;padding:14px 14px 16px}
 .capaMod .cabMod{color:#fff;font:bold 13px Arial,Helvetica,sans-serif;letter-spacing:.7px;
   margin-bottom:11px;display:flex;align-items:center;gap:8px}
 .capaMod .cabMod .pt{width:10px;height:10px;border-radius:50%;flex:none}
 .capaMod .minis{display:flex;gap:7px;margin-bottom:12px;align-items:stretch}
+/* altura fixa nas caixinhas: sem isso, um rótulo de duas linhas empurra o
+   botão de entrar para baixo e os cartões saem desalinhados entre si */
 .capaMod .mini1{flex:1;text-align:center;background:rgba(0,0,0,.20);border-radius:7px;
-  padding:9px 4px;display:flex;flex-direction:column;justify-content:center}
+  padding:9px 4px;min-height:64px;display:flex;flex-direction:column;
+  justify-content:center}
 .capaMod .mini1 .v{color:#fff;font:bold 18px Arial,Helvetica,sans-serif;line-height:1.1}
 .capaMod .mini1 .t{color:#9fb6d6;font-size:9.5px;margin-top:4px;line-height:12px;
   letter-spacing:.3px}
@@ -1664,7 +1669,8 @@ input.faixa::-moz-range-thumb{width:14px;height:16px;background:#fff;
     <button class="btn verdinho" id="nvCriar">Criar o gist</button>
     <button class="btn" id="nvConectar">Conectar</button>
     <button class="btn" id="nvEnviar">⭱ Enviar agora</button>
-    <button class="btn" id="nvBaixar">⭳ Trazer da nuvem</button>
+    <button class="btn" id="nvBaixar">⇄ Juntar com a nuvem</button>
+    <button class="btn" id="nvTrocar" title="Descarta o que está aqui e usa a versão da nuvem">⭳ Substituir pelo da nuvem</button>
     <label class="nvAuto"><input type="checkbox" id="nvAuto" checked> enviar sozinho ao digitar</label>
     <button class="btn" id="nvDesligar">Desligar</button>
     <button class="btn" id="nvFechar">Fechar</button>
@@ -2209,6 +2215,85 @@ async function nuvemLerRemoto(){
   return (env && env.dados) ? env : { carimbo:"", aparelho:"", dados: env };
 }
 
+/* ---------- juntar o que dois aparelhos fizeram ao mesmo tempo ----------
+   Se você cronometra no tablet enquanto lança questões no computador, os dois
+   lados têm coisas que o outro não viu. Em vez de escolher um e perder o
+   resto, juntamos: cada registro aparece uma vez só, e o que existe de um
+   lado só entra do mesmo jeito. Onde os dois mexeram no MESMO registro,
+   vale o do lado mais recente. */
+function juntarListas(a, b, chaveDe){
+  const A = Array.isArray(a) ? a : [], B = Array.isArray(b) ? b : [];
+  const mapa = new Map();
+  // primeiro o lado antigo, depois o novo passa por cima do que repetir
+  A.forEach(x => mapa.set(chaveDe(x), x));
+  B.forEach(x => mapa.set(chaveDe(x), x));
+  return [...mapa.values()];
+}
+function juntarObjetos(a, b){
+  return Object.assign({}, a || {}, b || {});
+}
+/* chaves de identidade de cada tipo de registro */
+const CH = {
+  sessao: s => String(s.id || [s.data, s.mat, s.hora, s.min].join("|")),
+  erro:   e => String([e.sim, e.conc, e.q, e.mat, e.assunto].join("|")),
+  juris:  j => String(j.temaUrl || [j.data, j.mat, j.tese].join("|")),
+  conteudo: c => String([c.data, c.mat, c.tema].join("|")),
+  evento: e => String([e.data, e.titulo].join("|")),
+  concurso: c => String(c.num)
+};
+
+function juntarDados(velho, novo){
+  // parte do lado mais recente e vai trazendo o que só existe no outro
+  const R = JSON.parse(JSON.stringify(novo || {}));
+  const V = velho || {};
+
+  R.concursos = juntarListas(V.concursos, R.concursos, CH.concurso)
+    .sort((x,y) => n(x.num) - n(y.num));
+
+  ["O","D"].forEach(m => {
+    R.lanc = R.lanc || {}; R.ficha = R.ficha || {};
+    R.lanc[m]  = juntarObjetos((V.lanc||{})[m],  R.lanc[m]);
+    R.ficha[m] = juntarObjetos((V.ficha||{})[m], R.ficha[m]);
+  });
+
+  R.caderno = R.caderno || {};
+  ["O","D","T"].forEach(m => {
+    R.caderno[m] = juntarListas((V.caderno||{})[m], R.caderno[m], CH.erro);
+  });
+
+  R.juris   = juntarListas(V.juris,   R.juris,   CH.juris);
+  R.teses   = juntarListas(V.teses,   R.teses,   CH.juris);
+  R.sumulas = juntarListas(V.sumulas, R.sumulas, CH.juris);
+  R.cadConteudo = juntarListas(V.cadConteudo, R.cadConteudo, CH.conteudo);
+
+  // estudo: sessões e eventos se juntam; o ciclo fica com o lado mais recente
+  R.estudo = R.estudo || {};
+  const VE = V.estudo || {};
+  R.estudo.sessoes = juntarListas(VE.sessoes, R.estudo.sessoes, CH.sessao)
+    .sort((x,y) => String(x.data + (x.hora||"")).localeCompare(y.data + (y.hora||"")));
+  R.estudo.eventos = juntarListas(VE.eventos, R.estudo.eventos, CH.evento);
+
+  // as listas de apoio nunca somem: união simples, sem repetir
+  ["materias","motivos","status","bancas","estilos","ufs"].forEach(k => {
+    const a = Array.isArray(V[k]) ? V[k] : [], b = Array.isArray(R[k]) ? R[k] : [];
+    R[k] = [...new Set([...b, ...a])];
+  });
+  if (VE.tipos || (R.estudo && R.estudo.tipos))
+    R.estudo.tipos = [...new Set([...(R.estudo.tipos||[]), ...(VE.tipos||[])])];
+  return R;
+}
+/* conta o que a junção acrescentou, para dizer ao usuário o que aconteceu */
+function resumoJuncao(antes, depois){
+  const conta = d => (Array.isArray(d) ? d.length : 0);
+  const somaCad = d => ["O","D","T"].reduce((a,m) => a + conta((d.caderno||{})[m]), 0);
+  return {
+    sessoes: conta((depois.estudo||{}).sessoes) - conta((antes.estudo||{}).sessoes),
+    erros: somaCad(depois) - somaCad(antes),
+    juris: (conta(depois.juris)+conta(depois.teses)+conta(depois.sumulas)) -
+           (conta(antes.juris)+conta(antes.teses)+conta(antes.sumulas))
+  };
+}
+
 async function nuvemEnviar(forcar){
   if (!nuvemLigada() || nuvemOcupada) return false;
   nuvemOcupada = true;
@@ -2217,10 +2302,23 @@ async function nuvemEnviar(forcar){
     if (!forcar && carimboLocal){
       const atual = await nuvemLerRemoto();     // alguém gravou no meio do caminho?
       if (atual.carimbo && atual.carimbo !== carimboLocal){
-        nuvemAviso("a nuvem tem uma versão de " + horaCurta(atual.carimbo) +
-          " que este aparelho ainda não viu — use Trazer da nuvem, ou Enviar agora " +
-          "para sobrescrever", true);
-        return false;
+        // o outro aparelho gravou algo que este não viu: em vez de escolher um
+        // lado e perder o resto, juntamos os dois e mandamos o resultado
+        const antes = DB;
+        const juntado = juntarDados(atual.dados, DB);
+        const r = resumoJuncao(antes, juntado);
+        DB = juntado;
+        pularProximoEnvio = true; salvar(); render();
+        const partes = [];
+        if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
+        if (r.erros) partes.push(r.erros + " questão(ões)");
+        if (r.juris) partes.push(r.juris + " julgado(s)");
+        nuvemAviso(partes.length
+          ? "juntei o que veio do outro aparelho: " + partes.join(", ")
+          : "conferido com o outro aparelho, nada de novo");
+        avisoTec(partes.length
+          ? "O outro aparelho tinha " + partes.join(", ") + ". Está tudo aqui agora."
+          : "Sincronizado com o outro aparelho.");
       }
     }
     const carimbo = new Date().toISOString();
@@ -2238,26 +2336,45 @@ async function nuvemEnviar(forcar){
   finally{ nuvemOcupada = false; }
 }
 
-async function nuvemTrazer(silencioso){
+async function nuvemTrazer(silencioso, substituir){
   if (!nuvemLigada()) return false;
   try{
     nuvemAviso("procurando…");
     const env = await nuvemLerRemoto();
     if (!env.dados || !env.dados.concursos){
       nuvemAviso("o que está na nuvem não parece uma cópia válida", true); return false; }
-    if (env.carimbo && env.carimbo === carimboLocal){
+    if (env.carimbo && env.carimbo === carimboLocal && !substituir){
       if (!silencioso) nuvemAviso("já está tudo igual aqui e na nuvem");
       return false;
     }
-    if (!silencioso && !confirm(
-      "A nuvem tem uma versão de " + horaCurta(env.carimbo) + ".\n\n" +
-      "Trazer para este aparelho? O que está na tela agora será substituído."))
-      return false;
-    DB = env.dados;
+    if (substituir){
+      // troca completa: só quando você pede, para começar do zero neste aparelho
+      if (!silencioso && !confirm(
+        "Substituir tudo o que está neste aparelho pela versão da nuvem, de " +
+        horaCurta(env.carimbo) + "?\n\n" +
+        "O que existir só aqui será perdido. Para não perder nada, use " +
+        "“Juntar com a nuvem”."))
+        return false;
+      DB = env.dados;
+      carimboLocal = env.carimbo || "";
+      pularProximoEnvio = true;
+      nuvemGravarCfg(); salvar(); render();
+      nuvemAviso("trazido da nuvem — versão de " + horaCurta(env.carimbo));
+      return true;
+    }
+    // o normal: juntar os dois lados
+    const antes = DB;
+    DB = juntarDados(env.dados, DB);
+    const r = resumoJuncao(antes, DB);
     carimboLocal = env.carimbo || "";
-    pularProximoEnvio = true;              // acabou de vir de lá: não devolve
+    pularProximoEnvio = true;
     nuvemGravarCfg(); salvar(); render();
-    nuvemAviso("trazido da nuvem — versão de " + horaCurta(env.carimbo));
+    const partes = [];
+    if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
+    if (r.erros) partes.push(r.erros + " questão(ões)");
+    if (r.juris) partes.push(r.juris + " julgado(s)");
+    nuvemAviso(partes.length ? "juntado: " + partes.join(", ") : "nada de novo na nuvem");
+    setTimeout(() => nuvemEnviar(true), 1200);
     return true;
   }catch(e){ nuvemAviso("não trouxe: " + e.message, true); return false; }
 }
@@ -2280,15 +2397,25 @@ async function nuvemAoAbrir(){
     const env = await nuvemLerRemoto();
     if (!env.carimbo || env.carimbo === carimboLocal){
       nuvemAviso("em dia com a nuvem"); return; }
-    if (confirm("A nuvem tem uma versão de " + horaCurta(env.carimbo) + ".\n\n" +
-      "Trazer para este aparelho? O que está guardado aqui será substituído.")){
-      DB = env.dados; carimboLocal = env.carimbo;
-      pularProximoEnvio = true;
-      nuvemGravarCfg(); salvar(); render();
-      nuvemAviso("trazido da nuvem — versão de " + horaCurta(env.carimbo));
-    } else {
-      nuvemAviso("você recusou a versão da nuvem; nada foi enviado nem trazido", true);
-    }
+    // junta o que veio com o que está aqui: nada dos dois lados se perde
+    const antes = DB;
+    const juntado = juntarDados(env.dados, DB);
+    const r = resumoJuncao(antes, juntado);
+    DB = juntado;
+    carimboLocal = env.carimbo;
+    pularProximoEnvio = true;
+    nuvemGravarCfg(); salvar(); render();
+    const partes = [];
+    if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
+    if (r.erros) partes.push(r.erros + " questão(ões)");
+    if (r.juris) partes.push(r.juris + " julgado(s)");
+    nuvemAviso(partes.length
+      ? "juntado com a nuvem: " + partes.join(", ")
+      : "em dia com a nuvem");
+    if (partes.length)
+      avisoTec("Trouxe do outro aparelho: " + partes.join(", ") + ".");
+    // o resultado da junção precisa voltar para a nuvem
+    setTimeout(() => nuvemEnviar(true), 1500);
   }catch(e){ nuvemAviso("não consegui falar com o GitHub: " + e.message, true); }
 }
 
@@ -2463,13 +2590,13 @@ function tecladoRico(ev){
     if (no.nodeType !== 3) return;                     // só em nó de texto
     if (no.parentElement && no.parentElement.closest("li")) return;  // já é lista
     const antes = no.textContent.slice(0, sel.focusOffset);
-    const marca = antes.match(/^\s*([-*•]|\d+[.)])$/);
+    const marca = antes.match(/^\s*([-*•·]|\d{1,3}[.)\-]|[a-zA-Z][.)])$/);
     if (!marca) return;
     ev.preventDefault();
     // apaga o que foi digitado e deixa o navegador montar a lista
     for (let i = 0; i < antes.length; i++) document.execCommand("delete");
-    document.execCommand(/^\d/.test(marca[1]) ? "insertOrderedList"
-                                              : "insertUnorderedList");
+    document.execCommand(/^[-*•·]$/.test(marca[1]) ? "insertUnorderedList"
+                                                   : "insertOrderedList");
   }
 }
 /* texto rico -> texto puro, para listas, CSV e resumos curtos */
@@ -2489,11 +2616,84 @@ function tdRicoLeitura(html, cls){
   return td;
 }
 
-/* colar traz só o texto, sem cores nem fontes de fora */
+/* ---------- texto colado vira parágrafos e listas de verdade ----------
+   Reconhece "1." "1-" "1)" "a)" como lista numerada e "-" "*" "•" como lista
+   de marcadores. Linhas soltas viram parágrafos. É o que se espera ao colar
+   um resumo escrito em outro lugar. */
+const MARCA_NUM = /^\s*(\d{1,3})\s*[.)\-–]\s+(.*)$/;
+const MARCA_LET = /^\s*([a-zA-Z])\s*[.)]\s+(.*)$/;
+const MARCA_PON = /^\s*[-*•·–]\s+(.*)$/;
+function escaparHTML(t){
+  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function textoParaHTML(txt){
+  const linhas = String(txt || "").replace(/\r\n?/g,"\n").split("\n");
+  const saida = [];
+  let lista = null, itens = [];      // lista em construção
+  const fechar = () => {
+    if (!lista) return;
+    const tipo = lista === "letra" ? '<ol type="a">' : lista === "num" ? "<ol>" : "<ul>";
+    const fim  = lista === "ponto" ? "</ul>" : "</ol>";
+    saida.push(tipo + itens.map(t => "<li>" + escaparHTML(t) + "</li>").join("") + fim);
+    lista = null; itens = [];
+  };
+  linhas.forEach(linha => {
+    if (!linha.trim()){ fechar(); return; }
+    let m;
+    if ((m = linha.match(MARCA_NUM))){
+      if (lista !== "num") fechar();
+      lista = "num"; itens.push(m[2]); return;
+    }
+    if ((m = linha.match(MARCA_LET))){
+      if (lista !== "letra") fechar();
+      lista = "letra"; itens.push(m[2]); return;
+    }
+    if ((m = linha.match(MARCA_PON))){
+      if (lista !== "ponto") fechar();
+      lista = "ponto"; itens.push(m[1]); return;
+    }
+    fechar();
+    saida.push("<div>" + escaparHTML(linha.trim()) + "</div>");
+  });
+  fechar();
+  return saida.join("");
+}
+/* insere HTML no ponto do cursor. Tenta o caminho do navegador e, se ele
+   recusar, monta os nós à mão — assim a colagem nunca fica sem efeito. */
+function inserirHTML(alvo, html){
+  let ok = false;
+  try{ ok = document.execCommand("insertHTML", false, html); }catch(e){ ok = false; }
+  if (ok) return;
+  const sel = window.getSelection();
+  const molde = document.createElement("div");
+  molde.innerHTML = html;
+  const frag = document.createDocumentFragment();
+  while (molde.firstChild) frag.appendChild(molde.firstChild);
+  if (sel && sel.rangeCount){
+    const r = sel.getRangeAt(0);
+    r.deleteContents(); r.insertNode(frag); r.collapse(false);
+    sel.removeAllRanges(); sel.addRange(r);
+  } else {
+    alvo.appendChild(frag);
+  }
+}
+/* depois de colar, a caixa cresce para caber o que entrou */
+function crescerCaixa(cx){
+  if (!cx) return;
+  cx.classList.add("aberto");
+  cx.style.height = "auto";
+}
+/* colar: o texto entra formatado, sem trazer cores nem fontes de fora */
 function colarLimpo(ev){
   ev.preventDefault();
+  const cx = ev.currentTarget;
   const t = (ev.clipboardData || window.clipboardData).getData("text/plain");
-  document.execCommand("insertText", false, t);
+  const html = textoParaHTML(t);
+  if (/<(ul|ol)[ >]/.test(html) || /\n/.test(t)) inserirHTML(cx, html);
+  else document.execCommand("insertText", false, t);
+  crescerCaixa(cx);
+  // avisa quem guarda o valor de que o conteúdo mudou
+  cx.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function tdTextoRico(valor, onSet, altMin){
@@ -2502,8 +2702,16 @@ function tdTextoRico(valor, onSet, altMin){
   cx.className = "cxRico";
   cx.contentEditable = "true";
   cx.spellcheck = false;
-  cx.style.height = (altMin || 22) + "px";
-  cx.innerHTML = valor ?? "";
+  const conteudo = valor ?? "";
+  // com listas ou vários parágrafos a célula abre no tamanho do conteúdo:
+  // presa em 22px, a anotação entrava mas ficava escondida abaixo do corte
+  if (/<(ul|ol|li|div|p|br)\b/i.test(conteudo)){
+    cx.classList.add("aberto");
+    cx.style.height = "auto";
+  } else {
+    cx.style.height = (altMin || 22) + "px";
+  }
+  cx.innerHTML = conteudo;
   cx.title = (cx.textContent || "").trim();
   cx.addEventListener("input", () => {
     onSet(cx.innerHTML); cx.title = (cx.textContent || "").trim(); salvar();
@@ -11967,19 +12175,22 @@ document.getElementById("nvConectar").onclick = async () => {
   pegarCampos();
   if (!NUV.token || !NUV.gist){ nuvemAviso("preencha a chave e o número do gist", true); return; }
   carimboLocal = "";                     // força a comparação com o que está lá
-  await nuvemTrazer(false);
+  await nuvemTrazer(false, false);       // junta: se este aparelho estiver vazio, vem tudo
 };
 document.getElementById("nvEnviar").onclick = async () => {
   pegarCampos();
   if (!nuvemLigada()){ nuvemAviso("configure a chave e o gist primeiro", true); return; }
-  const ok = await nuvemEnviar(false);
-  if (!ok && confirm("Enviar assim mesmo, sobrescrevendo o que está na nuvem?"))
-    await nuvemEnviar(true);
+  await nuvemEnviar(false);              // junta sozinho se o outro lado mexeu
 };
 document.getElementById("nvBaixar").onclick = async () => {
   pegarCampos();
   if (!nuvemLigada()){ nuvemAviso("configure a chave e o gist primeiro", true); return; }
-  await nuvemTrazer(false);
+  await nuvemTrazer(false, false);       // junta, sem perder nada dos dois lados
+};
+document.getElementById("nvTrocar").onclick = async () => {
+  pegarCampos();
+  if (!nuvemLigada()){ nuvemAviso("configure a chave e o gist primeiro", true); return; }
+  await nuvemTrazer(false, true);        // troca completa, com confirmação
 };
 document.getElementById("nvDesligar").onclick = () => {
   if (!confirm("Desligar a sincronização neste aparelho? Os dados continuam na nuvem " +
