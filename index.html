@@ -634,7 +634,7 @@ table.g td.txt textarea{width:100%;min-height:22px;border:0;background:transpare
 table.g td.txt.preto textarea{color:#000}
 table.g td.txt.rico .cxRico{width:100%;height:22px;min-height:22px;border:0;
   background:transparent;color:#000;font:12px/16px Arial,Helvetica,sans-serif;
-  padding:3px 6px;text-align:justify;text-justify:inter-word;overflow:hidden;
+  padding:3px 6px;text-align:left;overflow:hidden;
   outline:none;word-break:break-word;overflow-wrap:anywhere;resize:vertical;display:block}
 table.g td.txt.rico .cxRico:focus{background:#fffbe6;outline:1.5px solid var(--azulMedio);
   outline-offset:-2px;overflow-y:auto}
@@ -709,13 +709,21 @@ svg.chart{display:block;background:#fff}
 .modalCampo input:focus,.modalCampo select:focus{outline:none;
   border-color:var(--azulMedio);box-shadow:0 0 0 2px rgba(47,85,151,.15)}
 .modalCampo small{color:#8794a8;font-size:10px;line-height:12px}
-/* anotação de várias linhas */
-.modalCampo textarea.campoObs{border:1px solid #c9d4e3;background:#fff;color:#1F3864;
-  padding:6px 8px;font:12.5px Arial,Helvetica,sans-serif;width:100%;border-radius:4px;
-  resize:vertical;min-height:56px;line-height:17px}
-.modalCampo textarea.campoObs::placeholder{color:#a9b3c1;font-style:italic}
-.modalCampo textarea.campoObs:focus{outline:none;border-color:var(--azulMedio);
+/* anotação de várias linhas, com negrito e listas */
+.modalCampo .campoObs{border:1px solid #c9d4e3;background:#fff;color:#1F3864;
+  padding:6px 8px;font:12.5px/17px Arial,Helvetica,sans-serif;width:100%;
+  border-radius:4px;resize:vertical;min-height:66px;max-height:40vh;
+  overflow-y:auto;outline:none}
+.modalCampo .campoObs:empty:before{content:attr(data-vazio);color:#a9b3c1;
+  font-style:italic}
+.modalCampo .campoObs:focus{border-color:var(--azulMedio);
   box-shadow:0 0 0 2px rgba(47,85,151,.15)}
+/* listas dentro de qualquer campo de texto rico */
+.cxRico ul,.cxRico ol,.cxRicoVer ul,.cxRicoVer ol{margin:2px 0;padding-left:20px}
+.cxRico li,.cxRicoVer li{margin:1px 0}
+.cxRico ul,.cxRicoVer ul{list-style:disc}
+.cxRico ol,.cxRicoVer ol{list-style:decimal}
+.cxRicoVer{text-align:left;white-space:normal}
 /* linha de marcação (tem objetiva / tem discursiva) no Novo concurso */
 .modalCampo.campoMarca{background:#EAF1FB;border:1px solid #cfdcee;border-radius:5px;
   padding:6px 8px;display:grid;grid-template-columns:auto 18px;align-items:center;
@@ -815,16 +823,17 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
   transition:background .12s}
 .capaAtalho:hover{background:rgba(255,255,255,.20);color:#fff}
 /* ---------- capa: um cartão por módulo ---------- */
-.capaMods{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:stretch}
-.capaMod{flex:1 1 285px;display:flex;flex-direction:column;
+.capaMods{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));
+  gap:12px;margin-bottom:16px;align-items:stretch}
+.capaMod{display:flex;flex-direction:column;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
   border-radius:10px;padding:14px 14px 16px}
 .capaMod .cabMod{color:#fff;font:bold 13px Arial,Helvetica,sans-serif;letter-spacing:.7px;
   margin-bottom:11px;display:flex;align-items:center;gap:8px}
 .capaMod .cabMod .pt{width:10px;height:10px;border-radius:50%;flex:none}
-.capaMod .minis{display:flex;gap:7px;margin-bottom:12px}
+.capaMod .minis{display:flex;gap:7px;margin-bottom:12px;align-items:stretch}
 .capaMod .mini1{flex:1;text-align:center;background:rgba(0,0,0,.20);border-radius:7px;
-  padding:9px 4px}
+  padding:9px 4px;display:flex;flex-direction:column;justify-content:center}
 .capaMod .mini1 .v{color:#fff;font:bold 18px Arial,Helvetica,sans-serif;line-height:1.1}
 .capaMod .mini1 .t{color:#9fb6d6;font-size:9.5px;margin-top:4px;line-height:12px;
   letter-spacing:.3px}
@@ -2430,6 +2439,63 @@ function tdTexto(valor, onSet, altMin){
 }
 /* campo de texto com negrito real: usa contenteditable em vez de textarea.
    O conteúdo é guardado como HTML (com <b>). Ctrl+B aplica/tira negrito. */
+/* ---------- teclado dos campos de texto rico ----------
+   Ctrl+B negrito · Ctrl+Shift+8 lista com marcadores · Ctrl+Shift+7 numerada.
+   Escrevendo "- " ou "1. " no começo da linha a lista também começa sozinha,
+   que é como se costuma digitar sem pensar em atalho. */
+function tecladoRico(ev){
+  const ed = ev.currentTarget;
+  if (ev.ctrlKey || ev.metaKey){
+    const k = (ev.key || "").toLowerCase();
+    if (k === "b"){ ev.preventDefault(); document.execCommand("bold"); return; }
+    if (ev.shiftKey && (k === "8" || k === "*")){
+      ev.preventDefault(); document.execCommand("insertUnorderedList"); return; }
+    if (ev.shiftKey && (k === "7" || k === "&")){
+      ev.preventDefault(); document.execCommand("insertOrderedList"); return; }
+    if (k === "i" || k === "u") ev.preventDefault();   // só negrito e listas
+    return;
+  }
+  // espaço logo depois de "-", "*" ou "1." vira lista na hora
+  if (ev.key === " "){
+    const sel = window.getSelection();
+    if (!sel || !sel.focusNode) return;
+    const no = sel.focusNode;
+    if (no.nodeType !== 3) return;                     // só em nó de texto
+    if (no.parentElement && no.parentElement.closest("li")) return;  // já é lista
+    const antes = no.textContent.slice(0, sel.focusOffset);
+    const marca = antes.match(/^\s*([-*•]|\d+[.)])$/);
+    if (!marca) return;
+    ev.preventDefault();
+    // apaga o que foi digitado e deixa o navegador montar a lista
+    for (let i = 0; i < antes.length; i++) document.execCommand("delete");
+    document.execCommand(/^\d/.test(marca[1]) ? "insertOrderedList"
+                                              : "insertUnorderedList");
+  }
+}
+/* texto rico -> texto puro, para listas, CSV e resumos curtos */
+function semTags(html){
+  const t = String(html ?? "");
+  if (!/[<&]/.test(t)) return t;
+  const d = document.createElement("div");
+  d.innerHTML = t.replace(/<\/(li|p|div)>/gi, "\n").replace(/<br\s*\/?>/gi, "\n");
+  return (d.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+}
+/* célula que mostra o texto rico já formatado (listas, negrito) */
+function tdRicoLeitura(html, cls){
+  const td = el("td", cls || "esq txtCel");
+  const d = el("div","cxRicoVer");
+  d.innerHTML = String(html ?? "");
+  td.appendChild(d);
+  return td;
+}
+
+/* colar traz só o texto, sem cores nem fontes de fora */
+function colarLimpo(ev){
+  ev.preventDefault();
+  const t = (ev.clipboardData || window.clipboardData).getData("text/plain");
+  document.execCommand("insertText", false, t);
+}
+
 function tdTextoRico(valor, onSet, altMin){
   const td = el("td","ed txt rico");
   const cx = document.createElement("div");
@@ -2442,20 +2508,8 @@ function tdTextoRico(valor, onSet, altMin){
   cx.addEventListener("input", () => {
     onSet(cx.innerHTML); cx.title = (cx.textContent || "").trim(); salvar();
   });
-  cx.addEventListener("keydown", ev => {
-    if ((ev.ctrlKey || ev.metaKey) && (ev.key === "b" || ev.key === "B")){
-      ev.preventDefault();
-      document.execCommand("bold");
-    }
-    // bloqueia outros formatos que o navegador poderia tentar
-    if ((ev.ctrlKey || ev.metaKey) && /^[iuIU]$/.test(ev.key)) ev.preventDefault();
-  });
-  // ao colar, só texto puro (sem trazer formatação de fora)
-  cx.addEventListener("paste", ev => {
-    ev.preventDefault();
-    const t = (ev.clipboardData || window.clipboardData).getData("text/plain");
-    document.execCommand("insertText", false, t);
-  });
+  cx.addEventListener("keydown", tecladoRico);
+  cx.addEventListener("paste", colarLimpo);
   td.appendChild(cx);
   return td;
 }
@@ -4042,7 +4096,7 @@ function telaJuris(){
       const tr = el("tr", li % 2 === 0 ? "zebC" : "zebW");
       tr.appendChild(tdData(e.data, v => e.data = v, render));
       tr.appendChild(tdEdit(e.tema, v => e.tema = v));
-      const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
+      const tdTese = comLink(tdTextoRico(e.tese, v => e.tese = v), e.temaUrl,
         "Abrir só este julgado no Buscador");
       tr.appendChild(tdTese);
       tr.appendChild(comLink(tdEdit(e.info, v => e.info = v), e.infoUrl,
@@ -4090,7 +4144,7 @@ function telaJuris(){
       tr.appendChild(tdSelect(e.mat, conhecidas, v => e.mat = v, render));
       tr.appendChild(tdData(e.data, v => e.data = v, render));
       tr.appendChild(tdEdit(e.tema, v => e.tema = v));
-      const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
+      const tdTese = comLink(tdTextoRico(e.tese, v => e.tese = v), e.temaUrl,
         "Abrir só este julgado no Buscador");
       tr.appendChild(tdTese);
       tr.appendChild(comLink(tdEdit(e.info, v => e.info = v), e.infoUrl,
@@ -4232,7 +4286,7 @@ function telaTeses(){
     tr.appendChild(tdEdit(e.tema, v => e.tema = v));
     tr.appendChild(comLink(tdEdit(e.ed, v => e.ed = v), e.edUrl,
       "Abrir a edição no Buscador"));
-    const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
+    const tdTese = comLink(tdTextoRico(e.tese, v => e.tese = v), e.temaUrl,
       "Abrir a edição nesta tese");
     tr.appendChild(tdTese);
     const tdObs = tdTextoRico(e.obs, v => e.obs = v);
@@ -4436,7 +4490,7 @@ function telaSumulas(){
       ["Súmula","Súmula Vinculante"], v => e.tipoSumula = v));
     tr.appendChild(tdEdit(e.numero, v => e.numero = v));
     tr.appendChild(tdSelect(e.trib, DB.tribunais, v => e.trib = v));
-    const tdTese = comLink(tdTexto(e.tese, v => e.tese = v), e.temaUrl,
+    const tdTese = comLink(tdTextoRico(e.tese, v => e.tese = v), e.temaUrl,
       "Abrir a súmula no Buscador");
     tr.appendChild(tdTese);
     const tdObs = tdTextoRico(e.obs, v => e.obs = v);
@@ -5946,11 +6000,15 @@ function janelaSessao(base, aoSalvar){
   const linhaObs = el("div","modalCampo");
   linhaObs.style.padding = "0 14px 12px";
   linhaObs.appendChild(el("label",null,"Anotação"));
-  // caixa de várias linhas: Enter quebra a linha, como no caderno de erros
-  const obs = document.createElement("textarea");
-  obs.className = "campoObs";
-  obs.value = s.obs || ""; obs.placeholder = "o que você viu, onde parou…";
-  obs.rows = 3;
+  // editor com negrito e listas: Ctrl+B, "- " e "1. " funcionam aqui
+  const obs = document.createElement("div");
+  obs.className = "campoObs cxRico";
+  obs.contentEditable = "true";
+  obs.spellcheck = false;
+  obs.innerHTML = s.obs || "";
+  obs.dataset.vazio = "o que você viu, onde parou…";
+  obs.addEventListener("keydown", tecladoRico);
+  obs.addEventListener("paste", colarLimpo);
   linhaObs.appendChild(obs);
   cx.appendChild(linhaObs);
 
@@ -5994,7 +6052,7 @@ function janelaSessao(base, aoSalvar){
       data: paraISO(ent.data.value) || hojeISO(),
       hora: horaLimpa(ent.hora.value),
       mat: ent.mat.value, cont: ent.cont.value.trim(), tipo: ent.tipo.value, min,
-      q: s.q || "", ac: s.ac || "", obs: obs.value.trim()
+      q: s.q || "", ac: s.ac || "", obs: (obs.textContent || "").trim() ? obs.innerHTML.trim() : ""
     };
     if (novo) E.sessoes.push(reg);
     else Object.assign(E.sessoes.find(x => x.id === s.id) || {}, reg);
@@ -6235,7 +6293,7 @@ function linhasEstudo(){
   sessoes().slice()
     .sort((a,b) => String(a.data).localeCompare(String(b.data)))
     .forEach(s => L.push([ dataBR(s.data), s.mat || "", s.cont || "", s.tipo || "",
-      Math.round(n(s.min)*60), hMin(s.min), s.obs || "" ]));
+      Math.round(n(s.min)*60), hMin(s.min), semTags(s.obs) ]));
   return L;
 }
 function linhasCaderno(){
@@ -6921,7 +6979,7 @@ function telaEstInicio(){
     tr.appendChild(el("td","esq txtCel", s.cont || "—"));
     tr.appendChild(celulaTipo(s.tipo));
     tr.appendChild(el("td","tempoCel", hMin(s.min)));
-    tr.appendChild(el("td","esq txtCel", s.obs || ""));
+    tr.appendChild(tdRicoLeitura(s.obs || ""));
     t.tbody.appendChild(tr);
   });
   tela.appendChild(t);
@@ -7090,47 +7148,68 @@ function pulsoCrono(){
 ================================================================= */
 let ctxAudio = null, tocando = null, tituloOriginal = null, piscaTitulo = null;
 
-/* ---------- manter a página viva com a tela apagada ----------
-   Com a tela desligada o aparelho congela a aba, os timers param e o alarme
-   nunca dispara. O jeito de contornar é o mesmo dos tocadores de música: se
-   há som tocando, o sistema mantém a página rodando. Então deixamos um som
-   contínuo, quase inaudível, enquanto o cronômetro corre. */
-let somDeFundo = null;
-function ondaQuaseMuda(){
-  // um WAV de um segundo com amplitude mínima — silêncio puro às vezes é
-  // descartado pelo navegador, e aí a página congela do mesmo jeito
-  const taxa = 8000, quadros = taxa, bytes = quadros * 2;
-  const buf = new ArrayBuffer(44 + bytes), v = new DataView(buf);
-  const txt = (p, t) => { for (let i=0;i<t.length;i++) v.setUint8(p+i, t.charCodeAt(i)); };
-  txt(0,"RIFF"); v.setUint32(4, 36+bytes, true); txt(8,"WAVEfmt ");
-  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-  v.setUint32(24,taxa,true); v.setUint32(28,taxa*2,true);
-  v.setUint16(32,2,true); v.setUint16(34,16,true);
-  txt(36,"data"); v.setUint32(40,bytes,true);
-  for (let i=0;i<quadros;i++)
-    v.setInt16(44+i*2, Math.round(Math.sin(i/taxa*2*Math.PI*60) * 2), true);
-  let bin = ""; new Uint8Array(buf).forEach(b => bin += String.fromCharCode(b));
-  return "data:audio/wav;base64," + btoa(bin);
-}
+/* ---------- manter o motor de áudio vivo com a tela apagada ----------
+   Com a tela desligada o aparelho congela a aba e os timers param. O motor de
+   áudio, porém, roda numa linha própria: deixando um tom contínuo inaudível
+   nele, ele continua acordado. Usamos Web Audio, e não um tocador de mídia,
+   justamente para o Android não tratar isso como música e abaixar a sua. */
+let tomVivo = null, apitosAgendados = [];
 function manterVivo(ligar){
   try{
     if (ligar){
-      if (!somDeFundo){
-        somDeFundo = new Audio(ondaQuaseMuda());
-        somDeFundo.loop = true; somDeFundo.volume = 0.02;
+      const c = ligarAudio();
+      if (!c) return;
+      if (c.state === "suspended") c.resume();
+      if (!tomVivo){
+        const osc = c.createOscillator(), vol = c.createGain();
+        osc.frequency.value = 30;              // grave demais para se ouvir
+        vol.gain.value = 0.0006;               // e baixo demais também
+        osc.connect(vol); vol.connect(c.destination);
+        osc.start();
+        tomVivo = { osc, vol };
       }
-      if (somDeFundo.paused) somDeFundo.play().catch(() => {});
-      // o Android trata como mídia e não congela a aba
-      if (navigator.mediaSession && window.MediaMetadata){
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: "Cronômetro de estudo", artist: crono().mat || "Central de Estudos" });
-        navigator.mediaSession.playbackState = "playing";
-      }
-    } else if (somDeFundo){
-      somDeFundo.pause();
-      if (navigator.mediaSession) navigator.mediaSession.playbackState = "paused";
+    } else if (tomVivo){
+      try{ tomVivo.osc.stop(); }catch(e){}
+      tomVivo = null;
     }
   }catch(e){}
+}
+
+/* ---------- o apito fica agendado no motor de áudio ----------
+   Assim ele toca na hora certa mesmo que o navegador tenha congelado o
+   JavaScript da página: quem dispara é o próprio motor, não um setTimeout. */
+function limparApitosAgendados(){
+  apitosAgendados.forEach(o => { try{ o.stop(); }catch(e){} });
+  apitosAgendados = [];
+}
+function agendarApito(segundosAte){
+  limparApitosAgendados();
+  const c = ligarAudio();
+  if (!c || !(segundosAte > 0) || crono().som === false) return;
+  const t0 = c.currentTime + segundosAte;
+  // toca por um minuto: apitos triplos a cada 2 segundos
+  for (let volta = 0; volta < 30; volta++){
+    [0, 0.28, 0.56].forEach((atraso, k) => {
+      const quando = t0 + volta*2 + atraso;
+      const osc = c.createOscillator(), vol = c.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(k === 2 ? 1180 : 880, quando);
+      vol.gain.setValueAtTime(0.0001, quando);
+      vol.gain.exponentialRampToValueAtTime(0.32, quando + 0.02);
+      vol.gain.exponentialRampToValueAtTime(0.0001, quando + 0.20);
+      osc.connect(vol); vol.connect(c.destination);
+      osc.start(quando); osc.stop(quando + 0.22);
+      apitosAgendados.push(osc);
+    });
+  }
+}
+/* recalcula o agendamento a partir do estado atual do cronômetro */
+function reagendarAlarme(){
+  const c = crono();
+  limparApitosAgendados();
+  if (!c.ativo || !c.iniMs || !c.prox) return;
+  const faltaSeg = (n(c.prox)*60000 - cronoMs()) / 1000;
+  if (faltaSeg > 0) agendarApito(faltaSeg);
 }
 
 /* pede uma vez a permissão de notificar, para o alarme chegar na tela travada */
@@ -7179,6 +7258,7 @@ function apitar(){
   });
 }
 function pararAlarme(){
+  limparApitosAgendados();
   if (tocando){ clearInterval(tocando); tocando = null; }
   if (piscaTitulo){ clearInterval(piscaTitulo); piscaTitulo = null; }
   if (tituloOriginal !== null){ document.title = tituloOriginal; tituloOriginal = null; }
@@ -7188,7 +7268,8 @@ function tocarAlarme(){
   const c0 = crono();
   notificar((c0.mat || "Atividade") + " — " + hMin(cronoMs()/60000));
   if (c0.som !== false){
-    apitar();
+    // se a página estava acordada, o agendado pode não ter saído: apita aqui
+    if (!apitosAgendados.length) apitar();
     tocando = setInterval(apitar, 2000);
   }
   // pisca o título para você ver mesmo com a aba em segundo plano
@@ -7226,7 +7307,7 @@ function janelaAlarme(){
   bSoneca.title = "Desliga e avisa de novo daqui a 5 minutos";
   bSoneca.onclick = () => {
     c.prox = Math.round(cronoMs()/60000) + 5;
-    if (!c.iniMs) cronoRetomar();
+    if (!c.iniMs) cronoRetomar(); else reagendarAlarme();
     salvar(); desligar();
     if (emTelaCheia()) atualizarBotaoCrono(); else render();
   };
@@ -7234,7 +7315,7 @@ function janelaAlarme(){
   bSeguir.onclick = () => {
     // se marcou repetir, o próximo aviso é um intervalo adiante
     c.prox = c.repetir ? n(c.prox) + minDe(c.alvo) : 0;
-    if (!c.iniMs) cronoRetomar();
+    if (!c.iniMs) cronoRetomar(); else reagendarAlarme();
     salvar(); desligar();
     if (emTelaCheia()) atualizarBotaoCrono(); else render();
   };
@@ -7516,14 +7597,14 @@ function painelRelogio(){
     const seg = n(campos[0].value)*3600 + n(campos[1].value)*60 + n(campos[2].value);
     c.prox = seg/60;
     c.alvo = seg ? hMin(Math.round(seg/60)) : "";
-    ligarAudio(); relogioForma = ""; salvar(); render();
+    ligarAudio(); reagendarAlarme(); relogioForma = ""; salvar(); render();
   }
   cxT.appendChild(caixas);
   const atalhosT = el("div","atalhosT");
   [["15 min",15],["25 min",25],["50 min",50],["1h",60],["2h",120]].forEach(([rot,min]) => {
     const b = el("button",null,rot);
     b.onclick = () => { c.prox = min; c.alvo = hMin(min);
-      ligarAudio(); relogioForma = ""; salvar(); render(); };
+      ligarAudio(); reagendarAlarme(); relogioForma = ""; salvar(); render(); };
     atalhosT.appendChild(b);
   });
   cxT.appendChild(atalhosT);
@@ -7548,6 +7629,8 @@ function painelRelogio(){
     () => { c.pausarAoTocar = !c.pausarAoTocar; salvar(); render(); });
   chaveDe("Manter a tela ligada", c.telaAcesa !== false,
     () => { c.telaAcesa = c.telaAcesa === false; salvar(); render(); cuidarDaTela(); });
+  chaveDe("Tocar com a tela apagada", c.fundo !== false,
+    () => { c.fundo = c.fundo === false; salvar(); render(); cuidarDaTela(); });
 
   const pe = el("div","pezinho");
   const bOuvir = el("button",null,"🔊 ouvir o alarme");
@@ -7841,7 +7924,7 @@ function telaCrono(){
     tr.appendChild(el("td","esq txtCel", s.cont || "—"));
     tr.appendChild(celulaTipo(s.tipo));
     tr.appendChild(el("td","tempoCel", hMin(s.min)));
-    tr.appendChild(el("td","esq txtCel", s.obs || ""));
+    tr.appendChild(tdRicoLeitura(s.obs || ""));
     t.tbody.appendChild(tr);
   });
   const trT = el("tr","tot");
@@ -8536,7 +8619,7 @@ function telaHistorico(){
       bloco.appendChild(L);
       if (s.cont || s.obs)
         bloco.appendChild(el("div","hdObs",
-          [s.cont, s.obs].filter(Boolean).join("  —  ")));
+          [s.cont, semTags(s.obs)].filter(Boolean).join("  —  ")));
     });
     corpo.appendChild(bloco);
   });
@@ -12006,7 +12089,10 @@ let travaTela = null;
 async function cuidarDaTela(){
   const c = crono();
   const rodando = !!(c.ativo && c.iniMs);
-  manterVivo(rodando);            // com o som tocando, a aba não congela
+  // com a chave desligada, nada de áudio ao fundo — útil para quem ouve música
+  const comFundo = rodando && c.fundo !== false;
+  manterVivo(comFundo);           // motor de áudio acordado enquanto corre
+  if (comFundo) reagendarAlarme(); else limparApitosAgendados();
   const querer = !!(rodando && c.telaAcesa !== false);
   try{
     if (querer && !travaTela && navigator.wakeLock){
