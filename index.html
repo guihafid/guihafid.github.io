@@ -1223,7 +1223,19 @@ table.g tr.matOculta td button.mini.olho{opacity:1}
 .c7Dia.hoje{background:var(--azulEscuro)}
 .c7Dia.hoje .dow{color:#9fb6d6}
 .c7Dia.hoje .num{color:#fff}
-.c7Total{text-align:center;font:bold 19px Arial;color:#3a4a5c;margin:12px 0 8px}
+.c7Total{text-align:center;font:bold 19px Arial;color:#3a4a5c;margin:12px 0 2px}
+/* rótulo do que o número grande está mostrando */
+.c7RotTotal{text-align:center;font-size:11px;color:#98a2b0;margin:0 0 8px;
+  text-transform:lowercase}
+/* título vira botão: alterna entre o dia e o total da semana */
+.c7Topo .tit.titClic{background:none;border:0;padding:0;cursor:pointer;
+  font:bold 13px Arial;color:var(--azulEscuro);flex:1;text-align:left}
+.c7Topo .tit.titClic:hover{text-decoration:underline}
+.c7Topo .tit.titClic.on{color:#1F6F6B;text-decoration:underline}
+/* a coluna escolhida ganha destaque */
+.c7Col.escolhido .barra{outline:2px solid #1F6F6B;outline-offset:2px}
+.c7Col.escolhido .rot{color:#1F6F6B;font-weight:bold}
+.c7Col.escolhido .semBarra{background:#1F6F6B}
 /* régua de referência das barrinhas dos últimos 7 dias: só o risquinho e o valor */
 .c7Graf{position:relative;padding-left:50px}
 .c7Grade{position:absolute;left:0;right:0;top:0;height:100px;pointer-events:none}
@@ -5734,6 +5746,17 @@ function hMin(min){
 }
 const hMinEixo = min => { const m = Math.round(n(min));
   return m >= 60 ? (m/60).toFixed(m%60 ? 1 : 0).replace(".",",") + "h" : m + "m"; };
+/* só horas e minutos, para resumos onde o segundo não muda nada.
+   Arredonda para o minuto mais próximo: 41m 40s vira 42m. */
+function hMinRedondo(min){
+  const t = Math.round(n(min));
+  if (!t) return "—";
+  const h = Math.floor(t/60), m = t - h*60;
+  const p = [];
+  if (h) p.push(h + "h");
+  if (m || !h) p.push(m + "m");
+  return p.join(" ");
+}
 // devolve MINUTOS (com fração de segundos quando houver)
 // "1:30" -> 90   "1:30:45" -> 90,75   "1h30m45s" -> 90,75   "45s" -> 0,75   "90" -> 90
 function minDe(txt){
@@ -6612,7 +6635,10 @@ let periodoMat = "hoje";           // hoje | semana | mes
 function painelSeteDias(){
   const cx = el("div","card7");
   const topo = el("div","c7Topo");
-  topo.appendChild(el("span","tit","Últimos 7 dias"));
+  // clicando no título, o número grande passa a mostrar o total dos 7 dias
+  const bTit = el("button","tit titClic","Últimos 7 dias");
+  bTit.title = "Clique para ver o total dos 7 dias; clique de novo para voltar ao dia";
+  topo.appendChild(bTit);
   const ver = el("button","verTudo","Ver tudo");
   ver.onclick = () => { calMes = hojeISO().slice(0,7); irParaModulo("cal","eCal"); };
   topo.appendChild(ver);
@@ -6638,9 +6664,16 @@ function painelSeteDias(){
   });
   cx.appendChild(cab);
 
-  cx.appendChild(el("div","c7Total", hMin(dias.reduce((a,x) => a + x.min, 0))));
+  const totalSemana = dias.reduce((a,x) => a + x.min, 0);
+
+  /* o número grande mostra o dia escolhido; no total, os 7 dias somados.
+     Começa no dia de hoje, que é o que interessa na maioria das vezes. */
+  const elTotal = el("div","c7Total");
+  const elRot = el("div","c7RotTotal");
+  cx.appendChild(elTotal); cx.appendChild(elRot);
 
   const barras = el("div","c7Barras");
+  const colunas = [];
   dias.forEach(x => {
     const col = el("div","c7Col");
     const cxb = el("div","c7Espaco");
@@ -6656,6 +6689,11 @@ function painelSeteDias(){
     col.appendChild(cxb);
     col.appendChild(el("span","rot",
       DIAS_SEM[(x.d.getDay()+6)%7].slice(0,3) + "."));
+    // clicar na coluna traz aquele dia para o número grande
+    col.style.cursor = "pointer";
+    col.title = dataBR(x.iso) + " — " + (x.min ? hMin(x.min) : "sem estudo");
+    col.onclick = () => mostrarDia(x);
+    colunas.push({ dado:x, el:col });
     barras.appendChild(col);
   });
 
@@ -6674,6 +6712,27 @@ function painelSeteDias(){
   graf.appendChild(grade);
   graf.appendChild(barras);
   cx.appendChild(graf);
+
+  /* ---- quem manda no número grande: um dia, ou a semana toda ---- */
+  let verSemana = false, diaVisto = dias[dias.length-1];   // começa em hoje
+  function mostrarDia(x){
+    verSemana = false; diaVisto = x; pintarTotal();
+  }
+  function pintarTotal(){
+    if (verSemana){
+      elTotal.textContent = hMin(totalSemana);
+      elRot.textContent = "nos últimos 7 dias";
+    } else {
+      elTotal.textContent = diaVisto.min ? hMin(diaVisto.min) : "—";
+      elRot.textContent = (diaVisto.hoje ? "hoje, " : "") +
+        DIAS_SEM[(diaVisto.d.getDay()+6)%7] + ", " + dataBR(diaVisto.iso).slice(0,5);
+    }
+    bTit.classList.toggle("on", verSemana);
+    colunas.forEach(c => c.el.classList.toggle("escolhido",
+      !verSemana && c.dado.iso === diaVisto.iso));
+  }
+  bTit.onclick = () => { verSemana = !verSemana; pintarTotal(); };
+  pintarTotal();
 
   // comparação com o mesmo dia da semana passada
   const semanaPassada = new Date(hoje); semanaPassada.setDate(semanaPassada.getDate()-7);
@@ -11507,8 +11566,8 @@ function numerosDaCapa(){
     pendentes: todas.filter(e => faseDe(e.status) === "Pendente").length,
     revisadas: todas.filter(e => faseDe(e.status) === "Revisado").length,
     dominadas: todas.filter(e => faseDe(e.status) === "Dominado").length,
-    tempoHoje: hMin(somaMin(sessoes().filter(s => s.data === hojeISO()))),
-    tempoSemana: hMin(somaMin(sessoesEntre(isoDeData(iniSemana(new Date())), hojeISO()))),
+    tempoHoje: hMinRedondo(somaMin(sessoes().filter(s => s.data === hojeISO()))),
+    tempoSemana: hMinRedondo(somaMin(sessoesEntre(isoDeData(iniSemana(new Date())), hojeISO()))),
     sequencia: seq.atual,
     conteudos: DB.cadConteudo.length,
     tec: (DB.caderno.T || []).filter(e => faseDe(e.status) === "Pendente").length,
