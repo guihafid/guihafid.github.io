@@ -6925,6 +6925,7 @@ function cronoComecar(mat, cont, tipo, obs, alvo, repetir, pausar){
   c.repetir = !!repetir; c.pausarAoTocar = !!pausar;
   c.acum = 0; c.iniMs = Date.now(); c.dia = hojeISO();
   c.horaIni = horaAgora();                  // fica no registro do histórico
+  ligarAudio(); pedirNotificacao();         // o clique de agora libera as duas coisas
   salvar(); cuidarDaTela(); render();
 }
 // deixa o cronômetro carregado (matéria + alarme), porém PARADO: só começa a
@@ -7030,6 +7031,67 @@ function pulsoCrono(){
 ================================================================= */
 let ctxAudio = null, tocando = null, tituloOriginal = null, piscaTitulo = null;
 
+/* ---------- manter a página viva com a tela apagada ----------
+   Com a tela desligada o aparelho congela a aba, os timers param e o alarme
+   nunca dispara. O jeito de contornar é o mesmo dos tocadores de música: se
+   há som tocando, o sistema mantém a página rodando. Então deixamos um som
+   contínuo, quase inaudível, enquanto o cronômetro corre. */
+let somDeFundo = null;
+function ondaQuaseMuda(){
+  // um WAV de um segundo com amplitude mínima — silêncio puro às vezes é
+  // descartado pelo navegador, e aí a página congela do mesmo jeito
+  const taxa = 8000, quadros = taxa, bytes = quadros * 2;
+  const buf = new ArrayBuffer(44 + bytes), v = new DataView(buf);
+  const txt = (p, t) => { for (let i=0;i<t.length;i++) v.setUint8(p+i, t.charCodeAt(i)); };
+  txt(0,"RIFF"); v.setUint32(4, 36+bytes, true); txt(8,"WAVEfmt ");
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,taxa,true); v.setUint32(28,taxa*2,true);
+  v.setUint16(32,2,true); v.setUint16(34,16,true);
+  txt(36,"data"); v.setUint32(40,bytes,true);
+  for (let i=0;i<quadros;i++)
+    v.setInt16(44+i*2, Math.round(Math.sin(i/taxa*2*Math.PI*60) * 2), true);
+  let bin = ""; new Uint8Array(buf).forEach(b => bin += String.fromCharCode(b));
+  return "data:audio/wav;base64," + btoa(bin);
+}
+function manterVivo(ligar){
+  try{
+    if (ligar){
+      if (!somDeFundo){
+        somDeFundo = new Audio(ondaQuaseMuda());
+        somDeFundo.loop = true; somDeFundo.volume = 0.02;
+      }
+      if (somDeFundo.paused) somDeFundo.play().catch(() => {});
+      // o Android trata como mídia e não congela a aba
+      if (navigator.mediaSession && window.MediaMetadata){
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: "Cronômetro de estudo", artist: crono().mat || "Central de Estudos" });
+        navigator.mediaSession.playbackState = "playing";
+      }
+    } else if (somDeFundo){
+      somDeFundo.pause();
+      if (navigator.mediaSession) navigator.mediaSession.playbackState = "paused";
+    }
+  }catch(e){}
+}
+
+/* pede uma vez a permissão de notificar, para o alarme chegar na tela travada */
+function pedirNotificacao(){
+  try{
+    if (window.Notification && Notification.permission === "default")
+      Notification.requestPermission();
+  }catch(e){}
+}
+function notificar(texto){
+  try{
+    if (window.Notification && Notification.permission === "granted"){
+      const nt = new Notification("⏰ Deu o tempo", {
+        body: texto, tag: "crono-alarme", requireInteraction: true,
+        icon: "logo-192.png" });
+      nt.onclick = () => { window.focus(); nt.close(); };
+    }
+  }catch(e){}
+}
+
 function ligarAudio(){                    // precisa de um clique seu para o navegador liberar
   try{
     if (!ctxAudio){
@@ -7064,7 +7126,9 @@ function pararAlarme(){
 }
 function tocarAlarme(){
   if (tocando) return;
-  if (crono().som !== false){
+  const c0 = crono();
+  notificar((c0.mat || "Atividade") + " — " + hMin(cronoMs()/60000));
+  if (c0.som !== false){
     apitar();
     tocando = setInterval(apitar, 2000);
   }
@@ -11882,7 +11946,9 @@ document.getElementById("btnRefazer").onclick = refazerAgora;
 let travaTela = null;
 async function cuidarDaTela(){
   const c = crono();
-  const querer = !!(c.ativo && c.iniMs && c.telaAcesa !== false);
+  const rodando = !!(c.ativo && c.iniMs);
+  manterVivo(rodando);            // com o som tocando, a aba não congela
+  const querer = !!(rodando && c.telaAcesa !== false);
   try{
     if (querer && !travaTela && navigator.wakeLock){
       travaTela = await navigator.wakeLock.request("screen");
