@@ -2039,6 +2039,29 @@ const rotulo = () => ONDE === "claude" ? "salvo no Claude"
               : ONDE === "navegador" ? "salvo neste navegador"
               : "SEM salvamento — use a cópia de segurança";
 
+/* ---------- trocar o conteúdo do DB sem trocar o objeto ----------
+   Várias janelas do app guardam um atalho para um pedaço do DB no momento em
+   que abrem (a janela de registrar estudo, por exemplo, guarda E = DB.estudo).
+   Se uma sincronização trocasse o DB inteiro por um objeto novo enquanto a
+   janela estivesse aberta, o que fosse gravado ali iria parar no objeto
+   antigo — e sumiria. Por isso a junção agora despeja o resultado DENTRO do
+   DB que já existe, mantendo os atalhos de todo mundo válidos. */
+function adotar(dest, src){
+  if (Array.isArray(dest) && Array.isArray(src)){
+    dest.length = 0;
+    for (let i = 0; i < src.length; i++) dest.push(src[i]);
+    return dest;
+  }
+  Object.keys(dest).forEach(k => { if (!(k in src)) delete dest[k]; });
+  Object.keys(src).forEach(k => {
+    const d = dest[k], v = src[k];
+    if (d && v && typeof d === "object" && typeof v === "object" &&
+        Array.isArray(d) === Array.isArray(v)) adotar(d, v);
+    else dest[k] = v;
+  });
+  return dest;
+}
+
 /* ---- histórico: cada pausa na digitação vira um passo de Ctrl+Z ---- */
 const PASSOS_MAX = 80;
 let pilha = [], refazer = [], anterior = null, timer = null;
@@ -2079,7 +2102,7 @@ function desfazer(){
   fechar();
   if (!pilha.length) return;
   refazer.push(instantanea());
-  DB = JSON.parse(pilha.pop());
+  adotar(DB, JSON.parse(pilha.pop()));
   anterior = instantanea();
   persistir(anterior);
   render();
@@ -2088,7 +2111,7 @@ function refazerAgora(){
   fechar();
   if (!refazer.length) return;
   pilha.push(instantanea());
-  DB = JSON.parse(refazer.pop());
+  adotar(DB, JSON.parse(refazer.pop()));
   anterior = instantanea();
   persistir(anterior);
   render();
@@ -2117,7 +2140,7 @@ async function carregar(){
       texto = window.localStorage.getItem(CHAVE);
     }
     if (texto){
-      DB = JSON.parse(texto);
+      adotar(DB, JSON.parse(texto));
       anterior = instantanea();
       avisarEstado("retomado — " + rotulo());
       return;
@@ -2427,8 +2450,19 @@ function frasesJuncao(r){
   return p;
 }
 
+let adiados = 0;
 async function nuvemEnviar(forcar){
   if (!nuvemLigada()) return false;
+  // digitando numa célula do caderno? a junção redesenha a tabela e tiraria o
+  // cursor do lugar. Espera terminar — mas no máximo um minuto, para o envio
+  // nunca ficar parado de vez se o cursor for esquecido dentro de um campo.
+  if (!forcar && digitandoAgora() && adiados < 12){
+    adiados++;
+    clearTimeout(nuvemTimer);
+    nuvemTimer = setTimeout(() => nuvemEnviar(false), 5000);
+    return false;
+  }
+  adiados = 0;
   if (nuvemOcupada){
     // já tem conversa com o GitHub em andamento: tenta de novo daqui a pouco,
     // em vez de deixar esta alteração para trás (era assim que sumia)
@@ -2447,7 +2481,7 @@ async function nuvemEnviar(forcar){
         const antes = DB;
         const juntado = juntarDados(atual.dados, DB);
         const r = resumoJuncao(antes, juntado);
-        DB = juntado;
+        adotar(DB, juntado);
         pularProximoEnvio = true; salvar(); render();
         const partes = frasesJuncao(r);
         nuvemAviso(partes.length
@@ -2494,7 +2528,7 @@ async function nuvemTrazer(silencioso, substituir){
         "O que existir só aqui será perdido. Para não perder nada, use " +
         "“Juntar com a nuvem”."))
         return false;
-      DB = env.dados;
+      adotar(DB, env.dados);
       carimboLocal = env.carimbo || "";
       pularProximoEnvio = true;
       marcasAtualizar(); ultimoEnviado = instantanea();
@@ -2541,7 +2575,7 @@ async function nuvemAoAbrir(){
     const antes = DB;
     const juntado = juntarDados(env.dados, DB);
     const r = resumoJuncao(antes, juntado);
-    DB = juntado;
+    adotar(DB, juntado);
     carimboLocal = env.carimbo;
     pularProximoEnvio = true;
     nuvemGravarCfg(); salvar(); render();
@@ -2562,7 +2596,17 @@ async function nuvemAoAbrir(){
    rodando por horas, ia ficando cada vez mais desatualizado. Agora ele espia
    a nuvem de minuto em minuto e ao voltar para a tela — sem atrapalhar quem
    está digitando, e sem mexer no cronômetro. */
-let ultimaConferida = 0;
+let ultimaConferida = 0, ultimaTecla = 0;
+document.addEventListener("keydown", () => { ultimaTecla = Date.now(); }, true);
+document.addEventListener("input",   () => { ultimaTecla = Date.now(); }, true);
+/* está com o dedo na tecla AGORA? (usado para adiar a junção, nunca para
+   cancelá-la: adiar demais seria o mesmo que não sincronizar) */
+function digitandoAgora(){
+  if (document.querySelector(".modalFundo")) return true;
+  const a = document.activeElement;
+  const editando = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+  return !!editando && Date.now() - ultimaTecla < 15000;
+}
 function mexendoAgora(){
   const a = document.activeElement;
   if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable)) return true;
@@ -2582,7 +2626,7 @@ async function nuvemConferir(agora){
     const antes = DB;
     const juntado = juntarDados(env.dados, DB);
     const r = resumoJuncao(antes, juntado);
-    DB = juntado;
+    adotar(DB, juntado);
     carimboLocal = env.carimbo;
     nuvemGravarCfg();
     if (emTelaCheia()) atualizarBotaoCrono(); else render();
@@ -2610,7 +2654,7 @@ async function apagarSalvo(){
 }
 async function restaurarPlanilha(){
   if (!confirm("Voltar tudo ao estado em que a planilha estava? O que você digitou aqui será perdido.")) return;
-  DB = JSON.parse(JSON.stringify(BASE));
+  adotar(DB, JSON.parse(JSON.stringify(BASE)));
   await apagarSalvo();
   render();
 }
@@ -6466,8 +6510,9 @@ function janelaSessao(base, aoSalvar){
       mat: ent.mat.value, cont: ent.cont.value.trim(), tipo: ent.tipo.value, min,
       q: s.q || "", ac: s.ac || "", obs: (obs.textContent || "").trim() ? obs.innerHTML.trim() : ""
     };
-    if (novo) E.sessoes.push(reg);
-    else Object.assign(E.sessoes.find(x => x.id === s.id) || {}, reg);
+    const Eg = garantirEstudo();       // resolvido AGORA, não quando a janela abriu
+    if (novo) Eg.sessoes.push(reg);
+    else Object.assign(Eg.sessoes.find(x => x.id === s.id) || {}, reg);
     lancarNoCiclo(reg.mat, novo ? min : 0);
     salvar(); fechar();
     if (aoSalvar) aoSalvar(reg); else render();
