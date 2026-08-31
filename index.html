@@ -2145,7 +2145,8 @@ function nuvemLerCfg(){
     NUV.dono  = localStorage.getItem("cs_gh_dono")  || "";
     NUV.auto  = localStorage.getItem("cs_gh_auto") !== "0";
     carimboLocal = localStorage.getItem("cs_gh_carimbo") || "";
-  }catch(e){}
+    MARCAS = JSON.parse(localStorage.getItem("cs_gh_marcas") || "{}") || {};
+  }catch(e){ MARCAS = MARCAS || {}; }
 }
 function nuvemGravarCfg(){
   try{
@@ -2196,8 +2197,7 @@ async function gh(caminho, metodo, corpo){
 }
 
 // devolve { carimbo, aparelho, dados } do que está guardado na nuvem
-async function nuvemLerRemoto(){
-  const g = await gh("/gists/" + NUV.gist);
+async function envelopeDoGist(g){
   if (g.owner && g.owner.login && NUV.dono !== g.owner.login){
     NUV.dono = g.owner.login; nuvemGravarCfg();
   }
@@ -2211,6 +2211,10 @@ async function nuvemLerRemoto(){
   const env = JSON.parse(texto);
   return (env && env.dados) ? env : { carimbo:"", aparelho:"", dados: env };
 }
+async function nuvemLerRemoto(){
+  return envelopeDoGist(await gh("/gists/" + NUV.gist));
+}
+
 
 /* ---------- juntar o que dois aparelhos fizeram ao mesmo tempo ----------
    Se você cronometra no tablet enquanto lança questões no computador, os dois
@@ -2218,17 +2222,27 @@ async function nuvemLerRemoto(){
    resto, juntamos: cada registro aparece uma vez só, e o que existe de um
    lado só entra do mesmo jeito. Onde os dois mexeram no MESMO registro,
    vale o do lado mais recente. */
-function juntarListas(a, b, chaveDe){
-  const A = Array.isArray(a) ? a : [], B = Array.isArray(b) ? b : [];
-  const mapa = new Map();
-  // primeiro o lado antigo, depois o novo passa por cima do que repetir
-  A.forEach(x => mapa.set(chaveDe(x), x));
-  B.forEach(x => mapa.set(chaveDe(x), x));
-  return [...mapa.values()];
+/* ---------- a marca de cada registro ----------
+   A junção antiga tinha um furo: quem enviava por último ganhava sempre. Se o
+   tablet ficou duas horas com o cronômetro correndo e, nesse meio-tempo, o
+   computador corrigiu uma questão do caderno, o tablet mandava a versão VELHA
+   por cima e a correção sumia — e vice-versa. Para resolver, guardamos aqui
+   uma marca curtinha de cada registro no instante da última sincronização.
+   Comparando os dois lados com essa marca dá para saber, registro a registro,
+   qual dos dois de fato mexeu. Só quem mexeu ganha; quem não mexeu não
+   atrapalha. Sem marca guardada (primeira vez), tudo se junta como antes. */
+let MARCAS = {};
+function marca(txt){
+  let a = 0x811c9dc5, b = 0x9e3779b1;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193);
+    b = Math.imul(b ^ c, 0x85ebca6b);
+  }
+  return (a>>>0).toString(36) + (b>>>0).toString(36);
 }
-function juntarObjetos(a, b){
-  return Object.assign({}, a || {}, b || {});
-}
+const marcaDe = x => marca(JSON.stringify(x === undefined ? null : x));
+
 /* chaves de identidade de cada tipo de registro */
 const CH = {
   sessao: s => String(s.id || [s.data, s.mat, s.hora, s.min].join("|")),
@@ -2239,60 +2253,189 @@ const CH = {
   concurso: c => String(c.num)
 };
 
+/* todas as listas de registros, com a chave que identifica cada linha */
+function trilhas(D){
+  const E = (D && D.estudo) || {};
+  return [
+    ["cc", D.concursos,       CH.concurso],
+    ["kO", (D.caderno||{}).O, CH.erro],
+    ["kD", (D.caderno||{}).D, CH.erro],
+    ["kT", (D.caderno||{}).T, CH.erro],
+    ["ju", D.juris,           CH.juris],
+    ["te", D.teses,           CH.juris],
+    ["su", D.sumulas,         CH.juris],
+    ["cn", D.cadConteudo,     CH.conteudo],
+    ["se", E.sessoes,         CH.sessao],
+    ["ev", E.eventos,         CH.evento]
+  ];
+}
+/* a fotografia das marcas: como estava tudo na última vez que este aparelho
+   e a nuvem estiveram iguais */
+function marcasDe(D){
+  const m = {};
+  if (!D) return m;
+  trilhas(D).forEach(([id, lista, ch]) => {
+    (Array.isArray(lista) ? lista : []).forEach(x => { m[marca(id + ch(x))] = marcaDe(x); });
+  });
+  ["O","D"].forEach(mod => {
+    const L = (D.lanc||{})[mod] || {}, F = (D.ficha||{})[mod] || {};
+    Object.keys(L).forEach(cod => Object.keys(L[cod]||{}).forEach(mat =>
+      { m[marca("l"+mod+cod+"|"+mat)] = marcaDe(L[cod][mat]); }));
+    Object.keys(F).forEach(cod => { m[marca("f"+mod+cod)] = marcaDe(F[cod]); });
+  });
+  return m;
+}
+function marcasGravar(){
+  try{ localStorage.setItem("cs_gh_marcas", JSON.stringify(MARCAS)); }
+  catch(e){ /* sem espaço: segue funcionando, só sem a memória fina da junção */ }
+}
+function marcasAtualizar(){ MARCAS = marcasDe(DB); marcasGravar(); }
+
+/* placar do que a junção fez, para contar ao usuário depois */
+const contaNova = () => ({ novo:0, atualizado:0, apagado:0, conflito:0 });
+let ULT_CONTA = contaNova();
+
+/* ---------- junta uma LISTA de registros ---------- */
+function juntar3(idT, remota, local, chaveDe, conta){
+  const R = new Map(), L = new Map();
+  (Array.isArray(remota) ? remota : []).forEach(x => R.set(chaveDe(x), x));
+  (Array.isArray(local)  ? local  : []).forEach(x => L.set(chaveDe(x), x));
+  const saida = [];
+  new Set([...L.keys(), ...R.keys()]).forEach(k => {
+    const base = MARCAS[marca(idT + k)];      // como o registro estava na última sync
+    const r = R.get(k), l = L.get(k);
+    if (r !== undefined && l !== undefined){
+      const mr = marcaDe(r), ml = marcaDe(l);
+      if (mr === ml){ saida.push(l); return; }              // iguais
+      if (base === undefined){ saida.push(l); return; }     // sem memória: como antes
+      if (ml === base){ saida.push(r); conta.atualizado++; return; }  // só o outro mexeu
+      if (mr === base){ saida.push(l); return; }            // só este aparelho mexeu
+      saida.push(l); conta.conflito++; return;              // os dois mexeram
+    }
+    if (r !== undefined){                                   // não existe mais aqui
+      if (base !== undefined && marcaDe(r) === base) return; // apagado aqui, intocado lá
+      saida.push(r); conta.novo++; return;                   // novo (ou mexido) lá
+    }
+    if (base !== undefined && marcaDe(l) === base){ conta.apagado++; return; } // apagado lá
+    saida.push(l);
+  });
+  return saida;
+}
+/* ---------- junta um MAPA (chave → valor), mesma lógica ---------- */
+function juntarMapa(idT, remoto, local, conta){
+  const R = remoto || {}, L = local || {}, saida = {};
+  new Set([...Object.keys(R), ...Object.keys(L)]).forEach(k => {
+    const base = MARCAS[marca(idT + k)];
+    const r = R[k], l = L[k];
+    if (r !== undefined && l !== undefined){
+      const mr = marcaDe(r), ml = marcaDe(l);
+      if (mr === ml || base === undefined || mr === base){ saida[k] = l; return; }
+      if (ml === base){ saida[k] = r; conta.atualizado++; return; }
+      saida[k] = l; conta.conflito++; return;
+    }
+    if (r !== undefined){
+      if (base !== undefined && marcaDe(r) === base) return;
+      saida[k] = r; return;
+    }
+    if (base !== undefined && marcaDe(l) === base) return;
+    saida[k] = l;
+  });
+  return saida;
+}
+/* união simples de listas de texto (matérias, motivos, conteúdos…) */
+const unir = (a, b) => [...new Set([...(Array.isArray(b)?b:[]), ...(Array.isArray(a)?a:[])])];
+
 function juntarDados(velho, novo){
-  // parte do lado mais recente e vai trazendo o que só existe no outro
+  const conta = contaNova();
   const R = JSON.parse(JSON.stringify(novo || {}));
   const V = velho || {};
 
-  R.concursos = juntarListas(V.concursos, R.concursos, CH.concurso)
+  R.concursos = juntar3("cc", V.concursos, R.concursos, CH.concurso, conta)
     .sort((x,y) => n(x.num) - n(y.num));
 
-  ["O","D"].forEach(m => {
-    R.lanc = R.lanc || {}; R.ficha = R.ficha || {};
-    R.lanc[m]  = juntarObjetos((V.lanc||{})[m],  R.lanc[m]);
-    R.ficha[m] = juntarObjetos((V.ficha||{})[m], R.ficha[m]);
+  R.lanc = R.lanc || {}; R.ficha = R.ficha || {};
+  ["O","D"].forEach(mod => {
+    // até o nível da MATÉRIA de cada simulado: assim, dois aparelhos podem
+    // lançar matérias diferentes do mesmo simulado sem um apagar o outro
+    const VL = (V.lanc||{})[mod] || {}, LL = R.lanc[mod] || {}, saida = {};
+    new Set([...Object.keys(VL), ...Object.keys(LL)]).forEach(cod => {
+      const sub = juntarMapa("l"+mod+cod+"|", VL[cod], LL[cod], conta);
+      if (Object.keys(sub).length) saida[cod] = sub;
+    });
+    R.lanc[mod]  = saida;
+    R.ficha[mod] = juntarMapa("f"+mod, (V.ficha||{})[mod], R.ficha[mod], conta);
   });
 
   R.caderno = R.caderno || {};
   ["O","D","T"].forEach(m => {
-    R.caderno[m] = juntarListas((V.caderno||{})[m], R.caderno[m], CH.erro);
+    R.caderno[m] = juntar3("k"+m, (V.caderno||{})[m], R.caderno[m], CH.erro, conta);
   });
 
-  R.juris   = juntarListas(V.juris,   R.juris,   CH.juris);
-  R.teses   = juntarListas(V.teses,   R.teses,   CH.juris);
-  R.sumulas = juntarListas(V.sumulas, R.sumulas, CH.juris);
-  R.cadConteudo = juntarListas(V.cadConteudo, R.cadConteudo, CH.conteudo);
+  R.juris       = juntar3("ju", V.juris,       R.juris,       CH.juris, conta);
+  R.teses       = juntar3("te", V.teses,       R.teses,       CH.juris, conta);
+  R.sumulas     = juntar3("su", V.sumulas,     R.sumulas,     CH.juris, conta);
+  R.cadConteudo = juntar3("cn", V.cadConteudo, R.cadConteudo, CH.conteudo, conta);
 
-  // estudo: sessões e eventos se juntam; o ciclo fica com o lado mais recente
+  // estudo: sessões e eventos se juntam; o ciclo e o cronômetro ficam com este aparelho
   R.estudo = R.estudo || {};
   const VE = V.estudo || {};
-  R.estudo.sessoes = juntarListas(VE.sessoes, R.estudo.sessoes, CH.sessao)
+  R.estudo.sessoes = juntar3("se", VE.sessoes, R.estudo.sessoes, CH.sessao, conta)
     .sort((x,y) => String(x.data + (x.hora||"")).localeCompare(y.data + (y.hora||"")));
-  R.estudo.eventos = juntarListas(VE.eventos, R.estudo.eventos, CH.evento);
+  R.estudo.eventos = juntar3("ev", VE.eventos, R.estudo.eventos, CH.evento, conta);
 
   // as listas de apoio nunca somem: união simples, sem repetir
   ["materias","motivos","status","bancas","estilos","ufs"].forEach(k => {
-    const a = Array.isArray(V[k]) ? V[k] : [], b = Array.isArray(R[k]) ? R[k] : [];
-    R[k] = [...new Set([...b, ...a])];
+    R[k] = unir(V[k], R[k]);
   });
-  if (VE.tipos || (R.estudo && R.estudo.tipos))
-    R.estudo.tipos = [...new Set([...(R.estudo.tipos||[]), ...(VE.tipos||[])])];
+  if (VE.tipos || R.estudo.tipos) R.estudo.tipos = unir(VE.tipos, R.estudo.tipos);
+
+  // cores e conteúdos cadastrados: o que existe de um lado só também entra
+  R.cores = Object.assign({}, V.cores || {}, R.cores || {});
+  R.estudo.conteudos = R.estudo.conteudos || {};
+  Object.keys(VE.conteudos || {}).forEach(mat => {
+    R.estudo.conteudos[mat] = unir((VE.conteudos||{})[mat], R.estudo.conteudos[mat]);
+  });
+  R.estudo.coresCont = R.estudo.coresCont || {};
+  Object.keys(VE.coresCont || {}).forEach(mat => {
+    R.estudo.coresCont[mat] =
+      Object.assign({}, (VE.coresCont||{})[mat] || {}, R.estudo.coresCont[mat] || {});
+  });
+
+  ULT_CONTA = conta;
   return R;
 }
-/* conta o que a junção acrescentou, para dizer ao usuário o que aconteceu */
+/* conta o que a junção mexeu, para dizer ao usuário o que aconteceu */
 function resumoJuncao(antes, depois){
   const conta = d => (Array.isArray(d) ? d.length : 0);
   const somaCad = d => ["O","D","T"].reduce((a,m) => a + conta((d.caderno||{})[m]), 0);
+  const mais = v => Math.max(0, v);
   return {
-    sessoes: conta((depois.estudo||{}).sessoes) - conta((antes.estudo||{}).sessoes),
-    erros: somaCad(depois) - somaCad(antes),
-    juris: (conta(depois.juris)+conta(depois.teses)+conta(depois.sumulas)) -
-           (conta(antes.juris)+conta(antes.teses)+conta(antes.sumulas))
+    sessoes: mais(conta((depois.estudo||{}).sessoes) - conta((antes.estudo||{}).sessoes)),
+    erros: mais(somaCad(depois) - somaCad(antes)),
+    juris: mais((conta(depois.juris)+conta(depois.teses)+conta(depois.sumulas)) -
+                (conta(antes.juris)+conta(antes.teses)+conta(antes.sumulas))),
+    atualizado: ULT_CONTA.atualizado
   };
+}
+/* frase pronta com o que veio do outro aparelho */
+function frasesJuncao(r){
+  const p = [];
+  if (r.sessoes) p.push(r.sessoes + " atividade(s)");
+  if (r.erros) p.push(r.erros + " questão(ões)");
+  if (r.juris) p.push(r.juris + " julgado(s)");
+  if (r.atualizado) p.push(r.atualizado + " correção(ões)");
+  return p;
 }
 
 async function nuvemEnviar(forcar){
-  if (!nuvemLigada() || nuvemOcupada) return false;
+  if (!nuvemLigada()) return false;
+  if (nuvemOcupada){
+    // já tem conversa com o GitHub em andamento: tenta de novo daqui a pouco,
+    // em vez de deixar esta alteração para trás (era assim que sumia)
+    clearTimeout(nuvemTimer);
+    nuvemTimer = setTimeout(() => nuvemEnviar(forcar), 3000);
+    return false;
+  }
   nuvemOcupada = true;
   try{
     nuvemAviso("enviando…");
@@ -2306,10 +2449,7 @@ async function nuvemEnviar(forcar){
         const r = resumoJuncao(antes, juntado);
         DB = juntado;
         pularProximoEnvio = true; salvar(); render();
-        const partes = [];
-        if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
-        if (r.erros) partes.push(r.erros + " questão(ões)");
-        if (r.juris) partes.push(r.juris + " julgado(s)");
+        const partes = frasesJuncao(r);
         nuvemAviso(partes.length
           ? "juntei o que veio do outro aparelho: " + partes.join(", ")
           : "conferido com o outro aparelho, nada de novo");
@@ -2327,6 +2467,8 @@ async function nuvemEnviar(forcar){
     const g = await gh("/gists/" + NUV.gist, "PATCH", { files: arquivos });
     if (g && g.owner && g.owner.login){ NUV.dono = g.owner.login; }
     carimboLocal = carimbo; nuvemGravarCfg();
+    // a partir de agora, ESTA é a versão que este aparelho e a nuvem têm em comum
+    marcasAtualizar(); ultimoEnviado = instantanea();
     nuvemAviso("enviado às " + horaCurta(carimbo));
     return true;
   }catch(e){ nuvemAviso("não enviou: " + e.message, true); return false; }
@@ -2355,6 +2497,7 @@ async function nuvemTrazer(silencioso, substituir){
       DB = env.dados;
       carimboLocal = env.carimbo || "";
       pularProximoEnvio = true;
+      marcasAtualizar(); ultimoEnviado = instantanea();
       nuvemGravarCfg(); salvar(); render();
       nuvemAviso("trazido da nuvem — versão de " + horaCurta(env.carimbo));
       return true;
@@ -2366,10 +2509,7 @@ async function nuvemTrazer(silencioso, substituir){
     carimboLocal = env.carimbo || "";
     pularProximoEnvio = true;
     nuvemGravarCfg(); salvar(); render();
-    const partes = [];
-    if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
-    if (r.erros) partes.push(r.erros + " questão(ões)");
-    if (r.juris) partes.push(r.juris + " julgado(s)");
+    const partes = frasesJuncao(r);
     nuvemAviso(partes.length ? "juntado: " + partes.join(", ") : "nada de novo na nuvem");
     setTimeout(() => nuvemEnviar(true), 1200);
     return true;
@@ -2378,9 +2518,12 @@ async function nuvemTrazer(silencioso, substituir){
 
 // chamada a cada gravação local: espera a poeira baixar e manda
 let pularProximoEnvio = false;
+let ultimoEnviado = "";          // o texto exato que já está guardado na nuvem
 function nuvemAgendar(){
-  if (pularProximoEnvio){ pularProximoEnvio = false; return; }  // veio da nuvem agora
+  pularProximoEnvio = false;
   if (!nuvemLigada() || !NUV.auto) return;
+  // nada mudou desde o último envio (o caso do que acabou de vir da nuvem)
+  if (ultimoEnviado && instantanea() === ultimoEnviado) return;
   clearTimeout(nuvemTimer);
   nuvemTimer = setTimeout(() => nuvemEnviar(false), 4000);
 }
@@ -2402,10 +2545,7 @@ async function nuvemAoAbrir(){
     carimboLocal = env.carimbo;
     pularProximoEnvio = true;
     nuvemGravarCfg(); salvar(); render();
-    const partes = [];
-    if (r.sessoes) partes.push(r.sessoes + " atividade(s)");
-    if (r.erros) partes.push(r.erros + " questão(ões)");
-    if (r.juris) partes.push(r.juris + " julgado(s)");
+    const partes = frasesJuncao(r);
     nuvemAviso(partes.length
       ? "juntado com a nuvem: " + partes.join(", ")
       : "em dia com a nuvem");
@@ -2415,6 +2555,50 @@ async function nuvemAoAbrir(){
     setTimeout(() => nuvemEnviar(true), 1500);
   }catch(e){ nuvemAviso("não consegui falar com o GitHub: " + e.message, true); }
 }
+
+/* ---------- conferir a nuvem sozinho, de tempos em tempos ----------
+   Antes, um aparelho aberto só descobria o que o outro tinha lançado quando
+   alguém recarregava a página. Era por isso que o tablet, com o cronômetro
+   rodando por horas, ia ficando cada vez mais desatualizado. Agora ele espia
+   a nuvem de minuto em minuto e ao voltar para a tela — sem atrapalhar quem
+   está digitando, e sem mexer no cronômetro. */
+let ultimaConferida = 0;
+function mexendoAgora(){
+  const a = document.activeElement;
+  if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable)) return true;
+  return !!document.querySelector(".modalFundo");   // janela aberta: não redesenha
+}
+async function nuvemConferir(agora){
+  if (!nuvemLigada() || !NUV.auto || nuvemOcupada) return;
+  if (document.hidden || mexendoAgora()) return;
+  if (!agora && Date.now() - ultimaConferida < 60000) return;
+  ultimaConferida = Date.now();
+  nuvemOcupada = true;
+  try{
+    const env = await nuvemLerRemoto();
+    if (!env.carimbo || env.carimbo === carimboLocal) return;
+    if (!env.dados || !env.dados.concursos) return;
+    if (mexendoAgora()) return;              // começou a digitar durante a busca
+    const antes = DB;
+    const juntado = juntarDados(env.dados, DB);
+    const r = resumoJuncao(antes, juntado);
+    DB = juntado;
+    carimboLocal = env.carimbo;
+    nuvemGravarCfg();
+    if (emTelaCheia()) atualizarBotaoCrono(); else render();
+    const partes = frasesJuncao(r);
+    nuvemAviso(partes.length ? "chegou do outro aparelho: " + partes.join(", ")
+                             : "em dia com a nuvem");
+    if (partes.length) avisoTec("Chegou do outro aparelho: " + partes.join(", ") + ".");
+    salvar();                                // o resultado da junção volta para a nuvem
+  }catch(e){ /* sem internet agora: tenta na próxima volta */ }
+  finally{ nuvemOcupada = false; }
+}
+setInterval(() => nuvemConferir(false), 60000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) setTimeout(() => nuvemConferir(true), 800);
+});
+window.addEventListener("focus", () => setTimeout(() => nuvemConferir(false), 800));
 
 nuvemLerCfg();          // a configuração já vale antes mesmo do primeiro desenho
 
