@@ -11904,7 +11904,11 @@ const ABAS_SIM = [
   { id:"evoD",     nome:"Evolução Discursiva", cls:"dis", fn:() => telaEvolucao("D") },
   { id:"cadD",     nome:"Caderno Discursiva",  cls:"dis", fn:() => telaCaderno("D") },
   { id:"provas",   nome:"Desempenho em prova", cls:"", fn: telaProvas },
-  // agora fica no botão ⚙ Configuração, na barra de cima
+];
+/* A Configuração morava dentro de SIMULADOS e por isso acendia aquele módulo
+   quando você abria a engrenagem. Agora ela é uma tela avulsa, com módulo só
+   dela: como não existe botão "cfg" na barra de cima, nenhum módulo acende. */
+const ABAS_CFG = [
   { id:"listas",   nome:"Configuração",  cls:"", fn: telaListas, oculta:true },
 ];
 const ABAS_EST = [
@@ -11955,15 +11959,19 @@ const ABAS_CAL = [
 ];
 // sete módulos na mesma aplicação, cada um com as suas abas
 const MODULOS = { cad:ABAS_CAD, est:ABAS_EST, cCont:ABAS_CONT,
-  sim:ABAS_SIM, cTec:ABAS_TEC, cJur:ABAS_JUR, cal:ABAS_CAL };
+  sim:ABAS_SIM, cTec:ABAS_TEC, cJur:ABAS_JUR, cal:ABAS_CAL, cfg:ABAS_CFG };
 const INICIAL = { cad:"cadastro", est:"eInicio", cCont:"cConteudo",
-  sim:"provas", cTec:"cTec", cJur:"cJuris", cal:"eCal" };
+  sim:"provas", cTec:"cTec", cJur:"cJuris", cal:"eCal", cfg:"listas" };
 let modulo = "cad";
 let ABAS = ABAS_CAD;
 const abaPorModulo = { cad:"cadastro", est:"eInicio", cCont:"cConteudo",
   sim:"provas", cTec:"cTec", cJur:"cJuris", cal:"eCal" };
 function irParaModulo(qual, destino){
-  abaPorModulo[modulo] = abaAtual;
+  // a Configuração é uma aba oculta que mora dentro de SIMULADOS. Se ela fosse
+  // guardada como "última aba visitada", clicar em SIMULADOS depois abriria a
+  // Configuração de novo, e não a tela de provas.
+  const saindoDe = ABAS.find(x => x.id === abaAtual);
+  if (!saindoDe || !saindoDe.oculta) abaPorModulo[modulo] = abaAtual;
   modulo = qual; ABAS = MODULOS[qual];
   abaAtual = destino || abaPorModulo[qual] || INICIAL[qual];
   render(); window.scrollTo(0,0);
@@ -12450,20 +12458,16 @@ document.getElementById("nvDesligar").onclick = () => {
 };
 
 /* ---- botão ⚙ Configuração: abre a tela de listas e parâmetros ---- */
-let abaAntesDaConfig = "cadastro";
-let moduloAntesDaConfig = "sim";
+let voltaDaConfig = null;                 // de onde eu vim quando abri a engrenagem
 document.getElementById("btnConfig").onclick = () => {
-  if (modulo === "sim" && abaAtual === "listas"){    // clicou de novo: volta de onde veio
-    if (moduloAntesDaConfig !== "sim"){ irParaModulo(moduloAntesDaConfig, abaAntesDaConfig); return; }
-    abaAtual = abaAntesDaConfig;
-  } else {
-    moduloAntesDaConfig = modulo;
-    abaAntesDaConfig = abaAtual;
-    if (modulo !== "sim"){ abaPorModulo[modulo] = abaAtual; modulo = "sim"; ABAS = ABAS_SIM; }
-    abaAtual = "listas";
+  if (modulo === "cfg"){                  // clicou de novo: volta de onde veio
+    const v = voltaDaConfig || { mod:"cad", aba:INICIAL.cad };
+    voltaDaConfig = null;
+    irParaModulo(v.mod, v.aba);
+    return;
   }
-  render();
-  window.scrollTo(0,0);
+  voltaDaConfig = { mod: modulo, aba: abaAtual };
+  irParaModulo("cfg");
 };
 
 /* ---- menu da conta, no canto direito ---- */
