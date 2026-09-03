@@ -1854,6 +1854,29 @@ function migrarMateria(velho, novo){
   if (E){
     (E.sessoes || []).forEach(x => { if (x.mat === velho) x.mat = novo; });
     if (E.ciclo) (E.ciclo.itens || []).forEach(x => { if (x.mat === velho) x.mat = novo; });
+    // o cronograma guarda os nomes das matérias direto nas listas de cada dia,
+    // nos blocos do rodízio e nas marcações "data|nome": sem isto, renomear
+    // uma matéria deixava o plano da semana apontando para um nome que sumiu
+    const CRm = (E.ciclo || {}).cronograma;
+    if (CRm){
+      const troca = arr => Array.isArray(arr)
+        ? arr.map(x => x === velho ? novo : x) : arr;
+      if (CRm.plano) for (let i = 0; i < 7; i++) CRm.plano[i] = troca(CRm.plano[i]);
+      if (CRm.rodizio && Array.isArray(CRm.rodizio.blocos))
+        CRm.rodizio.blocos = CRm.rodizio.blocos.map(troca);
+      if (CRm.feitos){
+        const saida = {};
+        Object.keys(CRm.feitos).forEach(k => {
+          const corte = k.indexOf("|");
+          const dia = k.slice(0, corte), nome = k.slice(corte + 1);
+          saida[(corte >= 0 && nome === velho) ? dia + "|" + novo : k] = CRm.feitos[k];
+        });
+        CRm.feitos = saida;
+      }
+    }
+    // e as voltas já guardadas no histórico do ciclo
+    if (E.ciclo) (E.ciclo.historico || []).forEach(v =>
+      (v.itens || []).forEach(x => { if (x.mat === velho) x.mat = novo; }));
     if (E.crono && E.crono.mat === velho) E.crono.mat = novo;
     if (E.conteudos && E.conteudos[velho]){
       E.conteudos[novo] = E.conteudos[velho]; delete E.conteudos[velho];
@@ -2091,6 +2114,10 @@ function cicloRetrato(c){
   if (!c || typeof c !== "object") return "";
   const r = {};
   CICLO_CAMPOS.forEach(k => { r[k] = c[k]; });
+  // o feito de cada matéria é calculado a partir das sessões: se ele entrasse
+  // aqui, cada registro de estudo carimbaria o ciclo duas vezes
+  if (Array.isArray(r.itens))
+    r.itens = r.itens.map(i => ({ mat:i.mat, meta:i.meta, sobra:i.sobra }));
   r.historico = c.historico;
   return JSON.stringify(r);
 }
@@ -2200,6 +2227,7 @@ async function persistir(texto){
 }
 function registrar(){
   clearTimeout(timer); timer = null;
+  sincronizarCiclo();            // o andamento vem das sessões, sempre
   cicloCarimbar();               // mexeu na guia Ciclo? fica a hora, para a junção saber
   const texto = instantanea();
   if (anterior !== null && anterior !== texto){
@@ -6658,12 +6686,10 @@ function janelaSessao(base, aoSalvar){
   gravar.onclick = confirmar;
 }
 
-// soma o tempo na matéria correspondente do ciclo, se ela estiver lá
-function lancarNoCiclo(mat, min){
-  if (!min || !mat) return;
-  const it = garantirEstudo().ciclo.itens.find(x => x.mat === mat);
-  if (it) it.feito = n(it.feito) + min;
-}
+/* o ciclo não recebe mais tempo "empurrado": ele recalcula.
+   A chamada continua aqui para o andamento já estar certo no instante em que
+   o app pergunta se a volta fechou, antes mesmo de redesenhar a tela. */
+function lancarNoCiclo(){ sincronizarCiclo(); }
 
 /* ---------- pedaços reaproveitados nas telas ---------- */
 function cartao(titulo, valor, detalhe){
@@ -9566,6 +9592,46 @@ function telaPlano(qual){
 
 // as matérias ocultas continuam guardadas no ciclo, mas não entram na conta
 const itensCiclo = () => garantirEstudo().ciclo.itens.filter(i => !oculta(i.mat));
+
+/* ============ o andamento do ciclo é calculado, não guardado ============
+   Antes, cada matéria do ciclo tinha um contador que só crescia, alimentado
+   num ponto só: o registro de uma atividade nova. Editar o tempo de um
+   registro, apagá-lo ou importar uma planilha passavam longe do ciclo, e o
+   número ia ficando cada vez mais distante da verdade.
+   Agora o ciclo funciona como o cronograma sempre funcionou: o feito de cada
+   matéria é a soma das sessões dela desde o começo da volta, mais a sobra que
+   veio da volta anterior. Apagou um registro, o ciclo devolve o tempo sozinho.
+
+   Duas coisas ficam guardadas, porque não dá para deduzir das sessões:
+     · i.sobra      — o que passou da meta na volta anterior e foi carregado
+     · C.consumidas — os registros do dia da virada que já contaram na volta
+                      passada, para o mesmo dia não valer duas vezes
+========================================================================= */
+const chaveSessao = s => String(s.id || [s.data, s.mat, s.hora, s.min].join("|"));
+
+// minutos por matéria num período, ignorando registros já contados antes
+function minutosPorMateria(desde, ate, jaContadas){
+  const fora = jaContadas instanceof Set ? jaContadas : new Set(jaContadas || []);
+  const soma = {};
+  sessoes().forEach(s => {
+    const d = String(s.data || "");
+    if (!d || !s.mat) return;
+    if (desde && d < desde) return;
+    if (ate && d > ate) return;
+    if (fora.size && fora.has(chaveSessao(s))) return;
+    soma[s.mat] = n(soma[s.mat]) + n(s.min);
+  });
+  return soma;
+}
+
+/* refaz o feito de todas as matérias do ciclo a partir das sessões */
+function sincronizarCiclo(){
+  const E = DB && DB.estudo;
+  const C = E && E.ciclo;
+  if (!C || !Array.isArray(C.itens)) return;
+  const soma = minutosPorMateria(C.iniciado || "", "", C.consumidas);
+  C.itens.forEach(i => { i.feito = n(i.sobra) + n(soma[i.mat]); });
+}
 /* ===================== CRONOGRAMA DE ESTUDOS =====================
    Um plano fixo por dia da semana (segunda, terça...) e, em cima dele,
    a semana de verdade. A automação é esta: o que estava previsto para
@@ -10679,6 +10745,78 @@ function cicloMetas(tela, E, C){
 }
 
 // guarda uma volta concluída no histórico
+/* =========== faxina retroativa do histórico de voltas ===========
+   O histórico antigo foi gravado quando o feito de cada matéria era um
+   contador que carregava a sobra da volta anterior. Por isso as voltas
+   apareciam com o tempo das voltas passadas somado de novo, e o TEMPO
+   SOMADO da tela repetia as mesmas horas.
+
+   Esta faxina roda uma vez só e faz duas coisas:
+     1. junta voltas gravadas em duplicidade — a mesma volta, do mesmo ciclo,
+        no mesmo período, fechada nos dois aparelhos;
+     2. refaz o tempo de cada volta pelas sessões que existem de verdade,
+        dando a cada uma um período que não invade o da volta anterior.
+================================================================== */
+const CH_VOLTA_NORM = h =>
+  [String(h.nome || "").trim().toUpperCase(), n(h.volta),
+   String(h.ini || ""), String(h.fim || "")].join("|");
+
+function recalcularHistorico(){
+  const E = garantirEstudo(), C = E.ciclo;
+  const H = Array.isArray(C.historico) ? C.historico : [];
+  if (!H.length){ C.recalculado = 2; return { voltas:0, unidas:0 }; }
+
+  // 1) duplicatas: fica a que tem mais matérias descritas
+  const porChave = new Map();
+  H.forEach(v => {
+    const k = CH_VOLTA_NORM(v), atual = porChave.get(k);
+    if (!atual || (v.itens || []).length > (atual.itens || []).length) porChave.set(k, v);
+  });
+  const unidas = H.length - porChave.size;
+  const lista = [...porChave.values()];
+
+  // 2) cada volta ganha um período próprio, que começa onde a anterior parou
+  const porNome = {};
+  lista.forEach(v => {
+    const nm = String(v.nome || "").trim().toUpperCase();
+    (porNome[nm] = porNome[nm] || []).push(v);
+  });
+  Object.keys(porNome).forEach(nm => {
+    const vs = porNome[nm].sort((a,b) =>
+      String(a.fim || "").localeCompare(String(b.fim || "")) || n(a.volta) - n(b.volta));
+    let anterior = "";
+    vs.forEach(v => {
+      // a primeira volta conta desde o seu início; as seguintes, só o que veio
+      // depois do fim da anterior — assim nenhum dia entra em duas voltas
+      const desde = anterior ? maisUmDia(anterior) : String(v.ini || "");
+      const ate = String(v.fim || "");
+      const soma = minutosPorMateria(desde, ate);
+      const itens = (v.itens || []).map(i => ({
+        mat: i.mat, meta: n(i.meta), feito: n(soma[i.mat])
+      }));
+      // matéria que foi estudada no período mas não estava na volta gravada
+      // não entra: o histórico guarda a volta como ela foi montada
+      const feitoTot = itens.reduce((a,i) => a + n(i.feito), 0);
+      const metaTot = itens.length
+        ? itens.reduce((a,i) => a + n(i.meta), 0) : n(v.metaTot);
+      const utilTot = itens.reduce((a,i) => a + Math.min(n(i.feito), n(i.meta)), 0);
+      v.itens = itens;
+      v.periodoDe = desde; v.fim = ate;
+      v.metaTot = metaTot;
+      v.feitoTot = feitoTot;
+      v.utilTot = utilTot;
+      v.pct = metaTot ? utilTot / metaTot : 0;
+      anterior = ate;
+    });
+  });
+
+  lista.sort((a,b) => String(b.fim || "").localeCompare(String(a.fim || "")) ||
+                      n(b.volta) - n(a.volta));
+  C.historico = lista;
+  C.recalculado = 2;
+  return { voltas: lista.length, unidas };
+}
+
 function registrarVoltaCiclo(E, C){
   const T = cicloTotais();
   E.ciclo.historico.unshift({
@@ -10715,10 +10853,15 @@ function concluirVoltaCiclo(E, C, jaPerguntado){
   itensCiclo().forEach(i => {
     const sobra = n(i.feito) - n(i.meta);
     // "reiniciar = sim" zera tudo; "não" leva o tempo excedente para a volta seguinte
-    i.feito = (C.reiniciar === "sim") ? 0 : Math.max(0, sobra);
+    i.sobra = (C.reiniciar === "sim") ? 0 : Math.max(0, sobra);
   });
   C.voltas = n(C.voltas) + 1;
   C.iniciado = hojeISO();                     // a nova volta começa hoje
+  // o que você já estudou HOJE contou na volta que acabou de fechar: fica
+  // marcado para não contar de novo na volta que começa agora
+  C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
+                          .map(chaveSessao);
+  sincronizarCiclo();
   salvar(); render();
   return true;
 }
@@ -10946,7 +11089,12 @@ function cicloHistorico(tela, E, C){
         C.voltas = 0;
         C.iniciado = hojeISO();
         C.avisadaVolta = 0;
-        itensCiclo().forEach(i => i.feito = 0);
+        // zerar de verdade: some a sobra e o que já foi estudado hoje não
+        // reaparece na contagem que começa agora
+        itensCiclo().forEach(i => { i.sobra = 0; i.feito = 0; });
+        C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
+                                .map(chaveSessao);
+        sincronizarCiclo();
         salvar(); render();
         avisoTec("Contagem de voltas finalizada. O histórico continua guardado.");
       }
@@ -11677,10 +11825,13 @@ function cicloEdicao(tela, E, C, secao){
       "Confirma?";
     if (!confirm(aviso)) return;
     // a volta em andamento, se estiver pela metade, não vira histórico
-    itensCiclo().forEach(i => i.feito = 0);
+    itensCiclo().forEach(i => { i.sobra = 0; i.feito = 0; });
     C.voltas = 0;
     C.nome = "";
     C.iniciado = hojeISO();
+    C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
+                            .map(chaveSessao);
+    sincronizarCiclo();
     salvar();
     abaAtual = "cicloAtual";
     render(); window.scrollTo(0,0);
@@ -12132,6 +12283,7 @@ const CLS_GRUPO = { obj:"OBJETIVA", dis:"DISCURSIVA", cron:"CRONOGRAMA",
 const grupoDe = cls => CLS_GRUPO[cls] || null;
 
 function render(){
+  sincronizarCiclo();            // o ciclo reflete as sessões de agora
   // mantém ce coerente com o estilo escolhido
   DB.concursos.forEach(c => c.ce = String(c.estilo||"").toUpperCase().indexOf("CERTO") >= 0);
   // cadastro antigo não tinha as marcas de prova: vale como "tem as duas"
@@ -12757,6 +12909,22 @@ if (typeof MutationObserver !== "undefined"){
 }
 
 carregar().then(() => {
+  // faxina única do histórico do ciclo: junta voltas repetidas e refaz o tempo
+  // de cada uma pelas sessões reais. Roda antes do primeiro desenho.
+  const E0 = garantirEstudo();
+  if (n(E0.ciclo.recalculado) < 2){
+    const r = recalcularHistorico();
+    // a sobra herdada do contador antigo não tem como ser confiada: o
+    // andamento da volta em curso passa a sair das sessões, do zero
+    (E0.ciclo.itens || []).forEach(i => { i.sobra = 0; });
+    sincronizarCiclo();
+    salvar();
+    if (r.voltas || r.unidas){
+      setTimeout(() => avisoTec(
+        "Histórico do ciclo recalculado pelas atividades registradas" +
+        (r.unidas ? " — " + r.unidas + " volta(s) repetida(s) foram unidas." : ".")), 1500);
+    }
+  }
   render(); botoesHistorico(); abrirCapa();
   cuidarDaTela();          // cronômetro já rodando: a tela fica acesa
   nuvemAoAbrir();          // se houver sincronização configurada, confere a nuvem
