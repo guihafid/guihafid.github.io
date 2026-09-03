@@ -2062,6 +2062,129 @@ function adotar(dest, src){
   return dest;
 }
 
+/* ====== guias CICLO e CRONOGRAMA: o que anda junto entre aparelhos ======
+   Atravessam de um aparelho para o outro: as matérias do ciclo, as metas, as
+   voltas, o andamento, o histórico de voltas, o plano da semana, o rodízio e
+   as marcações de cada dia (feito, folga, adiado). O cronômetro continua
+   sendo de cada aparelho — quem está com o relógio correndo é quem está ali.
+
+   São dois assuntos com feitios diferentes, e cada um tem o seu tratamento:
+
+   • O DESENHO das coisas — matérias, metas, plano da semana, blocos do
+     rodízio — é uma peça só. Não faz sentido misturar meio plano de um
+     aparelho com meio plano do outro, então cada assunto leva um carimbo
+     próprio e vale o que foi mexido por último.
+
+   • As MARCAÇÕES do dia a dia são independentes umas das outras: marcar
+     terça no tablet não tem nada a ver com marcar quinta no computador. Elas
+     passam pela mesma junção fina dos outros registros, que compara com a
+     última vez em que os dois estiveram iguais — é assim que ela distingue
+     "marquei agora lá" de "desmarquei aqui de propósito".
+====================================================================== */
+const CICLO_CAMPOS = ["itens","voltas","reiniciar","verPor","iniciado","nome",
+                      "metasCiclo","nivel"];
+// como reconhecer uma volta já guardada, para não entrar duas vezes
+const CH_VOLTA = h => String([h.nome || "", h.volta, h.ini || "", h.fim || ""].join("|"));
+
+// o retrato do ciclo — sem o cronograma e sem o próprio carimbo
+function cicloRetrato(c){
+  if (!c || typeof c !== "object") return "";
+  const r = {};
+  CICLO_CAMPOS.forEach(k => { r[k] = c[k]; });
+  r.historico = c.historico;
+  return JSON.stringify(r);
+}
+// o retrato do cronograma — só o desenho da semana, sem as marcações do dia a dia
+const CRON_CAMPOS = ["plano","modo","acumular","rodizio"];
+function cronRetrato(cr){
+  if (!cr || typeof cr !== "object") return "";
+  const r = {};
+  CRON_CAMPOS.forEach(k => { r[k] = cr[k]; });
+  return JSON.stringify(r);
+}
+let cicloAnterior = null, cronAnterior = null;   // null = só anotar, sem carimbar
+function cicloCarimbar(){
+  const C = DB && DB.estudo && DB.estudo.ciclo;
+  if (!C) return;
+  const agora = cicloRetrato(C);
+  if (cicloAnterior !== null && cicloAnterior !== agora)
+    C.alterado = new Date().toISOString();
+  cicloAnterior = agora;
+  // o cronograma tem carimbo separado: mexer no ciclo não faz o plano da semana
+  // parecer mais novo do que é, nem o contrário
+  const CR = C.cronograma;
+  if (!CR) return;
+  const agoraCron = cronRetrato(CR);
+  if (cronAnterior !== null && cronAnterior !== agoraCron)
+    CR.alterado = new Date().toISOString();
+  cronAnterior = agoraCron;
+}
+
+/* ---------- o cronograma: desenho da semana + marcações do dia a dia ---------- */
+let CRON_VEIO = false;
+function juntarCronograma(nuvem, aqui, conta){
+  aqui = aqui || {};
+  if (nuvem && typeof nuvem === "object"){
+    // um plano é "vazio" quando nenhum dia da semana tem matéria e o rodízio
+    // não tem bloco nenhum: um lado assim nunca apaga o plano do outro
+    const vazio = cr => {
+      const p = cr.plano || {}, b = ((cr.rodizio || {}).blocos) || [];
+      let temDia = false;
+      for (let i = 0; i < 7; i++) if ((p[i] || []).length) temDia = true;
+      return !temDia && !b.length;
+    };
+    const carimbo = cr => String((cr && cr.alterado) || "");
+    let deLa;
+    if (vazio(aqui) && !vazio(nuvem))      deLa = true;
+    else if (!vazio(aqui) && vazio(nuvem)) deLa = false;
+    else deLa = carimbo(nuvem) > carimbo(aqui);
+    if (deLa){
+      CRON_CAMPOS.forEach(k => {
+        if (k in nuvem) aqui[k] = JSON.parse(JSON.stringify(nuvem[k]));
+      });
+      aqui.alterado = nuvem.alterado || aqui.alterado || "";
+      CRON_VEIO = true;
+    }
+    // feito, folga e adiado: cada dia por si, pela junção fina
+    aqui.feitos  = juntarMapa("cf", nuvem.feitos,  aqui.feitos,  conta);
+    aqui.folgas  = juntarMapa("cg", nuvem.folgas,  aqui.folgas,  conta);
+    aqui.adiados = juntarMapa("ca", nuvem.adiados, aqui.adiados, conta);
+  }
+  cronAnterior = null;
+  return aqui;
+}
+
+let CICLO_VEIO = false;            // o ciclo desta junção veio do outro aparelho?
+function juntarCiclo(nuvem, aqui, conta){
+  aqui = aqui || {};
+  if (nuvem && typeof nuvem === "object"){
+    const vazio   = c => !Array.isArray(c.itens) || !c.itens.length;
+    const carimbo = c => String((c && c.alterado) || "");
+    let deLa;
+    if (vazio(aqui) && !vazio(nuvem))      deLa = true;   // aparelho ainda sem ciclo: recebe
+    else if (!vazio(aqui) && vazio(nuvem)) deLa = false;  // lado vazio nunca apaga o cheio
+    else deLa = carimbo(nuvem) > carimbo(aqui);           // fica com quem mexeu por último
+    if (deLa){
+      CICLO_CAMPOS.forEach(k => {
+        if (k in nuvem) aqui[k] = JSON.parse(JSON.stringify(nuvem[k]));
+      });
+      aqui.alterado = nuvem.alterado || aqui.alterado || "";
+      CICLO_VEIO = true;
+    }
+    // o histórico de voltas não escolhe lado: fica o que houver nos dois
+    const mapa = new Map();
+    (Array.isArray(nuvem.historico) ? nuvem.historico : []).forEach(h => mapa.set(CH_VOLTA(h), h));
+    (Array.isArray(aqui.historico)  ? aqui.historico  : []).forEach(h => mapa.set(CH_VOLTA(h), h));
+    aqui.historico = [...mapa.values()].sort((a,b) =>
+      String(b.fim || "").localeCompare(String(a.fim || "")) || n(b.volta) - n(a.volta));
+    if (aqui.historico.length > 200) aqui.historico.length = 200;
+  }
+  aqui.cronograma = juntarCronograma((nuvem || {}).cronograma, aqui.cronograma, conta);
+  // o que acabou de ser acertado com o outro aparelho não conta como mexida daqui
+  cicloAnterior = null;
+  return aqui;
+}
+
 /* ---- histórico: cada pausa na digitação vira um passo de Ctrl+Z ---- */
 const PASSOS_MAX = 80;
 let pilha = [], refazer = [], anterior = null, timer = null;
@@ -2077,6 +2200,7 @@ async function persistir(texto){
 }
 function registrar(){
   clearTimeout(timer); timer = null;
+  cicloCarimbar();               // mexeu na guia Ciclo? fica a hora, para a junção saber
   const texto = instantanea();
   if (anterior !== null && anterior !== texto){
     pilha.push(anterior);
@@ -2300,6 +2424,12 @@ function marcasDe(D){
   trilhas(D).forEach(([id, lista, ch]) => {
     (Array.isArray(lista) ? lista : []).forEach(x => { m[marca(id + ch(x))] = marcaDe(x); });
   });
+  // as marcações do cronograma entram na fotografia como qualquer outro registro:
+  // é o que permite saber depois quem desmarcou o quê
+  const CR = (((D.estudo || {}).ciclo || {}).cronograma) || {};
+  [["cf", CR.feitos], ["cg", CR.folgas], ["ca", CR.adiados]].forEach(([id, mapa]) => {
+    Object.keys(mapa || {}).forEach(k => { m[marca(id + k)] = marcaDe(mapa[k]); });
+  });
   ["O","D"].forEach(mod => {
     const L = (D.lanc||{})[mod] || {}, F = (D.ficha||{})[mod] || {};
     Object.keys(L).forEach(cod => Object.keys(L[cod]||{}).forEach(mat =>
@@ -2370,6 +2500,7 @@ const unir = (a, b) => [...new Set([...(Array.isArray(b)?b:[]), ...(Array.isArra
 
 function juntarDados(velho, novo){
   const conta = contaNova();
+  CICLO_VEIO = CRON_VEIO = false;
   const R = JSON.parse(JSON.stringify(novo || {}));
   const V = velho || {};
 
@@ -2399,9 +2530,11 @@ function juntarDados(velho, novo){
   R.sumulas     = juntar3("su", V.sumulas,     R.sumulas,     CH.juris, conta);
   R.cadConteudo = juntar3("cn", V.cadConteudo, R.cadConteudo, CH.conteudo, conta);
 
-  // estudo: sessões e eventos se juntam; o ciclo e o cronômetro ficam com este aparelho
+  // estudo: sessões e eventos se juntam; as guias Ciclo e Cronograma vêm
+  // junto; só o cronômetro fica com este aparelho
   R.estudo = R.estudo || {};
   const VE = V.estudo || {};
+  R.estudo.ciclo = juntarCiclo(VE.ciclo, R.estudo.ciclo, conta);
   R.estudo.sessoes = juntar3("se", VE.sessoes, R.estudo.sessoes, CH.sessao, conta)
     .sort((x,y) => String(x.data + (x.hora||"")).localeCompare(y.data + (y.hora||"")));
   R.estudo.eventos = juntar3("ev", VE.eventos, R.estudo.eventos, CH.evento, conta);
@@ -2437,7 +2570,9 @@ function resumoJuncao(antes, depois){
     erros: mais(somaCad(depois) - somaCad(antes)),
     juris: mais((conta(depois.juris)+conta(depois.teses)+conta(depois.sumulas)) -
                 (conta(antes.juris)+conta(antes.teses)+conta(antes.sumulas))),
-    atualizado: ULT_CONTA.atualizado
+    atualizado: ULT_CONTA.atualizado,
+    ciclo: CICLO_VEIO,
+    cron: CRON_VEIO
   };
 }
 /* frase pronta com o que veio do outro aparelho */
@@ -2447,6 +2582,8 @@ function frasesJuncao(r){
   if (r.erros) p.push(r.erros + " questão(ões)");
   if (r.juris) p.push(r.juris + " julgado(s)");
   if (r.atualizado) p.push(r.atualizado + " correção(ões)");
+  if (r.ciclo) p.push("o ciclo de estudos");
+  if (r.cron) p.push("o cronograma");
   return p;
 }
 
