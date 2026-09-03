@@ -6346,6 +6346,8 @@ function garantirEstudo(){
   if (!E.ciclo.verPor) E.ciclo.verPor = "semana";
   if (!Array.isArray(E.ciclo.historico)) E.ciclo.historico = [];
   if (!E.ciclo.iniciado) E.ciclo.iniciado = hojeISO();  // início da volta atual
+  if (typeof E.ciclo.iniciadoHora !== "string") E.ciclo.iniciadoHora = "";  // e a hora
+  if (!Array.isArray(E.ciclo.consumidas)) E.ciclo.consumidas = [];
   if (typeof E.ciclo.nome !== "string") E.ciclo.nome = "";   // ex.: PCDF -> CICLO - PCDF
   // metas de voltas a bater, em três níveis
   if (!E.ciclo.metasCiclo){
@@ -9609,16 +9611,43 @@ const itensCiclo = () => garantirEstudo().ciclo.itens.filter(i => !oculta(i.mat)
 ========================================================================= */
 const chaveSessao = s => String(s.id || [s.data, s.mat, s.hora, s.min].join("|"));
 
-// minutos por matéria num período, ignorando registros já contados antes
-function minutosPorMateria(desde, ate, jaContadas){
-  const fora = jaContadas instanceof Set ? jaContadas : new Set(jaContadas || []);
+/* Uma volta começa e termina num INSTANTE, não num dia inteiro. Encerrou às
+   16:44? O que foi estudado antes disso é da volta que fechou; o que vier
+   depois é da próxima, no mesmo dia.
+   O começo conta a partir da hora (>=) e o fim conta até antes dela (<), para
+   um registro na hora exata da virada cair de um lado só.
+   Registro sem hora anotada não tem como ser posto de um lado pelo relógio: no
+   dia da virada ele fica com a volta anterior se já existia quando ela fechou,
+   e com a nova se foi lançado depois. */
+function noPeriodo(s, deD, deH, ateD, ateH, fora){
+  const d = String(s.data || "");
+  if (!d) return false;
+  if (deD){
+    if (d < deD) return false;
+    if (d === deD && deH){
+      const h = String(s.hora || "");
+      if (h){ if (h < deH) return false; }
+      else if (fora && fora.has(chaveSessao(s))) return false;
+    }
+  }
+  if (ateD){
+    if (d > ateD) return false;
+    if (d === ateD && ateH){
+      const h = String(s.hora || "");
+      if (h && h >= ateH) return false;
+    }
+  }
+  return true;
+}
+
+// minutos por matéria entre dois instantes
+function minutosPorMateria(deD, deH, ateD, ateH, jaContadas){
+  const fora = jaContadas instanceof Set
+    ? jaContadas : new Set(jaContadas || []);
   const soma = {};
   sessoes().forEach(s => {
-    const d = String(s.data || "");
-    if (!d || !s.mat) return;
-    if (desde && d < desde) return;
-    if (ate && d > ate) return;
-    if (fora.size && fora.has(chaveSessao(s))) return;
+    if (!s.mat) return;
+    if (!noPeriodo(s, deD, deH, ateD, ateH, fora)) return;
     soma[s.mat] = n(soma[s.mat]) + n(s.min);
   });
   return soma;
@@ -9629,7 +9658,8 @@ function sincronizarCiclo(){
   const E = DB && DB.estudo;
   const C = E && E.ciclo;
   if (!C || !Array.isArray(C.itens)) return;
-  const soma = minutosPorMateria(C.iniciado || "", "", C.consumidas);
+  const soma = minutosPorMateria(C.iniciado || "", C.iniciadoHora || "",
+                                 "", "", C.consumidas);
   C.itens.forEach(i => { i.feito = n(i.sobra) + n(soma[i.mat]); });
 }
 /* ===================== CRONOGRAMA DE ESTUDOS =====================
@@ -10784,13 +10814,20 @@ function recalcularHistorico(){
   Object.keys(porNome).forEach(nm => {
     const vs = porNome[nm].sort((a,b) =>
       String(a.fim || "").localeCompare(String(b.fim || "")) || n(a.volta) - n(b.volta));
-    let anterior = "";
+    let antD = "", antH = "";
     vs.forEach(v => {
-      // a primeira volta conta desde o seu início; as seguintes, só o que veio
-      // depois do fim da anterior — assim nenhum dia entra em duas voltas
-      const desde = anterior ? maisUmDia(anterior) : String(v.ini || "");
-      const ate = String(v.fim || "");
-      const soma = minutosPorMateria(desde, ate);
+      // a primeira volta conta desde o seu início; as seguintes retomam
+      // exatamente onde a anterior parou — no instante, quando ele é conhecido,
+      // e no dia seguinte quando a volta antiga é antiga demais para ter hora
+      let deD, deH;
+      if (antD){
+        if (antH){ deD = antD; deH = antH; }
+        else { deD = maisUmDia(antD); deH = ""; }
+      } else {
+        deD = String(v.ini || ""); deH = String(v.iniHora || "");
+      }
+      const ateD = String(v.fim || ""), ateH = String(v.fimHora || "");
+      const soma = minutosPorMateria(deD, deH, ateD, ateH);
       const itens = (v.itens || []).map(i => ({
         mat: i.mat, meta: n(i.meta), feito: n(soma[i.mat])
       }));
@@ -10801,12 +10838,12 @@ function recalcularHistorico(){
         ? itens.reduce((a,i) => a + n(i.meta), 0) : n(v.metaTot);
       const utilTot = itens.reduce((a,i) => a + Math.min(n(i.feito), n(i.meta)), 0);
       v.itens = itens;
-      v.periodoDe = desde; v.fim = ate;
+      v.periodoDe = deD; v.periodoDeHora = deH;
       v.metaTot = metaTot;
       v.feitoTot = feitoTot;
       v.utilTot = utilTot;
       v.pct = metaTot ? utilTot / metaTot : 0;
-      anterior = ate;
+      antD = ateD; antH = ateH;
     });
   });
 
@@ -10823,7 +10860,9 @@ function registrarVoltaCiclo(E, C){
     volta: n(C.voltas) + 1,
     nome: String(C.nome || "").trim(),        // a que ciclo esta volta pertence
     ini: C.iniciado || "",
+    iniHora: C.iniciadoHora || "",            // o instante em que a volta abriu
     fim: hojeISO(),
+    fimHora: horaAgora(),                     // e o instante em que fechou
     metaTot: T.meta,
     feitoTot: T.feito,
     utilTot: T.util,
@@ -10856,11 +10895,13 @@ function concluirVoltaCiclo(E, C, jaPerguntado){
     i.sobra = (C.reiniciar === "sim") ? 0 : Math.max(0, sobra);
   });
   C.voltas = n(C.voltas) + 1;
-  C.iniciado = hojeISO();                     // a nova volta começa hoje
-  // o que você já estudou HOJE contou na volta que acabou de fechar: fica
-  // marcado para não contar de novo na volta que começa agora
-  C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
-                          .map(chaveSessao);
+  C.iniciado = hojeISO();
+  C.iniciadoHora = horaAgora();               // a nova volta começa NESTE instante
+  // registro de hoje sem hora anotada não dá para separar pelo relógio: o que
+  // já existia agora fica com a volta que fechou
+  C.consumidas = sessoes().filter(s =>
+    String(s.data || "") === C.iniciado && !String(s.hora || "").trim())
+    .map(chaveSessao);
   sincronizarCiclo();
   salvar(); render();
   return true;
@@ -11088,12 +11129,14 @@ function cicloHistorico(tela, E, C){
       aoConfirmar: () => {
         C.voltas = 0;
         C.iniciado = hojeISO();
+        C.iniciadoHora = horaAgora();
         C.avisadaVolta = 0;
-        // zerar de verdade: some a sobra e o que já foi estudado hoje não
-        // reaparece na contagem que começa agora
+        // zerar de verdade: some a sobra, e a contagem nova começa agora — o
+        // que você estudar daqui a pouco entra, o de mais cedo não
         itensCiclo().forEach(i => { i.sobra = 0; i.feito = 0; });
-        C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
-                                .map(chaveSessao);
+        C.consumidas = sessoes().filter(s =>
+          String(s.data || "") === C.iniciado && !String(s.hora || "").trim())
+          .map(chaveSessao);
         sincronizarCiclo();
         salvar(); render();
         avisoTec("Contagem de voltas finalizada. O histórico continua guardado.");
@@ -11829,8 +11872,10 @@ function cicloEdicao(tela, E, C, secao){
     C.voltas = 0;
     C.nome = "";
     C.iniciado = hojeISO();
-    C.consumidas = sessoes().filter(s => String(s.data || "") === C.iniciado)
-                            .map(chaveSessao);
+    C.iniciadoHora = horaAgora();
+    C.consumidas = sessoes().filter(s =>
+      String(s.data || "") === C.iniciado && !String(s.hora || "").trim())
+      .map(chaveSessao);
     sincronizarCiclo();
     salvar();
     abaAtual = "cicloAtual";
