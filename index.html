@@ -14555,15 +14555,200 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
     <span class="av">👤</span><span class="nm" id="contaNome">…</span><span class="ca">▾</span>
   </span>
   <div id="menuConta">
-    <button data-a="config"><span class="ic">⚙</span>Configurações</button>
-    <button data-a="copia"><span class="ic">🖫</span>Cópia de segurança</button>
-    <button data-a="importar"><span class="ic">⭳</span>Importar planilha</button>
-    <button data-a="exportar"><span class="ic">⭱</span>Exportar planilha</button>
-    <button data-a="capa"><span class="ic">◈</span>Tela de abertura</button>
-    <button data-a="restaurar" class="perigo"><span class="ic">↺</span>Restaurar dados da planilha</button>
+    <button data-a="config"><span class="ic">▤</span>Painel</button>
+    <button data-a="perfil"><span class="ic">⚙</span>Configurações</button>
     <button data-a="sair" class="perigo"><span class="ic">⇥</span>Sair da conta</button>
   </div>
 </div>
+<style>
+#painelPerfil{display:none;background:#eef2f8;border-bottom:2px solid var(--azulEscuro);padding:12px 14px}
+#painelPerfil.on{display:block}
+#painelPerfil b{color:var(--azulEscuro);font-size:13px}
+#painelPerfil p{margin:4px 0 10px;color:#404040;font-size:12px;max-width:820px}
+#painelPerfil .corpo{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;max-width:820px}
+#painelPerfil .ladoFoto{text-align:center;flex:0 0 auto}
+#pfFoto{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#25405f;
+  display:block;border:2px solid #fff;box-shadow:0 2px 8px rgba(15,30,51,.2)}
+#pfSemFoto{width:96px;height:96px;border-radius:50%;background:#25405f;color:#cfe0f5;
+  display:none;align-items:center;justify-content:center;font-size:38px;font-weight:bold;
+  border:2px solid #fff;box-shadow:0 2px 8px rgba(15,30,51,.2)}
+#painelPerfil .ladoFoto .btn{margin-top:7px;display:block;width:100%}
+#painelPerfil .apagarFoto{background:none;border:0;color:#9C3535;font-size:11px;
+  text-decoration:underline;cursor:pointer;margin-top:5px;padding:0}
+#painelPerfil .campos{flex:1 1 320px;min-width:280px}
+#painelPerfil label{display:block;font-size:11px;font-weight:bold;color:var(--azulEscuro);
+  margin:0 0 3px;letter-spacing:.3px}
+#painelPerfil .campo{margin-bottom:11px}
+#painelPerfil input[type=text],#painelPerfil textarea{width:100%;padding:7px 9px;
+  border:1px solid var(--borda);border-radius:3px;font:13px Arial,Helvetica,sans-serif;background:#fff}
+#painelPerfil input:disabled{background:#e8ebf0;color:#6a7787}
+#painelPerfil textarea{height:66px;resize:vertical}
+#painelPerfil .dica{font-size:11px;color:#5a6a80;margin-top:3px}
+#pfAviso{font-size:12px;font-weight:bold;margin-top:8px;min-height:16px}
+#pfAviso.erro{color:#9C3535}
+#pfAviso.ok{color:#375623}
+</style>
+
+<div id="painelPerfil">
+  <b>Meu perfil</b>
+  <p>O apelido e a foto aparecem no canto da barra. O apelido é único: ninguém mais pode usar o mesmo.</p>
+  <div class="corpo">
+    <div class="ladoFoto">
+      <img id="pfFoto" alt="Sua foto">
+      <div id="pfSemFoto">?</div>
+      <input type="file" id="pfArquivo" accept="image/*" hidden>
+      <button class="btn" id="pfEscolher">Trocar foto</button>
+      <button class="apagarFoto" id="pfApagar">Excluir foto</button>
+    </div>
+    <div class="campos">
+      <div class="campo">
+        <label for="pfApelido">Apelido único no site</label>
+        <input type="text" id="pfApelido" maxlength="24" spellcheck="false" placeholder="@seuapelido">
+        <div class="dica">Letras, números, ponto e sublinhado. De 3 a 24 caracteres.</div>
+      </div>
+      <div class="campo">
+        <label for="pfDescricao">Descrição</label>
+        <textarea id="pfDescricao" maxlength="200" placeholder="uma frase sobre você"></textarea>
+      </div>
+      <div class="campo">
+        <label for="pfEmail">E-mail da conta</label>
+        <input type="text" id="pfEmail" disabled>
+        <div class="dica">Vem do login e não pode ser alterado por aqui.</div>
+      </div>
+      <button class="btn" id="pfSalvar">Salvar alterações</button>
+      <div id="pfAviso"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const pfPainel = document.getElementById("painelPerfil");
+const pfFoto = document.getElementById("pfFoto");
+const pfSemFoto = document.getElementById("pfSemFoto");
+const pfApelido = document.getElementById("pfApelido");
+const pfDescricao = document.getElementById("pfDescricao");
+const pfAviso = document.getElementById("pfAviso");
+let fotoNova = null;              // blob esperando envio
+
+function pfDizer(txt, tipo){
+  pfAviso.textContent = txt || "";
+  pfAviso.className = txt ? (tipo || "erro") : "";
+}
+
+function pfMostrarFoto(url){
+  if (url){
+    pfFoto.src = url; pfFoto.style.display = "block"; pfSemFoto.style.display = "none";
+  } else {
+    pfFoto.style.display = "none"; pfSemFoto.style.display = "flex";
+    pfSemFoto.textContent = (pfApelido.value || "?").replace("@","").charAt(0).toUpperCase() || "?";
+  }
+  const av = document.querySelector("#conta .av");
+  if (av){
+    if (url) av.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+    else av.textContent = "\u{1F464}";
+  }
+}
+
+/* encolhe a imagem para 200x200 antes de subir: uma foto de celular de 4 MB
+   vira uns 20 KB, e o balde de 1 GB dura muito mais */
+function pfEncolher(arquivo){
+  return new Promise((ok, falhou) => {
+    const img = new Image();
+    img.onload = () => {
+      const L = 200;
+      const lado = Math.min(img.width, img.height);
+      const cx = (img.width - lado) / 2, cy = (img.height - lado) / 2;
+      const tela = document.createElement("canvas");
+      tela.width = tela.height = L;
+      tela.getContext("2d").drawImage(img, cx, cy, lado, lado, 0, 0, L, L);
+      tela.toBlob(b => b ? ok(b) : falhou(new Error("não consegui processar")), "image/jpeg", 0.85);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => falhou(new Error("esse arquivo não parece uma imagem"));
+    img.src = URL.createObjectURL(arquivo);
+  });
+}
+
+document.getElementById("pfEscolher").onclick = () => document.getElementById("pfArquivo").click();
+document.getElementById("pfArquivo").onchange = async ev => {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  pfDizer("");
+  try{
+    fotoNova = await pfEncolher(f);
+    pfMostrarFoto(URL.createObjectURL(fotoNova));
+    pfDizer("Foto pronta. Clique em Salvar alterações.", "ok");
+  }catch(e){ pfDizer(e.message); }
+  ev.target.value = "";
+};
+
+document.getElementById("pfApagar").onclick = async () => {
+  if (!confirm("Excluir sua foto de perfil?")) return;
+  fotoNova = null;
+  try{
+    await sb.storage.from("avatares").remove([USUARIO.id + "/perfil.jpg"]);
+    await sb.from("perfis").update({ foto: null }).eq("id", USUARIO.id);
+    pfMostrarFoto(null);
+    pfDizer("Foto excluída.", "ok");
+  }catch(e){ pfDizer("Não consegui excluir agora."); }
+};
+
+document.getElementById("pfSalvar").onclick = async () => {
+  const bt = document.getElementById("pfSalvar");
+  let apelido = pfApelido.value.trim().replace(/^@+/, "");
+  if (!/^[A-Za-z0-9._]{3,24}$/.test(apelido)){
+    pfDizer("O apelido precisa de 3 a 24 caracteres, só letras, números, ponto ou sublinhado.");
+    return;
+  }
+  bt.disabled = true; pfDizer("Salvando…", "ok");
+  try{
+    let urlFoto;
+    if (fotoNova){
+      const caminho = USUARIO.id + "/perfil.jpg";
+      const { error: e1 } = await sb.storage.from("avatares")
+        .upload(caminho, fotoNova, { upsert: true, contentType: "image/jpeg" });
+      if (e1) throw e1;
+      const { data } = sb.storage.from("avatares").getPublicUrl(caminho);
+      urlFoto = data.publicUrl + "?v=" + Date.now();
+    }
+    const campos = { apelido, descricao: pfDescricao.value.trim() };
+    if (urlFoto) campos.foto = urlFoto;
+    const { error } = await sb.from("perfis").update(campos).eq("id", USUARIO.id);
+    if (error){
+      if (error.code === "23505" || /duplicate|unique/i.test(error.message || ""))
+        throw new Error("Esse apelido já está em uso. Escolha outro.");
+      throw error;
+    }
+    await sb.auth.updateUser({ data: { nome: apelido } });
+    const nm = document.getElementById("contaNome");
+    if (nm) nm.textContent = apelido;
+    if (urlFoto) pfMostrarFoto(urlFoto);
+    fotoNova = null;
+    pfDizer("Tudo salvo.", "ok");
+  }catch(e){
+    pfDizer(e.message || "Não consegui salvar agora.");
+  }
+  bt.disabled = false;
+};
+
+async function abrirPerfil(){
+  pfPainel.classList.toggle("on");
+  if (!pfPainel.classList.contains("on")) return;
+  window.scrollTo(0,0);
+  pfDizer("");
+  document.getElementById("pfEmail").value = USUARIO.email || "";
+  try{
+    const { data } = await sb.from("perfis")
+      .select("apelido,descricao,foto").eq("id", USUARIO.id).maybeSingle();
+    if (data){
+      pfApelido.value = data.apelido || "";
+      pfDescricao.value = data.descricao || "";
+      pfMostrarFoto(data.foto || null);
+    }
+  }catch(e){ pfDizer("Não consegui carregar seu perfil."); }
+}
+</script>
+
 <div id="painelCopia">
   <b>Cópia de segurança dos seus dados</b>
   <p>Este texto é tudo o que você já lançou. Guarde-o e você não depende de nada nem de
@@ -15422,6 +15607,14 @@ async function carregar(){
   if (capa) capa.remove();
   const elNome = document.getElementById("contaNome");
   if (elNome) elNome.textContent = nomeDaConta(USUARIO);
+  sb.from("perfis").select("apelido,foto").eq("id", USUARIO.id).maybeSingle()
+    .then(({ data }) => {
+      if (!data) return;
+      if (data.apelido && elNome) elNome.textContent = data.apelido;
+      const av = document.querySelector("#conta .av");
+      if (data.foto && av)
+        av.innerHTML = '<img src="' + data.foto + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+    }).catch(() => {});
   try{
     const [g, a] = await Promise.all([
       sb.from("dados").select("conteudo").eq("usuario", USUARIO.id).maybeSingle(),
@@ -28297,6 +28490,7 @@ elMenuConta.addEventListener("click", ev => {
     exportar:  janelaExportar,
     capa:      abrirCapa,
     restaurar: restaurarPlanilha,
+    perfil:    abrirPerfil,
     sair:      sairDaConta
   };
   (acoes[b.dataset.a] || (() => {}))();
