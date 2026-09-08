@@ -14550,6 +14550,7 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
     <span class="ch">🔥</span><span class="tx">0 dias</span>
   </span>
   <span id="estado" title=""></span>
+  <button class="btn" id="btnSair" title="Sair da conta" onclick="sairDaConta()" style="margin-left:8px">Sair</button>
   <button id="nuvemBar" title="Sincronização entre aparelhos">☁</button>
   <span id="conta" title="Sua conta">
     <span class="av">👤</span><span class="nm">Hafid</span><span class="ca">▾</span>
@@ -14632,6 +14633,158 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
 </div>
 <div id="guias"></div>
 <div id="tela"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+#capaLogin{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#0f1e33 0%,#1F3864 55%,#2F5597 100%);
+  display:flex;align-items:center;justify-content:center;padding:20px;font:14px Arial,Helvetica,sans-serif}
+#capaLogin .cx{background:#fff;border-radius:10px;padding:26px 24px;width:100%;max-width:380px;
+  box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#capaLogin img{display:block;width:64px;margin:0 auto 8px}
+#capaLogin h1{margin:0 0 4px;text-align:center;font-size:20px;letter-spacing:3px;color:#1F3864}
+#capaLogin .sub{text-align:center;color:#5a6a80;font-size:12px;margin-bottom:20px}
+#capaLogin label{display:block;font-size:11px;font-weight:bold;color:#1F3864;margin:12px 0 4px;letter-spacing:.3px}
+#capaLogin input{width:100%;padding:9px 10px;border:1px solid #BFBFBF;border-radius:4px;font-size:14px}
+#capaLogin input:focus{outline:none;border-color:#2F5597}
+#capaLogin .bt{width:100%;padding:11px;margin-top:18px;border:0;border-radius:4px;background:#1F3864;
+  color:#fff;font-size:14px;font-weight:bold;cursor:pointer}
+#capaLogin .bt:hover{background:#2F5597}
+#capaLogin .bt:disabled{opacity:.5;cursor:default}
+#capaLogin .btg{width:100%;padding:10px;margin-top:10px;border:1px solid #BFBFBF;border-radius:4px;
+  background:#fff;color:#3c4043;font-size:14px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:9px}
+#capaLogin .btg:hover{background:#f7f8fa}
+#capaLogin .troca{text-align:center;margin-top:16px;font-size:12px;color:#5a6a80}
+#capaLogin .troca a{color:#2F5597;cursor:pointer;text-decoration:underline}
+#capaLogin .ou{text-align:center;color:#8a97a8;font-size:11px;margin:16px 0 0;position:relative}
+#capaLogin .ou:before,#capaLogin .ou:after{content:"";position:absolute;top:50%;width:38%;height:1px;background:#e0e4ea}
+#capaLogin .ou:before{left:0}#capaLogin .ou:after{right:0}
+#capaLogin .recado{margin-top:14px;padding:9px 11px;border-radius:4px;font-size:12.5px;line-height:17px;display:none}
+#capaLogin .recado.erro{display:block;background:#FDECEA;color:#8c2f2f;border:1px solid #f5c6c0}
+#capaLogin .recado.ok{display:block;background:#E8F5E9;color:#2e5b31;border:1px solid #c3e6c8}
+</style>
+
+<div id="capaLogin">
+  <div class="cx">
+    <img src="img/dc0cf93321b295c8.png" alt="Hafid">
+    <h1>HAFID</h1>
+    <div class="sub" id="lgSub">Entre para acessar seus cadernos</div>
+
+    <label for="lgEmail">E-mail</label>
+    <input type="email" id="lgEmail" autocomplete="email" placeholder="voce@exemplo.com">
+
+    <label for="lgSenha">Senha</label>
+    <input type="password" id="lgSenha" autocomplete="current-password" placeholder="mínimo 6 caracteres">
+
+    <button class="bt" id="lgBotao">Entrar</button>
+
+    <div class="ou">ou</div>
+    <button class="btg" id="lgGoogle">
+      <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-4H24v7.5h12c-.2 2-1.5 5-4.4 7l6.7 5.2C42.2 36 45 30.6 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4c-1.9 1.3-4.4 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.1l-7.1 5.5C8 40.9 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.5 28.4c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4l-7.1-5.5C2.9 17 2 20.4 2 24s.9 7 2.4 9.9l7.1-5.5z"/><path fill="#EA4335" d="M24 10.6c3.2 0 5.4 1.4 6.7 2.6l6.1-6C33.1 3.8 29.1 2 24 2 15.4 2 8 7.1 4.4 14.1l7.1 5.5c1.8-5.3 6.7-9.1 12.5-9.1z"/></svg>
+      Entrar com Google
+    </button>
+
+    <div class="troca" id="lgTroca">
+      Ainda não tem conta? <a id="lgAlternar">Cadastre-se</a>
+    </div>
+    <div class="recado" id="lgRecado"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL   = "https://brsilbvzjouycwasgtav.supabase.co";
+const SB_CHAVE = "sb_publishable_5QriJIv9EZV-PiHlVr-rKQ_OijY7atX";
+const sb = window.supabase.createClient(SB_URL, SB_CHAVE);
+
+let USUARIO = null;
+let modoCadastro = false;
+
+const lgEmail  = document.getElementById("lgEmail");
+const lgSenha  = document.getElementById("lgSenha");
+const lgBotao  = document.getElementById("lgBotao");
+const lgRecado = document.getElementById("lgRecado");
+
+function lgAviso(txt, tipo){
+  lgRecado.textContent = txt;
+  lgRecado.className = "recado " + (tipo || "erro");
+}
+function lgLimpar(){ lgRecado.className = "recado"; }
+
+/* mensagens do Supabase vêm em inglês: traduz as mais comuns */
+function lgTraduzir(m){
+  m = String(m || "");
+  if (/Invalid login credentials/i.test(m))   return "E-mail ou senha incorretos.";
+  if (/Email not confirmed/i.test(m))         return "Confirme seu e-mail antes de entrar. Veja sua caixa de entrada.";
+  if (/User already registered/i.test(m))     return "Esse e-mail já tem conta. Tente entrar.";
+  if (/Password should be at least/i.test(m)) return "A senha precisa de pelo menos 6 caracteres.";
+  if (/rate limit|too many/i.test(m))         return "Muitas tentativas seguidas. Espere um minuto.";
+  if (/Unable to validate email/i.test(m))    return "Esse e-mail não parece válido.";
+  return m;
+}
+
+function lgTrocarModo(){
+  modoCadastro = !modoCadastro;
+  lgLimpar();
+  lgBotao.textContent = modoCadastro ? "Criar conta" : "Entrar";
+  document.getElementById("lgSub").textContent = modoCadastro
+    ? "Crie sua conta para começar" : "Entre para acessar seus cadernos";
+  document.getElementById("lgTroca").innerHTML = modoCadastro
+    ? 'Já tem conta? <a id="lgAlternar">Entrar</a>'
+    : 'Ainda não tem conta? <a id="lgAlternar">Cadastre-se</a>';
+  document.getElementById("lgAlternar").onclick = lgTrocarModo;
+}
+document.getElementById("lgAlternar").onclick = lgTrocarModo;
+
+lgBotao.onclick = async () => {
+  const email = lgEmail.value.trim(), senha = lgSenha.value;
+  if (!email || !senha){ lgAviso("Preencha o e-mail e a senha."); return; }
+  lgBotao.disabled = true;
+  lgLimpar();
+  try{
+    if (modoCadastro){
+      const { data, error } = await sb.auth.signUp({ email, password: senha });
+      if (error) throw error;
+      if (data.user && !data.session){
+        lgAviso("Conta criada. Confirme pelo link que enviamos ao seu e-mail e depois entre.", "ok");
+        lgBotao.disabled = false;
+        return;
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+      if (error) throw error;
+    }
+  }catch(e){
+    lgAviso(lgTraduzir(e.message));
+    lgBotao.disabled = false;
+  }
+};
+
+lgSenha.addEventListener("keydown", ev => { if (ev.key === "Enter") lgBotao.click(); });
+
+document.getElementById("lgGoogle").onclick = async () => {
+  lgLimpar();
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
+  if (error) lgAviso(lgTraduzir(error.message));
+};
+
+/* espera o login: devolve o usuário assim que houver sessão */
+function esperarLogin(){
+  return new Promise(async resolve => {
+    const { data } = await sb.auth.getSession();
+    if (data.session){ resolve(data.session.user); return; }
+    sb.auth.onAuthStateChange((_ev, sessao) => { if (sessao) resolve(sessao.user); });
+  });
+}
+
+async function sairDaConta(){
+  if (!confirm("Sair da conta? O que já foi salvo continua guardado.")) return;
+  await sb.auth.signOut();
+  location.reload();
+}
+</script>
 
 <script>
 const BASE = {"concursos": [], "materias": ["01 - Legislação Penal", "02 - Medicina Legal", "03 - Direito Constitucional", "04 - Direito Processual Civil", "05 - Direito Processual Penal", "06 - Direito Administrativo", "07 - Criminologia", "08 - Direito Civil", "09 - Direito Penal", "10 - Direitos Humanos", "11 - Legislação Estadual", "12 - Direito Ambiental", "13 - Direito Empresarial", "14 - Direito Tributário", "15 - Direito Agrário", "16 - Direito Eleitoral"], "lanc": {"O": {}, "D": {}}, "ficha": {"O": {}, "D": {}}, "caderno": {"O": [], "D": []}, "motivos": ["Não sabia o conteúdo", "Interpretei mal o enunciado", "Chute", "Esqueci (falta de revisão)", "Pegadinha da banca", "Falta de atenção", "Faltou tempo"], "status": ["Pendente", "Revisado", "Dominado"], "bancas": ["Cebraspe", "FGV", "FCC", "Vunesp", "Cesgranrio", "IADES", "Quadrix", "IBFC", "AOCP", "Consulplan", "Fundatec", "IDECAN", "Outra"], "estilos": ["Certo/Errado", "Múltipla escolha", "Misto"], "ufs": ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"], "faixas": [{"nome": "Crítico", "corte": 0.3, "bg": "C00000", "fg": "FFFFFF"}, {"nome": "Muito baixo", "corte": 0.5, "bg": "FF0000", "fg": "FFFFFF"}, {"nome": "Atenção", "corte": 0.7, "bg": "FFC000", "fg": "000000"}, {"nome": "Bom", "corte": 0.85, "bg": "FFFF00", "fg": "000000"}, {"nome": "Ótimo", "corte": 0.95, "bg": "92D050", "fg": "000000"}, {"nome": "Excelente", "corte": 0.95, "bg": "00B050", "fg": "FFFFFF"}]};
@@ -14998,8 +15151,7 @@ async function descobrirOnde(){
   }
   ONDE = testarNavegador() ? "navegador" : "memoria";
 }
-const rotulo = () => ONDE === "claude" ? "salvo no Claude"
-              : ONDE === "navegador" ? "salvo neste navegador"
+const rotulo = () => ONDE === "nuvem" ? "salvo na sua conta"
               : "SEM salvamento — use a cópia de segurança";
 
 /* ---------- trocar o conteúdo do DB sem trocar o objeto ----------
@@ -15157,13 +15309,42 @@ const PASSOS_MAX = 80;
 let pilha = [], refazer = [], anterior = null, timer = null;
 const instantanea = () => JSON.stringify(DB);
 
+/* ---------- gravacao na nuvem ----------
+   O pacote geral (concursos, simulados, calendario, caderno de erros) vai
+   numa linha so. As anotacoes do caderno de conteudo vao numa tabela a
+   parte, uma linha por secao: digitar numa secao sobe so aquela secao, e
+   nao o pacote inteiro. E o que segura o consumo de trafego. */
+let anotAntes = {};          // como estavam as anotacoes no ultimo envio
+
+async function enviarAnotacoes(){
+  const agora = (DB && DB.crimEdit) || {};
+  const subir = [], apagar = [];
+  for (const k in agora){
+    const h = agora[k] && agora[k].html;
+    if (typeof h === "string" && anotAntes[k] !== h)
+      subir.push({ usuario: USUARIO.id, secao: k, html: h, atualizado_em: new Date().toISOString() });
+  }
+  for (const k in anotAntes) if (!(k in agora)) apagar.push(k);
+  if (subir.length)  { const { error } = await sb.from("anotacoes").upsert(subir);  if (error) throw error; }
+  if (apagar.length) { const { error } = await sb.from("anotacoes").delete()
+                         .eq("usuario", USUARIO.id).in("secao", apagar); if (error) throw error; }
+  anotAntes = {};
+  for (const k in agora) if (agora[k] && typeof agora[k].html === "string") anotAntes[k] = agora[k].html;
+}
+
 async function persistir(texto){
-  if (ONDE === "memoria"){ avisarEstado(rotulo()); return; }
+  if (ONDE === "memoria" || !USUARIO){ avisarEstado(rotulo()); return; }
   try{
-    if (ONDE === "claude") await window.storage.set(CHAVE, texto);
-    else window.localStorage.setItem(CHAVE, texto);
+    const pacote = JSON.parse(texto);
+    delete pacote.crimEdit;              // as anotacoes vao pela outra tabela
+    const { error } = await sb.from("dados").upsert({
+      usuario: USUARIO.id, conteudo: pacote, atualizado_em: new Date().toISOString() });
+    if (error) throw error;
+    await enviarAnotacoes();
     avisarEstado(rotulo() + " " + new Date().toLocaleTimeString("pt-BR").slice(0,5));
-  }catch(e){ ONDE = "memoria"; avisarEstado(rotulo()); }
+  }catch(e){
+    avisarEstado("nao consegui salvar — confira sua conexao");
+  }
 }
 function registrar(){
   clearTimeout(timer); timer = null;
@@ -15180,7 +15361,6 @@ function registrar(){
   }
   anterior = texto;
   persistir(texto);
-  nuvemAgendar();          // e, se estiver ligada, a nuvem recebe logo depois
   botoesHistorico();
 }
 function salvar(){
@@ -15222,24 +15402,37 @@ document.addEventListener("keydown", ev => {
   else if (k === "y" || (k === "z" && ev.shiftKey)){ ev.preventDefault(); refazerAgora(); }
 });
 async function carregar(){
-  await descobrirOnde();
+  USUARIO = await esperarLogin();          // a tela so aparece depois disso
+  ONDE = "nuvem";
+  const capa = document.getElementById("capaLogin");
+  if (capa) capa.remove();
   try{
-    let texto = null;
-    if (ONDE === "claude"){
-      const r = await window.storage.get(CHAVE);
-      texto = r && r.value;
-    } else if (ONDE === "navegador"){
-      texto = window.localStorage.getItem(CHAVE);
-    }
-    if (texto){
-      adotar(DB, JSON.parse(texto));
+    const [g, a] = await Promise.all([
+      sb.from("dados").select("conteudo").eq("usuario", USUARIO.id).maybeSingle(),
+      sb.from("anotacoes").select("secao,html,atualizado_em").eq("usuario", USUARIO.id)
+    ]);
+    if (g.error) throw g.error;
+    if (a.error) throw a.error;
+    const pacote = (g.data && g.data.conteudo) || null;
+    if (pacote){
+      pacote.crimEdit = {};
+      (a.data || []).forEach(r => {
+        pacote.crimEdit[r.secao] = { html: r.html, data: (r.atualizado_em||"").slice(0,10), ts: Date.parse(r.atualizado_em)||Date.now() };
+        anotAntes[r.secao] = r.html;
+      });
+      adotar(DB, pacote);
       anterior = instantanea();
       avisarEstado("retomado — " + rotulo());
       return;
     }
-  }catch(e){}
+  }catch(e){
+    ONDE = "memoria";
+    avisarEstado("nao consegui ler seus dados — confira sua conexao");
+    anterior = instantanea();
+    return;
+  }
   anterior = instantanea();
-  avisarEstado("dados da sua planilha — " + rotulo());
+  avisarEstado("conta nova — " + rotulo());
 }
 /* ===================== sincronização entre aparelhos =====================
    Os dados moram num gist privado do GitHub. Cada aparelho guarda a chave e o
@@ -28232,7 +28425,6 @@ carregar().then(() => {
   }
   render(); botoesHistorico(); abrirCapa();
   cuidarDaTela();          // cronômetro já rodando: a tela fica acesa
-  nuvemAoAbrir();          // se houver sincronização configurada, confere a nuvem
   // sem lugar para gravar (acontece ao abrir direto do Drive ou do Dropbox):
   // o aviso fica na tela, porque tudo o que for digitado se perde ao fechar
   if (ONDE === "memoria"){
