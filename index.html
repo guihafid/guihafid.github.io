@@ -14550,19 +14550,17 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
     <span class="ch">🔥</span><span class="tx">0 dias</span>
   </span>
   <span id="estado" title=""></span>
-  <button class="btn" id="btnSair" title="Sair da conta" onclick="sairDaConta()" style="margin-left:8px">Sair</button>
-  <button id="nuvemBar" title="Sincronização entre aparelhos">☁</button>
   <span id="conta" title="Sua conta">
-    <span class="av">👤</span><span class="nm">Hafid</span><span class="ca">▾</span>
+    <span class="av">👤</span><span class="nm" id="contaNome">…</span><span class="ca">▾</span>
   </span>
   <div id="menuConta">
     <button data-a="config"><span class="ic">⚙</span>Configurações</button>
     <button data-a="copia"><span class="ic">🖫</span>Cópia de segurança</button>
-    <button data-a="nuvem"><span class="ic">☁</span>Sincronizar entre aparelhos</button>
     <button data-a="importar"><span class="ic">⭳</span>Importar planilha</button>
     <button data-a="exportar"><span class="ic">⭱</span>Exportar planilha</button>
     <button data-a="capa"><span class="ic">◈</span>Tela de abertura</button>
     <button data-a="restaurar" class="perigo"><span class="ic">↺</span>Restaurar dados da planilha</button>
+    <button data-a="sair" class="perigo"><span class="ic">⇥</span>Sair da conta</button>
   </div>
 </div>
 <div id="painelCopia">
@@ -14670,6 +14668,11 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
     <h1>HAFID</h1>
     <div class="sub" id="lgSub">Entre para acessar seus cadernos</div>
 
+    <div id="lgCampoNome" style="display:none">
+      <label for="lgNome">Como quer ser chamado</label>
+      <input type="text" id="lgNome" maxlength="24" autocomplete="nickname" placeholder="seu nome ou apelido">
+    </div>
+
     <label for="lgEmail">E-mail</label>
     <input type="email" id="lgEmail" autocomplete="email" placeholder="voce@exemplo.com">
 
@@ -14725,6 +14728,7 @@ function lgTraduzir(m){
 function lgTrocarModo(){
   modoCadastro = !modoCadastro;
   lgLimpar();
+  document.getElementById("lgCampoNome").style.display = modoCadastro ? "block" : "none";
   lgBotao.textContent = modoCadastro ? "Criar conta" : "Entrar";
   document.getElementById("lgSub").textContent = modoCadastro
     ? "Crie sua conta para começar" : "Entre para acessar seus cadernos";
@@ -14737,12 +14741,15 @@ document.getElementById("lgAlternar").onclick = lgTrocarModo;
 
 lgBotao.onclick = async () => {
   const email = lgEmail.value.trim(), senha = lgSenha.value;
+  const nome = document.getElementById("lgNome").value.trim();
   if (!email || !senha){ lgAviso("Preencha o e-mail e a senha."); return; }
+  if (modoCadastro && !nome){ lgAviso("Diga como quer ser chamado."); return; }
   lgBotao.disabled = true;
   lgLimpar();
   try{
     if (modoCadastro){
-      const { data, error } = await sb.auth.signUp({ email, password: senha });
+      const { data, error } = await sb.auth.signUp({
+        email, password: senha, options: { data: { nome } } });
       if (error) throw error;
       if (data.user && !data.session){
         lgAviso("Conta criada. Confirme pelo link que enviamos ao seu e-mail e depois entre.", "ok");
@@ -14777,6 +14784,12 @@ function esperarLogin(){
     if (data.session){ resolve(data.session.user); return; }
     sb.auth.onAuthStateChange((_ev, sessao) => { if (sessao) resolve(sessao.user); });
   });
+}
+
+/* o nome que aparece na barra: o nick escolhido, ou o começo do e-mail */
+function nomeDaConta(u){
+  const m = (u && u.user_metadata) || {};
+  return (m.nome || m.full_name || m.name || (u && u.email || "").split("@")[0] || "Conta").slice(0, 24);
 }
 
 async function sairDaConta(){
@@ -15406,6 +15419,8 @@ async function carregar(){
   ONDE = "nuvem";
   const capa = document.getElementById("capaLogin");
   if (capa) capa.remove();
+  const elNome = document.getElementById("contaNome");
+  if (elNome) elNome.textContent = nomeDaConta(USUARIO);
   try{
     const [g, a] = await Promise.all([
       sb.from("dados").select("conteudo").eq("usuario", USUARIO.id).maybeSingle(),
@@ -28280,7 +28295,8 @@ elMenuConta.addEventListener("click", ev => {
     importar:  janelaImportar,
     exportar:  janelaExportar,
     capa:      abrirCapa,
-    restaurar: restaurarPlanilha
+    restaurar: restaurarPlanilha,
+    sair:      sairDaConta
   };
   (acoes[b.dataset.a] || (() => {}))();
 });
