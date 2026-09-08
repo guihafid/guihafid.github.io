@@ -14561,8 +14561,14 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
   </div>
 </div>
 <style>
-#painelPerfil{display:none;background:#eef2f8;border-bottom:2px solid var(--azulEscuro);padding:12px 14px}
+#painelPerfil{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,30,51,.55);
+  padding:24px 16px;overflow:auto}
 #painelPerfil.on{display:block}
+#painelPerfil .cx{background:#fff;border-radius:10px;padding:20px 22px;margin:0 auto;
+  max-width:640px;box-shadow:0 12px 44px rgba(0,0,0,.35);position:relative}
+#pfFechar{position:absolute;top:10px;right:12px;border:0;background:none;font-size:20px;
+  color:#8a97a8;cursor:pointer;line-height:1;padding:2px 6px}
+#pfFechar:hover{color:#1F3864}
 #painelPerfil b{color:var(--azulEscuro);font-size:13px}
 #painelPerfil p{margin:4px 0 10px;color:#404040;font-size:12px;max-width:820px}
 #painelPerfil .corpo{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;max-width:820px}
@@ -14590,6 +14596,8 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
 </style>
 
 <div id="painelPerfil">
+ <div class="cx">
+  <button id="pfFechar" title="Fechar">&times;</button>
   <b>Meu perfil</b>
   <p>O apelido e a foto aparecem no canto da barra. O apelido é único: ninguém mais pode usar o mesmo.</p>
   <div class="corpo">
@@ -14619,6 +14627,7 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
       <div id="pfAviso"></div>
     </div>
   </div>
+ </div>
 </div>
 
 <script>
@@ -14731,10 +14740,15 @@ document.getElementById("pfSalvar").onclick = async () => {
   bt.disabled = false;
 };
 
+function pfFecharJanela(){ pfPainel.classList.remove("on"); }
+document.getElementById("pfFechar").onclick = pfFecharJanela;
+pfPainel.addEventListener("click", ev => { if (ev.target === pfPainel) pfFecharJanela(); });
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape" && pfPainel.classList.contains("on")) pfFecharJanela();
+});
+
 async function abrirPerfil(){
-  pfPainel.classList.toggle("on");
-  if (!pfPainel.classList.contains("on")) return;
-  window.scrollTo(0,0);
+  pfPainel.classList.add("on");
   pfDizer("");
   document.getElementById("pfEmail").value = USUARIO.email || "";
   try{
