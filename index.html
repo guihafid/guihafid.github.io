@@ -789,7 +789,7 @@ svg.chart{display:block;background:#fff}
 /* anotação de várias linhas, com negrito e listas */
 .modalCampo .campoObs{border:1px solid #c9d4e3;background:#fff;color:#1F3864;
   padding:6px 8px;font:12.5px/17px Arial,Helvetica,sans-serif;width:100%;
-  border-radius:4px;resize:vertical;height:31px;min-height:31px;max-height:40vh;
+  border-radius:4px;resize:vertical;height:104px;min-height:104px;max-height:40vh;
   overflow-y:auto;outline:none}
 .modalCampo .campoObs:empty:before{content:attr(data-vazio);color:#a9b3c1;
   font-style:italic}
@@ -16322,6 +16322,11 @@ function tecladoRico(ev){
   const ed = ev.currentTarget;
   if (ev.ctrlKey || ev.metaKey){
     const k = (ev.key || "").toLowerCase();
+    if (k === "enter"){                       // Ctrl+Enter quebra a linha
+      ev.preventDefault(); ev.stopPropagation();
+      document.execCommand("insertLineBreak");
+      ed.dispatchEvent(new Event("input", { bubbles:true }));
+      return; }
     if (k === "b"){ ev.preventDefault(); document.execCommand("bold"); return; }
     if (k === "i"){ ev.preventDefault(); document.execCommand("italic"); return; }
     if (k === "u"){ ev.preventDefault(); document.execCommand("underline"); return; }
@@ -28194,7 +28199,8 @@ function montarCapa(){
   [ ["eCrono", "▶", "Iniciar atividade"],
     ["gradeO", "✎", "Lançar simulados"],
     ["cicloCron", "🗓", "Cronograma de estudos"],
-    ["eCal", "📅", "Calendário"] ].forEach(([id, ico, rot]) => {
+    ["eCal", "📅", "Calendário"],
+    ["cConteudo", "📖", "Caderno de conteúdo"] ].forEach(([id, ico, rot]) => {
     const b = el("button","bAtalho");
     b.appendChild(el("span","ic", ico));
     b.appendChild(el("span",null, rot));
@@ -28295,10 +28301,12 @@ function montarCapa(){
 function abrirCapa(){
   montarCapa();
   elCapa.classList.add("on");
+  document.body.style.overflow = "hidden";   // so a barra da capa, nao a do fundo
   window.scrollTo(0,0);
 }
 function fecharCapa(destino){
   elCapa.classList.remove("on");
+  document.body.style.overflow = "";
   if (destino){
     const mod = moduloDaAba(destino);
     const a = MODULOS[mod].find(x => x.id === destino);
