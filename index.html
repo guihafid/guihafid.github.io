@@ -15092,11 +15092,15 @@ function ligarMascara(inp, fn){
 /* pega os campos de data e hora pelo texto de exemplo e liga a máscara neles */
 function ligarMascarasEm(raiz){
   (raiz || document).querySelectorAll("input").forEach(i => {
-    const p = String(i.placeholder || "");
+    const m = i.dataset.mascara;                 // o campo diz o que e
+    if (m === "data"){  ligarMascara(i, mascaraData);  return; }
+    if (m === "hora"){  ligarMascara(i, mascaraHora);  return; }
+    if (m === "tempo"){ ligarMascara(i, mascaraTempo); return; }
+    const p = String(i.placeholder || "");       // reforco pelo texto do exemplo
     if (/dd\/mm/i.test(p)) ligarMascara(i, mascaraData);
-    else if (/^ex\.:\s*\d{1,2}:\d{2}$/.test(p) || /hh:mm/i.test(p))
+    else if (/\d{1,2}:\d{2}:\d{2}/.test(p)) ligarMascara(i, mascaraTempo);
+    else if (/\d{1,2}:\d{2}/.test(p) || /hh:mm/i.test(p) || /horas?:minutos/i.test(p))
       ligarMascara(i, mascaraHora);
-    else if (/^ex\.:\s*\d{1,2}:\d{2}:\d{2}$/.test(p)) ligarMascara(i, mascaraTempo);
   });
 }
 const dataBR = d => !d ? "" : (d.length === 10 && d[4] === "-")
@@ -16322,11 +16326,6 @@ function tecladoRico(ev){
   const ed = ev.currentTarget;
   if (ev.ctrlKey || ev.metaKey){
     const k = (ev.key || "").toLowerCase();
-    if (k === "enter"){                       // Ctrl+Enter quebra a linha
-      ev.preventDefault(); ev.stopPropagation();
-      document.execCommand("insertLineBreak");
-      ed.dispatchEvent(new Event("input", { bubbles:true }));
-      return; }
     if (k === "b"){ ev.preventDefault(); document.execCommand("bold"); return; }
     if (k === "i"){ ev.preventDefault(); document.execCommand("italic"); return; }
     if (k === "u"){ ev.preventDefault(); document.execCommand("underline"); return; }
@@ -19683,6 +19682,9 @@ function janelaNovoConcurso(){
       e = document.createElement("input");
       e.placeholder = c.d || "";
       if (c.t === "num") e.inputMode = "numeric";
+      if (c.t === "hora" || c.t === "data" || c.t === "tempo"){
+        e.dataset.mascara = c.t; e.inputMode = "numeric"; e.spellcheck = false;
+      }
     }
     entradas[c.k] = e;
     linhas[c.k] = linha;
@@ -19716,7 +19718,8 @@ function janelaNovoConcurso(){
   const fechar = () => { document.body.removeChild(fundo); document.removeEventListener("keydown", tecla); };
   const tecla = ev => {
     if (ev.key === "Escape") fechar();
-    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON") confirmar();
+    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON"
+        && !ev.target.isContentEditable) confirmar();
   };
   document.addEventListener("keydown", tecla);
   fundo.onclick = ev => { if (ev.target === fundo) fechar(); };
@@ -20666,7 +20669,8 @@ function janelaSessao(base, aoSalvar){
     document.removeEventListener("keydown", tecla); };
   const tecla = ev => {
     if (ev.key === "Escape") fechar();
-    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON") confirmar();
+    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON"
+        && !ev.target.isContentEditable) confirmar();
   };
   document.addEventListener("keydown", tecla);
   fundo.onclick = ev => { if (ev.target === fundo) fechar(); };
