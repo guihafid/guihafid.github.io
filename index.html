@@ -17679,9 +17679,11 @@ function avisoTec(texto){
    A extensão pergunta se esta página é o controle; respondendo, ela entrega
    a fila de questões. Confirmamos o que entrou para ela poder limpar a fila.
 ---------------------------------------------------------------------- */
+let pontePronta = false;      // vira true so quando os dados ja estao na tela
 window.addEventListener("message", ev => {
   const d = ev.data;
   if (!d || d.fonte !== "caderno-erros-tec") return;
+  if (!pontePronta) return;   // antes disso o DB esta vazio: nao recebe nada
 
   if (d.tipo === "ping"){
     anunciar();
@@ -17758,7 +17760,12 @@ function anunciar(){
     motivos: (DB && DB.motivos) || []
   }, "*");
 }
-window.addEventListener("load", anunciar);
+// nao anuncia no load: naquele momento ainda nem houve login.
+// quem libera e o fim do carregamento, em liberarPonte().
+function liberarPonte(){
+  pontePronta = true;
+  anunciar();
+}
 
 /* ---------- grava os julgados vindos do Buscador Dizer o Direito ---------- */
 function aplicarJuris(dados){
@@ -28669,6 +28676,7 @@ if (typeof MutationObserver !== "undefined"){
 }
 
 carregar().then(() => {
+  liberarPonte();          // agora sim a extensao pode entregar a fila
   recarregarMaterias();          // as matérias com material entram na régua
   if (DB.ultimaCont && ABAS_CONT.some(x => x.id === DB.ultimaCont) &&
       modulo === "cCont") abaAtual = DB.ultimaCont;
