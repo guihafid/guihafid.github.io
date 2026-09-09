@@ -15077,7 +15077,6 @@ function ligarMascara(inp, fn){
   if (!inp || inp.dataset.mascarado) return inp;
   inp.dataset.mascarado = "1";
   inp.addEventListener("input", () => {
-    if (inp.dataset.remascarando) return;      // nao reformata o proprio reaviso
     const bruto = inp.value;
     // só formata quando o que está lá é só número: quem escreve "1h30m" fica livre
     if (!/^\d*$/.test(bruto.replace(/[:/]/g,""))) return;
@@ -15086,12 +15085,18 @@ function ligarMascara(inp, fn){
     if (novo === bruto) return;
     inp.value = novo;
     if (noFim) inp.setSelectionRange(novo.length, novo.length);
-    // reavisa quem escuta, agora com o valor ja formatado
-    if (!inp.dataset.remascarando){
-      inp.dataset.remascarando = "1";
-      inp.dispatchEvent(new Event("input", { bubbles:true }));
-      delete inp.dataset.remascarando;
-    }
+  });
+  // Ao sair do campo, fecha a formatacao e avisa quem escuta com o valor
+  // final. Antes o app gravava o texto cru, digitado antes da mascara agir:
+  // "13045" ficava guardado como "13:045" e a soma lia 13h45.
+  inp.addEventListener("blur", () => {
+    const bruto = inp.value;
+    if (!bruto || !/^[\d:/]*$/.test(bruto)) return;
+    inp.value = fn(bruto);
+    // avisa sempre: na tela o texto ja aparece formatado, mas quem guarda
+    // o dado ainda tem a versao crua da ultima tecla
+    inp.dispatchEvent(new Event("input", { bubbles:true }));
+    inp.dispatchEvent(new Event("change", { bubbles:true }));
   });
   return inp;
 }
