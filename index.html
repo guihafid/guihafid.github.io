@@ -15077,6 +15077,7 @@ function ligarMascara(inp, fn){
   if (!inp || inp.dataset.mascarado) return inp;
   inp.dataset.mascarado = "1";
   inp.addEventListener("input", () => {
+    if (inp.dataset.remascarando) return;      // nao reformata o proprio reaviso
     const bruto = inp.value;
     // só formata quando o que está lá é só número: quem escreve "1h30m" fica livre
     if (!/^\d*$/.test(bruto.replace(/[:/]/g,""))) return;
@@ -15085,6 +15086,12 @@ function ligarMascara(inp, fn){
     if (novo === bruto) return;
     inp.value = novo;
     if (noFim) inp.setSelectionRange(novo.length, novo.length);
+    // reavisa quem escuta, agora com o valor ja formatado
+    if (!inp.dataset.remascarando){
+      inp.dataset.remascarando = "1";
+      inp.dispatchEvent(new Event("input", { bubbles:true }));
+      delete inp.dataset.remascarando;
+    }
   });
   return inp;
 }
