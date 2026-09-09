@@ -17161,9 +17161,9 @@ function telaGrade(mod){
       const campos = [
         { fixo:true, valor:c.nome },
         { fixo:ehProva, valor: dataBR(ehProva ? dataProva : (f.data||"")),
-          set:v => f.data = paraISO(v) },
-        { fixo:false, valor:f.tg||"", set:v => f.tg = v },
-        { fixo:false, valor:f.tc||"", set:v => f.tc = v },
+          set:v => f.data = paraISO(v), masc:"data" },
+        { fixo:false, valor:f.tg||"", set:v => f.tg = v, masc:"tempo" },
+        { fixo:false, valor:f.tc||"", set:v => f.tc = v, masc:"tempo" },
         { fixo:ehProva, valor: ehProva ? "Prova oficial" : (f.curso||""), set:v => f.curso = v },
         { fixo:false, valor:f.param||"", set:v => f.param = v },
       ];
@@ -17172,7 +17172,20 @@ function telaGrade(mod){
         linha.appendChild(el("div","cel rotulo", ROT[k]));
         const cell = el("div","cel campo " + (cp.fixo ? "fixo" : "edit"));
         if (cp.fixo) cell.textContent = cp.valor;
-        else cell.appendChild(campoInput(cp.valor, cp.set));
+        else {
+          const inp = campoInput(cp.valor, cp.set);
+          if (cp.masc){
+            inp.dataset.mascara = cp.masc;
+            inp.inputMode = "numeric";
+            if (cp.masc === "data"){
+              inp.placeholder = "dd/mm/aa";
+              inp.addEventListener("change", () => {
+                inp.value = dataBR(paraISO(inp.value));
+              });
+            }
+          }
+          cell.appendChild(inp);
+        }
         linha.appendChild(cell);
         linha.appendChild(el("div","cel vazio"));
         bloco.appendChild(linha);
