@@ -19683,7 +19683,10 @@ function janelaNovoConcurso(){
       e.placeholder = c.d || "";
       if (c.t === "num") e.inputMode = "numeric";
       if (c.t === "hora" || c.t === "data" || c.t === "tempo"){
-        e.dataset.mascara = c.t; e.inputMode = "numeric"; e.spellcheck = false;
+        // aqui "hora" e duracao de prova, nao horario de relogio: preenche
+        // da direita, igual ao TEMPO ESTUDADO da atividade (330 -> 3:30)
+        e.dataset.mascara = (c.t === "hora" ? "tempo" : c.t);
+        e.inputMode = "numeric"; e.spellcheck = false;
       }
     }
     entradas[c.k] = e;
