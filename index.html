@@ -44810,179 +44810,206 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <script type="text/plain" id="matS_legadm_cap-lgpd">
 <div class="chapter-head sec teal"><div class="num">3</div><div><h2>Lei Geral de Proteção de Dados — LGPD</h2><div class="cap-sub"><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 13.709/2018</a></div></div></div>
 <div class="cap-body"><div class="lep-body">
+<style>
+.lgpd-q{border-collapse:collapse;width:100%;font-size:.86em;table-layout:fixed}
+.lgpd-q th,.lgpd-q td{border:1px solid #c9a227;padding:5px 7px;vertical-align:middle;line-height:1.3}
+.lgpd-q th{background:#ffff00;color:#111;text-align:center;font-weight:700}
+.lgpd-q th i{color:#e03131;font-style:normal}
+.lgpd-q .zc1{background:#fff}
+.lgpd-q .zc2{background:#e2efd9}
+.lgpd-q .zc3{background:#fbe5d6}
+.lgpd-q .zvaz{background:#e9e9e9}
+
+.lgpd-ap{border:1px solid #2f3f9e;border-radius:8px;overflow:hidden;margin:10px 0}
+.lgpd-ap.znao{border-color:#c00000}
+.lgpd-ap>.ztt{background:#2f3f9e;color:#fff;padding:8px 12px;font-size:.95em}
+.lgpd-ap.znao>.ztt{background:#c00000}
+.lgpd-ap>.zcp{background:#fff;padding:9px 14px}
+.lgpd-ap ul{margin:0;padding-left:18px}
+.lgpd-ap li{margin:3px 0;line-height:1.35;color:#1a1a5e}
+.lgpd-ap.znao li{color:#c00000}
+.lgpd-ap .zcerca{display:inline-block;border:2px solid #2e9e3f;border-radius:3px;padding:0 4px}
+
+.lgpd-ci{border:2px solid #4472c4;border-radius:4px;overflow:hidden;margin:8px 0;background:#fff}
+.lgpd-ci>.ztt{background:#4472c4;color:#fff;text-align:center;font-weight:700;letter-spacing:.05em;padding:6px}
+.lgpd-ci .zsub{text-align:center;font-weight:700;padding:8px 0 4px;font-size:.92em}
+.lgpd-ci table{border-collapse:collapse;width:100%;font-size:.86em}
+.lgpd-ci td{border:1px solid #bfbfbf;padding:8px 10px;vertical-align:middle}
+.lgpd-ci td.zk{width:26%;text-align:center;font-weight:700;letter-spacing:.03em}
+.lgpd-ci .zvd{color:#2e9e3f}
+.lgpd-ci .zmkv{background:#c6e0b4}
+.lgpd-ci .zmka{background:#bdd7ee}
+
+.lgpd-fx{margin:8px 0;font-size:.85em}
+.lgpd-fx .zfaixa{background:#111;color:#fff;font-weight:700;letter-spacing:.12em;padding:4px 9px;font-size:.92em}
+.lgpd-fx .zfaixa2{background:#e6e6e6;color:#111;font-weight:700;letter-spacing:.1em;padding:4px 9px;margin-top:3px;font-size:.92em;border-bottom:2px solid #111}
+.lgpd-fx .zlinha{display:flex;gap:8px;align-items:stretch;margin-top:7px}
+.lgpd-fx .zeixo{flex:0 0 26px;background:#ed7d31;border-radius:2px;position:relative}
+.lgpd-fx .zeixo span{position:absolute;top:50%;left:50%;white-space:nowrap;transform:translate(-50%,-50%) rotate(-90deg);color:#111;font-weight:700;font-size:.8em}
+.lgpd-fx .zramos{flex:1 1 auto;min-width:0}
+.lgpd-fx .zcx{border:1px solid #ed7d31;padding:7px 10px;margin-bottom:6px;line-height:1.35;background:#fff}
+.lgpd-fx .zcx:last-child{margin-bottom:0}
+.lgpd-fx .zcons{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.lgpd-fx .zcons>.zesq{flex:1 1 210px;border:1px solid #ed7d31;padding:7px 10px;line-height:1.35;background:#fff}
+.lgpd-fx .zcons>.zdir{flex:1 1 290px;min-width:0}
+.lgpd-fx .zcons>.zdir .zcx{border-style:dashed}
+
+.lgpd-sc{margin:8px 0;font-size:.85em;display:flex;gap:8px;align-items:stretch}
+.lgpd-sc .zeixo{flex:0 0 26px;border:1px solid #333;border-radius:2px;position:relative;background:#fff}
+.lgpd-sc .zeixo span{position:absolute;top:50%;left:50%;white-space:nowrap;transform:translate(-50%,-50%) rotate(-90deg);font-weight:700;font-size:.8em}
+.lgpd-sc .zlista{flex:1 1 auto;min-width:0}
+.lgpd-sc .zb{padding:7px 10px;margin-bottom:6px;line-height:1.35;border-radius:2px}
+.lgpd-sc .zvd{background:#c6efce}
+.lgpd-sc .zam{background:#e2e88a}
+.lgpd-sc .zrs{background:#f8cbcb}
+.lgpd-sc .zobs{border-left:2px solid #c9767b;padding:6px 10px;margin-top:6px;font-size:.95em;color:#444}
+@media(max-width:640px){
+  .lgpd-q{font-size:.76em}
+  .lgpd-fx .zeixo,.lgpd-sc .zeixo{flex:0 0 20px}
+  .lgpd-fx .zeixo span,.lgpd-sc .zeixo span{font-size:.68em}
+}
+</style>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">1</div><h3>Disposições Preliminares (arts. 1º a 6º)</h3></div>
-<table class="tab">
+<table class="lgpd-q">
+<colgroup><col style="width:26%"><col style="width:52%"><col style="width:22%"></colgroup>
 <thead>
-<tr><th>Objetivo (art. 1º)</th><th>Fundamentos (art. 2º)</th><th>Princípios (art. 6º)</th></tr>
+<tr><th>Objetivo <i>(Art. 1º)</i></th><th>Fundamentos <i>(Art. 2º)</i></th><th>Princípios <i>(Art. 6º)</i></th></tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<ul class="dash">
-<li><mark>Proteger</mark> os direitos fundamentais de liberdade e de privacidade</li>
-<li>Livre desenvolvimento da personalidade da pessoa natural</li>
-</ul>
-</td>
-<td>
-<ul class="dash">
-<li>Respeito à privacidade</li>
-<li>Autodeterminação informativa</li>
-<li>Liberdade de expressão, de informação, de comunicação e de opinião</li>
-<li>Inviolabilidade da intimidade, da honra e da imagem</li>
-<li>Desenvolvimento econômico e tecnológico e a inovação</li>
-<li>Livre iniciativa, a livre concorrência e a defesa do consumidor</li>
-<li>Direitos humanos, o livre desenvolvimento da personalidade, a dignidade e o exercício da cidadania pelas pessoas naturais</li>
-</ul>
-</td>
-<td>
-<ul class="dash">
-<li>Finalidade</li>
-<li>Adequação</li>
-<li>Necessidade</li>
-<li>Livre acesso</li>
-<li>Qualidade dos dados</li>
-<li>Transparência</li>
-<li>Segurança</li>
-<li>Prevenção</li>
-<li>Não discriminação</li>
-<li>Responsabilização e prestação de contas</li>
-</ul>
-</td>
-</tr>
+<tr><td class="zc1"><strong>Proteger</strong> os direitos fundamentais de liberdade e de privacidade</td><td class="zc2">Respeito à privacidade</td><td class="zc3">Finalidade</td></tr>
+<tr><td class="zc1">Livre desenvolvimento da personalidade da pessoa natural.</td><td class="zc2">Autodeterminação informativa</td><td class="zc3">Adequação</td></tr>
+<tr><td class="zvaz"></td><td class="zc2">Liberdade de expressão, de informação, de comunicação e de opinião</td><td class="zc3">Necessidade</td></tr>
+<tr><td class="zvaz"></td><td class="zc2">Inviolabilidade da intimidade, da honra e da imagem</td><td class="zc3">Livre acesso</td></tr>
+<tr><td class="zvaz"></td><td class="zc2">Desenvolvimento econômico e tecnológico e a inovação</td><td class="zc3">Qualidade dos dados</td></tr>
+<tr><td class="zvaz"></td><td class="zc2">Livre iniciativa, a livre concorrência e a defesa do consumidor</td><td class="zc3">Transparência</td></tr>
+<tr><td class="zvaz"></td><td class="zc2" rowspan="2">Direitos humanos, o livre desenvolvimento da personalidade, a dignidade e o exercício da cidadania pelas pessoas naturais</td><td class="zc3">Segurança</td></tr>
+<tr><td class="zvaz"></td><td class="zc3">Prevenção</td></tr>
+<tr><td class="zvaz"></td><td class="zc2"></td><td class="zc3">Não discriminação</td></tr>
+<tr><td class="zvaz"></td><td class="zc2"></td><td class="zc3">Responsabilização e prestação de contas</td></tr>
 </tbody>
 </table>
 </section>
 
-<section class="lepcard bordered"><div class="card-head"><div class="num">2</div><h3>Âmbito de Aplicação (art. 3º e art. 4º)</h3></div>
-<div class="balao b-azul">
-<div class="balao-titulo">LGPD APLICA-SE</div>
-<ul class="plain">
-<li>Tratamento realizado no <strong>território nacional</strong>.</li>
-<li>Tratamento com objetivo de <strong>fornecimento de bens ou serviços</strong> ou o tratamento de dados de indivíduos <strong>localizados no território nacional</strong>.</li>
-<li>Dados <strong>coletados no território nacional</strong>.</li>
+<section class="lepcard bordered"><div class="card-head"><div class="num">2</div><h3>Âmbito de Aplicação (arts. 3º e 4º)</h3></div>
+<div class="lgpd-ap">
+<div class="ztt">LGPD aplica-se</div>
+<div class="zcp">
+<ul>
+<li>tratamento realizado no território nacional</li>
+<li>tratamento com objetivo de fornecimento de bens ou serviços ou o tratamento de dados de indivíduos localizados no território nacional</li>
+<li>dados coletados no território nacional</li>
 </ul>
 </div>
-<div class="balao b-vermelho">
-<div class="balao-titulo">LGPD NÃO SE APLICA</div>
-<ul class="plain">
-<li>Por <strong>pessoa natural</strong> para fins exclusivamente <strong>particulares e não econômicos</strong>.</li>
-<li>Fins exclusivamente <strong>jornalístico</strong>, <strong>artísticos</strong> ou <strong>acadêmicos</strong>.</li>
-<li>Fins exclusivamente de <mark>segurança pública</mark>, <mark>defesa nacional</mark>, <strong>segurança do Estado</strong> ou <strong>atividades de investigação e repressão de infrações penais</strong>.</li>
-<li>Provenientes <strong>de fora do território nacional</strong> e que:
-  <ul class="dash">
-<li>não sejam objeto de comunicação, uso compartilhado de dados com agentes de tratamento brasileiros; <em>ou</em></li>
-<li>sejam objeto de transferência internacional de dados com outro país que não o de proveniência (desde que o país de proveniência proporcione proteção adequada a dados pessoais).</li>
+</div>
+<div class="lgpd-ap znao">
+<div class="ztt">LGPD não se aplica</div>
+<div class="zcp">
+<ul>
+<li>por pessoa natural para fins exclusivamente particulares e não econômicos</li>
+<li>fins jornalístico</li>
+<li>artísticos</li>
+<li>acadêmicos</li>
+<li><span class="zcerca">de segurança pública</span></li>
+<li><span class="zcerca">defesa nacional</span></li>
+<li>segurança do Estado</li>
+<li>atividades de investigação e repressão de infrações penais</li>
+<li>provenientes de fora do território nacional e
+<ul>
+<li>não sejam objeto de comunicação, uso compartilhado de dados com agentes de tratamento brasileiros ou</li>
+<li>objeto de transferência internacional de dados com outro país que não o de proveniência (desde que o país de proveniência proporcione proteção adequada a dados pessoais)</li>
 </ul>
 </li>
 </ul>
 </div>
+</div>
 </section>
 
-<section class="lepcard bordered"><div class="card-head"><div class="num">3</div><h3>Conceitos Importantes (art. 5º, incisos V, VI, VII, VIII, IX e XIX)</h3></div>
-<table class="tab">
-<thead>
-<tr><th style="width:22%">Conceito</th><th>Definição</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>TITULAR</strong></td><td>É a <u>pessoa natural</u> a quem se referem os dados pessoais que são objeto de tratamento.<br/><br/><mark>PEGADINHA</mark> ⇒ a banca vai dizer que o titular é <s>pessoa jurídica</s>.</td></tr>
-<tr><td><strong>CONTROLADOR</strong></td><td>Pessoa natural ou jurídica, de direito público ou privado, a quem <strong>competem as decisões referentes ao tratamento</strong> de dados pessoais.</td></tr>
-<tr><td><strong>OPERADOR</strong></td><td>Pessoa natural ou jurídica, de direito público ou privado, que <strong>realiza o tratamento</strong> de dados pessoais <strong>em nome do controlador</strong>.</td></tr>
-<tr><td><mark><strong>ENCARREGADO</strong></mark></td><td>É a pessoa indicada pelo controlador e operador para <strong>atuar como canal de comunicação</strong> entre o controlador, os titulares dos dados e a Autoridade Nacional de Proteção de Dados (ANPD).</td></tr>
-<tr><td><strong>AGENTES DE TRATAMENTO</strong></td><td>O <strong>controlador</strong> e o <strong>operador</strong> são os agentes de tratamento dos dados.</td></tr>
-<tr><td><strong>AUTORIDADE NACIONAL</strong></td><td>Órgão da administração pública responsável por zelar, implementar e fiscalizar o cumprimento desta Lei em todo o território nacional.</td></tr>
-</tbody>
+<section class="lepcard bordered"><div class="card-head"><div class="num">3</div><h3>Conceitos Importantes</h3></div>
+<div class="lgpd-ci">
+<div class="ztt">CONCEITOS IMPORTANTES</div>
+<div class="zsub">Art. 5º: incisos V, VI, VII, VIII, IX e XIX</div>
+<table>
+<tr><td class="zk">TITULAR</td><td>É a pessoa <u><strong>natural</strong></u> a quem se referem os dados pessoais que são objeto de tratamento.<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;<span class="zmkv">PEGADINHA</span> =&gt; A banca vai dizer que o titular é <s>pessoa jurídica</s>.</td></tr>
+<tr><td class="zk">CONTROLADOR</td><td>Pessoa natural ou jurídica, de direito público ou privado, a quem <span class="zvd">competem as decisões referentes ao tratamento</span> de dados pessoais.</td></tr>
+<tr><td class="zk">OPERADOR</td><td>Pessoa natural ou jurídica, de direito público ou privado, que <span class="zvd">realiza o tratamento</span> de dados pessoais em nome do controlador.</td></tr>
+<tr><td class="zk"><span class="zmka">ENCARREGADO</span></td><td>É a pessoa indicada pelo controlador e operador para <span class="zvd">atuar como canal de comunicação</span> entre o controlador, os titulares dos dados e a Autoridade Nacional de Proteção de Dados (ANPD).</td></tr>
+<tr><td class="zk">AGENTES DE TRATAMENTO</td><td>O <span class="zvd">controlador</span> e o <span class="zvd">operador</span> são os agentes de tratamento dos dados.</td></tr>
+<tr><td class="zk">AUTORIDADE NACIONAL</td><td>Órgão da administração pública responsável por zelar, implementar e fiscalizar o cumprimento desta Lei em todo o território nacional.</td></tr>
 </table>
+</div>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">4</div><h3>Dados Pessoais Sensíveis e Dados Anonimizados</h3></div>
-<table class="tab">
-<thead>
-<tr><th>Dados pessoais sensíveis</th><th>Dados anonimizados</th></tr>
-</thead>
-<tbody>
-<tr>
-<td>
+<p><strong>Dados pessoais sensíveis</strong></p>
 <ul class="dash">
-<li>São informações que podem gerar <strong>discriminação ou prejuízos</strong>.</li>
-<li>Exigem <strong>cuidados especiais</strong> e proteção reforçada pela LGPD.</li>
-<li>São informações relacionadas com <strong>aspectos íntimos da personalidade</strong> de uma pessoa.</li>
-<li>Exemplos: origem racial ou étnica, convicção religiosa.</li>
+<li>São informações que podem gerar discriminação ou prejuízos</li>
+<li>Exigem cuidados especiais e proteção reforçada pela LGPD</li>
+<li>São informações relacionadas com aspectos íntimos da personalidade de uma pessoa</li>
+<li>Exemplos: origem racial ou étnica, convicção religiosa</li>
 </ul>
-</td>
-<td>
+<p><strong>Dados anonimizados</strong></p>
 <ul class="dash">
-<li>São dados pessoais ou sensíveis que foram tratados para <strong>não identificar o titular</strong>.</li>
-<li>São dados que <strong>não podem ser associados a um indivíduo</strong>, direta ou indiretamente.</li>
-<li>São muito utilizados <strong>em estudos</strong>.</li>
-<li><mark>Não estão sujeitos à aplicação da LGPD</mark>, caso não seja possível identificar o titular.</li>
+<li>São dados pessoais ou sensíveis que foram tratados para não identificar o titular</li>
+<li>São dados que não podem ser associados a um indivíduo, direta ou indiretamente</li>
+<li>São muito utilizados em estudos</li>
+<li>Não estão sujeitos à aplicação da LGPD, caso não seja possível identificar o titular</li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
 </section>
 
-<section class="lepcard bordered"><div class="card-head"><div class="num">5</div><h3>Requisitos para o Tratamento de Dados Pessoais (art. 7º)</h3></div>
-<div class="balao b-azul">
-<div class="balao-titulo">Mediante CONSENTIMENTO do titular (art. 7º c/c art. 8º, caput)</div>
-<p>De forma <u>escrita</u> <em>ou</em> por <u>outro meio</u> que demonstre a manifestação de vontade.</p>
-<ul class="plain">
-<li>Consentimento pode ser <strong>REVOGADO a qualquer momento</strong> por manifestação expressa e gratuita (art. 8º, §5º).</li>
-<li>Consentimento <strong>DISPENSADO</strong> quando o próprio titular torna as informações públicas (art. 7º, §4º).</li>
-<li>Cabe ao <strong>controlador o ônus da prova</strong> de que o <strong>consentimento foi obtido</strong> em conformidade com a LGPD (art. 8º, §2º).</li>
-<li><strong>Crianças</strong>: consentimento específico e em destaque por <strong>pelo menos um dos pais</strong> ou pelo <strong>responsável legal</strong> (art. 14, §1º).</li>
-</ul>
+<section class="lepcard bordered"><div class="card-head"><div class="num">5</div><h3>Tratamento de Dados Pessoais (art. 7º)</h3></div>
+<div class="lgpd-fx">
+<div class="zfaixa">TRATAMENTO DE DADOS PESSOAIS</div>
+<div class="zfaixa2">REQUISITOS PARA O TRATAMENTO DE DADOS PESSOAIS</div>
+<div class="zlinha">
+<div class="zeixo"><span>Hipóteses para o Tratamento de Dados Pessoais (art. 7º)</span></div>
+<div class="zramos">
+<div class="zcons">
+<div class="zesq">Mediante <strong>CONSENTIMENTO</strong> do titular, de forma <u>escrita</u> <em>ou</em> por <u>outro meio</u> que demonstre a manifestação de vontade (<em>art. 7º cc art. 8º, caput</em>)</div>
+<div class="zdir">
+<div class="zcx">Consentimento pode ser <strong>REVOGADO a qualquer momento</strong> por manifestação expressa e gratuita (<em>art. 8º, §5º</em>)</div>
+<div class="zcx">Consentimento <strong>DISPENSADO</strong> quando o próprio titular torna as informações públicas (<em>art. 7º, §4º</em>)</div>
+<div class="zcx">Cabe ao <strong>controlador o ônus da prova</strong> de que o <strong>consentimento foi obtido</strong> em conformidade com a LGPD (<em>art. 8º, §2º</em>)</div>
+<div class="zcx"><strong>Crianças</strong>: consentimento específico e em destaque por <strong>pelo menos um dos pais</strong> ou pelo <strong>responsável legal</strong> (<em>art. 14, §1º</em>)</div>
 </div>
-<div class="balao b-verde">
-<div class="balao-titulo">Demais hipóteses (independem de consentimento)</div>
-<ul class="plain">
-<li>Para o cumprimento de <strong>OBRIGAÇÃO</strong> legal ou regulatória pelo controlador.</li>
-<li>Pela <strong>ADM. PÚBLICA</strong>, para o tratamento e uso compartilhado na execução de políticas públicas.</li>
-<li>Para a realização de <strong>ESTUDOS</strong> por órgão de pesquisa, garantida, sempre que possível, a anonimização.</li>
-<li>Quando necessário para a <strong>EXECUÇÃO de contrato</strong> ou de procedimentos preliminares relacionados a contrato do qual seja parte o titular, a pedido do titular dos dados.</li>
-<li>Para o exercício regular de direitos em <strong>PROCESSO</strong> judicial, administrativo ou arbitral.</li>
-<li>Para a <strong>PROTEÇÃO</strong> da vida ou da incolumidade física do titular ou de terceiro.</li>
-<li>Tutela da <strong>SAÚDE</strong>, <em>exclusivamente</em>, em procedimento feito por profissionais de saúde ou autoridade sanitária.</li>
-<li>Quando necessário para atender aos <strong>INTERESSES LEGÍTIMOS</strong> do controlador ou de terceiro, <u>exceto</u> no caso de prevalecerem direitos e liberdades fundamentais do titular que exijam a proteção dos dados pessoais.</li>
-<li>Para a proteção do <strong>CRÉDITO</strong>, inclusive quanto ao disposto na legislação pertinente.</li>
-</ul>
+</div>
+<div class="zcx">Para o cumprimento de <strong>OBRIGAÇÃO</strong> legal ou regulatória pelo controlador</div>
+<div class="zcx">Pela <strong>ADM. PÚBLICA</strong>, para o tratamento e uso compartilhado na execução de políticas públicas</div>
+<div class="zcx">Para a realização de <strong>ESTUDOS</strong> por órgão de pesquisa, garantida, sempre que possível, a anonimização</div>
+<div class="zcx">Quando necessário para a <strong>EXECUÇÃO</strong> de <strong>contrato</strong> ou de procedimentos preliminares relacionados a contrato do qual seja parte o titular, a pedido do titular dos dados</div>
+<div class="zcx">Para o exercício regular de direitos em <strong>PROCESSO</strong> judicial, administrativo ou arbitral</div>
+<div class="zcx">Para a <strong>PROTEÇÃO</strong> da vida ou da incolumidade física do titular ou de terceiro</div>
+<div class="zcx">Tutela da <strong>SAÚDE</strong>, <em>exclusivamente</em>, em procedimento feito por profissionais de saúde ou autoridade sanitária</div>
+<div class="zcx">Quando necessário para atender aos <strong>INTERESSES LEGÍTIMOS</strong> do controlador ou de terceiro, <u>exceto</u> no caso de prevalecerem direitos e liberdades fundamentais do titular que exijam a proteção dos dados pessoais</div>
+<div class="zcx">Para a proteção do <strong>CRÉDITO</strong>, inclusive quanto ao disposto na legislação pertinente</div>
+</div>
+</div>
 </div>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">6</div><h3>Privacy by Design × Privacy by Default</h3></div>
-<table class="tab">
-<thead>
-<tr><th style="width:30%">Princípio</th><th>Significado</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Privacy by Design</strong></td><td>Privacidade <strong>desde a concepção</strong> e em <strong>todo o ciclo de vida</strong> do projeto.</td></tr>
-<tr><td><strong>Privacy by Default</strong></td><td>Privacidade <mark>automática</mark>, no <mark>mais alto grau</mark>, já configurada <strong>por padrão</strong>, <mark>sem depender do usuário</mark>.</td></tr>
-</tbody>
-</table>
+<p>O tema é <strong>LGPD</strong> (Lei Geral de Proteção de Dados) e dois princípios muito cobrados:</p>
+<ul class="plain">
+<li><strong>Privacy by Design</strong> → privacidade <strong>desde a concepção</strong> e em <strong>todo o ciclo de vida</strong> do projeto.</li>
+<li><strong>Privacy by Default</strong> → privacidade <mark>automática</mark>, no <mark>mais alto grau</mark>, já configurada <strong>por padrão</strong> <span style="background:#f8d7da">sem depender do usuário</span>.</li>
+</ul>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">7</div><h3>Sanções Administrativas (art. 52)</h3></div>
-<table class="tab">
-<thead>
-<tr><th style="width:28%">Sanção</th><th>Detalhamento</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>ADVERTÊNCIA</strong></td><td>Com indicação de prazo para adoção de medidas corretivas.</td></tr>
-<tr><td><strong>MULTA SIMPLES</strong></td><td>Até <strong>2% do faturamento</strong>, limitada a <strong>R$ 50 milhões</strong> <u>por infração</u>.</td></tr>
-<tr><td><strong>MULTA DIÁRIA</strong></td><td>Limitada a <strong>R$ 50 milhões</strong> no <u>total</u>.</td></tr>
-<tr><td><strong>PUBLICIZAÇÃO</strong></td><td>Da infração após devidamente apurada e confirmada a sua ocorrência.</td></tr>
-<tr><td><strong>BLOQUEIO DOS DADOS</strong></td><td>Pessoais a que se refere a infração, até a sua regularização.</td></tr>
-<tr><td><strong>ELIMINAÇÃO DOS DADOS</strong></td><td>Pessoais a que se refere a infração.</td></tr>
-</tbody>
-</table>
-<div class="balao b-vermelho">
-<div class="balao-titulo">Só depois de imposta ao menos uma das sanções acima (art. 52, §6º, I)</div>
-<ul class="plain">
-<li><strong>SUSPENSÃO</strong> <u>parcial do funcionamento do banco de dados</u> — prazo: até <strong>6 meses</strong>, prorrogável por igual período.</li>
-<li><strong>SUSPENSÃO</strong> do <u>exercício da atividade de tratamento dos dados</u> — prazo: até <strong>6 meses</strong>, prorrogável por igual período.</li>
-<li><strong>PROIBIÇÃO</strong> <u>parcial ou total</u> do <strong>EXERCÍCIO</strong> de atividades relacionadas a tratamento de dados.</li>
-</ul>
+<div class="lgpd-sc">
+<div class="zeixo"><span>Sanções Administrativas <em>(art. 52)</em></span></div>
+<div class="zlista">
+<div class="zb zvd"><strong>ADVERTÊNCIA</strong>, com indicação de prazo para adoção de medidas corretivas</div>
+<div class="zb zam"><strong>MULTA SIMPLES</strong> | até 2% do faturamento, limitada a R$ 50 milhões <u>por infração</u></div>
+<div class="zb zam"><strong>MULTA DIÁRIA</strong> | limitada a R$ 50 milhões no <u>total</u></div>
+<div class="zb zam"><strong>PUBLICIZAÇÃO</strong> da infração após devidamente apurada e confirmada a sua ocorrência</div>
+<div class="zb zam"><strong>BLOQUEIO DOS DADOS</strong> pessoais a que se refere a infração até a sua regularização</div>
+<div class="zb zam"><strong>ELIMINAÇÃO DOS DADOS</strong> pessoais a que se refere a infração</div>
+<div class="zb zrs"><strong>SUSPENSÃO</strong> <u>parcial do funcionamento do banco de dados</u><br/>Prazo: até 6 meses, prorrogável por igual período</div>
+<div class="zb zrs"><strong>SUSPENSÃO</strong> do <u>exercício da atividade de tratamento dos dados</u><br/>Prazo: até 6 meses, prorrogável por igual período</div>
+<div class="zb zrs"><strong>PROIBIÇÃO</strong> <u>parcial ou total</u> do <strong>EXERCÍCIO</strong> de atividades relacionadas a tratamento de dados</div>
+<div class="zobs">Somente após ter sido imposta ao menos uma das sanções em <mark>AMARELO</mark> (<em>art. 52, §6º, I</em>)</div>
+</div>
 </div>
 </section>
 
@@ -44992,138 +45019,199 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <script type="text/plain" id="matS_legadm_cap-lai">
 <div class="chapter-head sec lar"><div class="num">4</div><div><h2>Lei de Acesso à Informação — LAI</h2><div class="cap-sub"><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12527.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 12.527/2011</a></div></div></div>
 <div class="cap-body"><div class="lep-body">
+<style>
+.lai-pz{background:#fff;padding:10px 12px;margin:8px 0}
+.lai-pz>h4{margin:0 0 10px;font-weight:400;font-size:1.5em;color:#111}
+.lai-pz table{border-collapse:collapse;width:100%;font-size:.88em}
+.lai-pz th{background:#4f92cd;color:#fff;text-align:left;padding:6px 10px;font-weight:600}
+.lai-pz td{padding:6px 10px;border:0;color:#1a1a1a}
+.lai-pz tbody tr:nth-child(odd){background:#e9eff7}
+.lai-pz tbody tr:nth-child(even){background:#dbe5f1}
+.lai-pz tbody tr.zmk td{position:relative}
+.lai-pz tbody tr.zmk td:after{content:"";position:absolute;left:6px;right:6px;bottom:2px;
+  border-top:2px solid #d33;pointer-events:none}
+
+.lai-sg{border:1px solid #333;padding:9px 11px;margin:8px 0;background:#fff;font-size:.85em}
+.lai-sg .zcab{border-bottom:2px solid #111;font-weight:700;letter-spacing:.09em;
+  padding-bottom:3px;margin-bottom:7px;font-size:1.02em}
+.lai-sg .zintro{border:1px solid #333;padding:7px 9px;line-height:1.4;margin-bottom:10px}
+.lai-sg table{border-collapse:collapse;width:100%}
+.lai-sg th,.lai-sg td{border:1px solid #333;padding:6px 8px;vertical-align:top;line-height:1.35}
+.lai-sg th{font-variant:small-caps;font-weight:700;text-align:center;font-size:.95em}
+.lai-sg th .zvm{color:#8b0000}
+.lai-sg .zgrau{font-variant:small-caps;font-weight:700;background:#ffff00;
+  display:inline-block;padding:0 4px}
+.lai-sg .zgrau.zus{color:#8b0000}
+.lai-sg ul{margin:3px 0 0;padding-left:15px}
+.lai-sg li{margin:2px 0}
+.lai-sg ul.plain{list-style:none;padding-left:2px}
+.lai-sg ul.plain li:before{content:none}
+.lai-sg .zcinza{background:#e8e8e8;padding:3px 5px;margin-top:4px;display:block}
+.lai-sg .zvd{color:#2e7d32}
+.lai-sg .zaz{color:#2f5597}
+.lai-sg .zrodape{margin-top:9px;line-height:1.45;color:#2f5597}
+.lai-sg .zpessoais{margin-top:10px;border-top:2px solid #111;padding-top:7px}
+.lai-sg .zpessoais .zcab2{font-weight:700;letter-spacing:.09em;margin-bottom:5px}
+
+.lai-cp{margin:8px 0;font-size:.85em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lai-cp .zraiz{flex:0 0 130px;text-align:center;line-height:1.3}
+.lai-cp .zcol{flex:1 1 380px;min-width:0}
+.lai-cp .zgrupo{display:flex;gap:9px;align-items:center;margin-bottom:9px}
+.lai-cp .zno{flex:0 0 108px;color:#fff;text-align:center;font-weight:700;
+  border-radius:5px;padding:7px 4px;line-height:1.2}
+.lai-cp .zno small{display:block;font-weight:400;font-size:.85em}
+.lai-cp .zno.zus{background:#c00000}
+.lai-cp .zno.zse{background:#111}
+.lai-cp .zno.zre{background:#7030a0}
+.lai-cp .zfls{flex:1 1 auto;min-width:0}
+.lai-cp .zfl{border-radius:5px;padding:6px 9px;margin-bottom:5px;text-align:center;line-height:1.3}
+.lai-cp .zfl:last-child{margin-bottom:0}
+.lai-cp .zfl.zus{background:#fdeaea;color:#c00000}
+.lai-cp .zfl.zse{background:#eceff1;color:#111}
+.lai-cp .zfl.zre{background:#efe6f7;color:#7030a0}
+@media(max-width:640px){
+  .lai-pz table,.lai-sg{font-size:.78em}
+  .lai-cp .zgrupo{flex-wrap:wrap}
+  .lai-cp .zno{flex:1 1 100%}
+}
+</style>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">1</div><h3>Regras do Pedido de Acesso</h3></div>
 <ul class="plain">
-<li><strong>Acesso Imediato:</strong> se a informação estiver disponível, deve ser entregue na hora.</li>
-<li><strong>Prazo de Resposta:</strong> caso não seja imediata, o órgão tem até <mark>20 dias</mark>, prorrogáveis por mais <mark>10 dias</mark> mediante justificativa.</li>
-<li><strong>Identificação:</strong> o solicitante deve se identificar, mas <mark>não é necessário justificar</mark> o motivo do pedido.</li>
-<li><strong>Gratuidade:</strong> a busca e o fornecimento são gratuitos, exceto em casos de reprodução de documentos (como cópias físicas).</li>
+<li><strong>Acesso Imediato:</strong> Se a informação estiver disponível, deve ser entregue na hora.</li>
+<li><strong>Prazo de Resposta:</strong> Caso não seja imediata, o órgão tem até <strong>20 dias</strong>, prorrogáveis por mais <strong>10 dias</strong> mediante justificativa.</li>
+<li><strong>Identificação:</strong> O solicitante deve se identificar, mas <strong>não é necessário justificar</strong> o motivo do pedido.</li>
+<li><strong>Gratuidade:</strong> A busca e o fornecimento são gratuitos, exceto em casos de reprodução de documentos (como cópias físicas)</li>
 </ul>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">2</div><h3>Prazos na LAI</h3></div>
-<table class="tab">
-<thead>
-<tr><th style="width:50%">Ato</th><th>Prazo</th></tr>
-</thead>
+<div class="lai-pz">
+<h4>Prazos na LAI</h4>
+<table>
+<thead><tr><th style="width:52%">Ato</th><th>Prazo</th></tr></thead>
 <tbody>
-<tr><td><mark>Resposta do pedido de acesso</mark></td><td><mark>Imediato ou 20d + 10d</mark></td></tr>
+<tr class="zmk"><td>Resposta do pedido de acesso</td><td>Imediato ou 20d + 10d</td></tr>
 <tr><td>Interposição de recurso</td><td>10d</td></tr>
 <tr><td>Julgamento de recurso</td><td>5d</td></tr>
 <tr><td>Julgamento de recurso pela CMRI</td><td>3 sessões</td></tr>
 <tr><td>Interposição de reclamação</td><td>10d (a partir de 30d do pedido de informação)</td></tr>
 <tr><td>Julgamento de reclamação</td><td>5d</td></tr>
-<tr><td>Restrição de acesso de informação <strong>ultrassecreta</strong></td><td>25 anos (+ 25 anos se houver prorrogação)</td></tr>
-<tr><td>Restrição de acesso de informação <strong>secreta</strong></td><td>15 anos</td></tr>
-<tr><td>Restrição de acesso de informação <strong>reservada</strong></td><td>5 anos</td></tr>
-<tr><td>Restrição de acesso de informação <strong>pessoal</strong></td><td>100 anos</td></tr>
+<tr><td>Restrição de acesso de informação ultrassecreta</td><td>25 anos (+ 25 anos se houver prorrogação)</td></tr>
+<tr><td>Restrição de acesso de informação secreta</td><td>15 anos</td></tr>
+<tr><td>Restrição de acesso de informação reservada</td><td>5 anos</td></tr>
+<tr><td>Restrição de acesso de informação pessoal</td><td>100 anos</td></tr>
 </tbody>
 </table>
+</div>
 </section>
 
-<section class="lepcard bordered"><div class="card-head"><div class="num">3</div><h3>Recurso: LAI × Lei 9.784/99 — atenção à diferença</h3></div>
+<section class="lepcard bordered"><div class="card-head"><div class="num">3</div><h3>Recurso: LAI × Lei 9.784/99</h3></div>
 <div class="balao b-azul">
 <div class="balao-titulo">✒️ Lei 9.784/1999 (Processo Administrativo)</div>
 <p>Assegura que das decisões administrativas cabe recurso, em face de razões de legalidade e de mérito. Esse recurso será <strong>DIRIGIDO À AUTORIDADE QUE PROFERIU A DECISÃO</strong>, a qual, <strong>se não a reconsiderar</strong> no prazo de <strong>CINCO DIAS</strong>, o encaminhará à autoridade superior (art. 56, § 1º). Logo, a própria autoridade poderá se retratar (rever a sua decisão), antes de fazer o recurso subir para a instância superior.</p>
 </div>
 <div class="balao b-vermelho">
 <div class="balao-titulo">✒️ Lei 12.527/2011 (Lei de Acesso à Informação)</div>
-<p><u>Não há juízo de reconsideração quando há negativa por parte de uma autoridade.</u> Na verdade, o recurso será <strong>DIRIGIDO À AUTORIDADE HIERARQUICAMENTE SUPERIOR</strong>, que deverá se manifestar no prazo de <strong>CINCO DIAS</strong>, conforme o art. 15, parágrafo único, da LAI.</p>
+<p><u>Não há juízo de reconsideração quando há negativa por parte de uma autoridade.</u> Na verdade, o recurso será <strong>DIRIGIDO À AUTORIDADE HIERARQUICAMENTE SUPERIOR,</strong> que deverá se manifestar no prazo de <strong>CINCO DIAS</strong>, conforme o art. 15, parágrafo único, da LAI.</p>
 </div>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">4</div><h3>Classificação quanto ao Grau e Prazo de Sigilo</h3></div>
-<p>A LAI determina que as informações <u>IMPRESCINDÍVEIS</u> <strong>à segurança da sociedade e do Estado</strong> são aquelas ligadas às FFAA (defesa, soberania, integridade do território, inteligência); que põem em <strong>risco</strong>: a vida, saúde e segurança pública, estabilidade econômica, financeira, monetária, instituições, autoridades, pesquisas estratégicas, atividades de inteligência, <strong>investigações em andamento</strong>, etc.</p>
-<table class="tab">
+<div class="lai-sg">
+<div class="zcab">CLASSIFICAÇÃO QUANTO AO GRAU E PRAZO DE SIGILO</div>
+<div class="zintro">LAI determina que as informações <u>IMPRESCINDÍVEIS</u> <strong>à segurança da sociedade e do Estado</strong> são aquelas ligadas à FFAA (defesa, soberania, integridade do território, inteligência); que põem em <strong>risco</strong>: a vida, saúde e segurança pública, estabilidade econômica, financeira, monetária, instituições, autoridades, pesquisas estratégias, atividades de inteligência, <strong>investigações em andamento</strong>, etc.</div>
+<table>
 <thead>
-<tr><th style="width:16%">Grau</th><th style="width:32%">Prazo — contado da data da produção da info.</th><th>Quem pode classificar (ADMPE) — deve ser utilizado o critério <u>MENOS RESTRITIVO POSSÍVEL</u></th></tr>
+<tr>
+<th style="width:17%"></th>
+<th style="width:30%"><span class="zvm">Prazo</span> - contado da data da produção da info.</th>
+<th><span class="zvm">Quem pode classificar</span> (<span class="zaz">ADMPE</span>) – deve ser utilizado o critério <u>menos restritivo possível</u>.</th>
+</tr>
 </thead>
 <tbody>
 <tr>
-<td><mark><strong>ULTRASSECRETA</strong></mark><br/><br/>Decisão por essa classificação deve ser <strong>encaminhada à CMRI</strong>.</td>
-<td><mark><strong>25 anos</strong></mark> <em>ou</em> até certo evento <u>se prazo menor</u>.<br/><br/>A <strong>CMRI</strong> poderá prorrogar, <strong>uma vez</strong>, por até <strong>+25 anos</strong>.</td>
+<td><span class="zgrau zus">Ultrassecreta</span><br/><br/>Decisão por essa classificação deve ser <strong>encaminhada à CMRI</strong>.</td>
+<td><span class="zgrau">25 anos</span> <em>ou</em> <span style="font-variant:small-caps">até certo evento <u>se prazo menor</u></span>.<br/><br/>▪ <strong>CMRI</strong> poderá <strong>prorrogar, uma vez</strong> por <u>até +25 anos</u>.</td>
 <td>
-<ul class="dash">
-<li>PR e VPR.</li>
-<li>Ministros e autoridades com mesmas prerrogativas.</li>
-<li>Comandantes das FFAA — deve ser <u>ratificada pelo MD</u>.</li>
-<li>Embaixadores e Cônsules — deve ser <u>ratificada pelo MRE</u>.</li>
+<ul class="plain" style="padding-left:0">
+<li>- PR e VPR.</li>
+<li>- Ministros e autoridades com mesmas prerrogativas.</li>
+<li>- Comandantes das FFAA – <span style="color:#777">deve ser <u>ratificada pelo MD</u></span>.</li>
+<li>- Embaixadores e Cônsules – <span style="color:#777">deve ser <u>ratificada pelo MRE</u></span>.</li>
 </ul>
-<strong>Podem delegar</strong>, <u>VEDADA</u> subdelegação.
+<span class="zcinza"><strong class="zvd">Podem delegar</strong>, <u>VEDADA</u> subdelegação.</span>
 </td>
 </tr>
 <tr>
-<td><mark><strong>SECRETA</strong></mark></td>
-<td><strong>15 anos</strong> <em>ou</em> até certo evento <u>se prazo menor</u>.</td>
+<td><span class="zgrau">Secreta</span></td>
+<td><span class="zgrau">15 anos</span> <em>ou</em> <span style="font-variant:small-caps">até certo evento <u>se prazo menor</u></span>.</td>
 <td>
-<ul class="dash">
-<li>Mesmas da <strong>Ultrassecreta</strong>.</li>
-<li>Titulares de AUT, FUND, EP e SEM.</li>
+<ul class="plain" style="padding-left:0">
+<li>- Mesmas da <span style="font-variant:small-caps;color:#c00000">Ultrassecreta</span>.</li>
+<li>- Titulares de AUT, FUND, EP e SEM.</li>
 </ul>
-<strong>Podem delegar</strong>, <u>VEDADA</u> subdelegação.
+<span class="zcinza"><strong class="zvd">Podem delegar</strong>, <u>VEDADA</u> subdelegação.</span>
 </td>
 </tr>
 <tr>
-<td><mark><strong>RESERVADA</strong></mark></td>
-<td><strong>05 anos</strong> <em>ou</em> até certo evento <u>se prazo menor</u>.</td>
+<td><span class="zgrau">Reservada</span></td>
+<td><span class="zgrau">05 anos</span> <em>ou</em> <span style="font-variant:small-caps">até certo evento <u>se prazo menor</u></span>.</td>
 <td>
-<ul class="dash">
-<li>Mesmas da <strong>Ultrassecreta</strong> e <strong>Secreta</strong>.</li>
-<li>Exercente de funções de direção, comando, chefia ou assessoramento, <strong>≥ DAS 101.5</strong> do GDAS <em>ou</em> equivalente.</li>
+<ul class="plain" style="padding-left:0">
+<li>- Mesmas da <span style="font-variant:small-caps;color:#c00000">Ultrassecreta</span> e <span style="font-variant:small-caps">Secreta</span>.</li>
+<li>- Exercente de funções de direção, comando, chefia ou assessoramento, <u>≥ DAS 101.5</u> do GDAS <em>ou</em> equivalente.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<div class="balao b-azul">
-<div class="balao-titulo">Autoridades — regra especial</div>
-<p>Segurança do PR, VPR e respectivos cônjuges / filhos serão classificadas como <strong>RESERVADAS</strong> e ficarão <strong>sob sigilo</strong> até término do mandato atual <em>ou</em> <u>último, se reeleição</u>. Decorrido o prazo <em>ou</em> ocorrido o evento, a informação torna-se <u>IMEDIATA</u> e <u>AUTOMATICAMENTE</u> pública.</p>
+<div class="zrodape">Segurança do PR, VPR e respectivos cônjuges / filhos, serão classificadas como <strong style="color:#c00000">RESERVADAS</strong> e ficarão <strong>sob sigilo</strong> <span style="font-variant:small-caps">até término do mandato atual</span> <em>ou</em> <u>último, se reeleição</u>. <strong>Decorrido o prazo <em>ou</em> ocorrido o evento</strong>, a informação torna-se <u>IMEDIATA</u> e <u>AUTOMATICAMENTE</u> pública.</div>
+<div class="zpessoais">
+<div class="zcab2">INFORMAÇÕES PESSOAIS</div>
+<div><mark>Vida privada, honra, imagem, liberdades e garantias individuais:</mark> <strong>acesso restrito</strong> <u>independentemente</u> de classificação de sigilo por <mark><strong><u>até 100 anos</u></strong></mark>. Acesso pode ser <strong class="zvd">autorizado</strong> por LEI <em>ou</em> CONSENTIMENTO* expresso.</div>
 </div>
-<div class="balao b-vermelho">
-<div class="balao-titulo">Informações pessoais</div>
-<p><mark>Vida privada, honra, imagem, liberdades e garantias individuais:</mark> <strong>acesso restrito</strong> <u>independentemente</u> de classificação de sigilo por <mark><strong>até 100 anos</strong></mark>. Acesso pode ser <strong>autorizado</strong> por LEI <em>ou</em> CONSENTIMENTO expresso.</p>
 </div>
 </section>
 
-<section class="lepcard bordered"><div class="card-head"><div class="num">5</div><h3>Competência para Classificar o Grau de Sigilo — resumo</h3></div>
-<table class="tab">
-<thead>
-<tr><th style="width:22%">Grau</th><th>Quem classifica</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>ULTRASSECRETO</strong><br/>(25 anos)</td><td>
-<ul class="dash">
-<li>Presidente da República + Vice</li>
-<li>Ministros de Estado (e autoridades com mesmas prerrogativas)</li>
-<li>Comandantes da Marinha, do Exército e da Aeronáutica</li>
-<li>Chefes de Missões Diplomáticas e Consulares permanentes no exterior</li>
-</ul>
-</td></tr>
-<tr><td><strong>SECRETO</strong><br/>(15 anos)</td><td>
-<ul class="dash">
-<li>Autoridades mencionadas acima</li>
-<li>Titulares de autarquias, fundações públicas ou estatais</li>
-</ul>
-</td></tr>
-<tr><td><strong>RESERVADO</strong><br/>(5 anos)</td><td>
-<ul class="dash">
-<li>Autoridades mencionadas acima</li>
-<li>Autoridades que exerçam funções de direção, comando ou chefia, nível DAS 101.5, ou superior</li>
-</ul>
-</td></tr>
-</tbody>
-</table>
+<section class="lepcard bordered"><div class="card-head"><div class="num">5</div><h3>Competência para Classificar o Grau de Sigilo</h3></div>
+<div class="lai-cp">
+<div class="zraiz">competência p/ classificar o grau de sigilo</div>
+<div class="zcol">
+<div class="zgrupo">
+<div class="zno zus">ultrassecreto<small>(25 anos)</small></div>
+<div class="zfls">
+<div class="zfl zus">Presidente da República + Vice</div>
+<div class="zfl zus">Ministros de Estado (e autoridades com mesmas prerrogativas)</div>
+<div class="zfl zus">Comandantes da Marinha, do Exército e da Aeronáutica</div>
+<div class="zfl zus">Chefes de Missões Diplomáticas e Consulares permanentes no exterior</div>
+</div>
+</div>
+<div class="zgrupo">
+<div class="zno zse">secreto<small>(15 anos)</small></div>
+<div class="zfls">
+<div class="zfl zse">autoridades mencionadas acima</div>
+<div class="zfl zse">titulares de autarquias, fundações públicas ou estatais</div>
+</div>
+</div>
+<div class="zgrupo">
+<div class="zno zre">reservado<small>(5 anos)</small></div>
+<div class="zfls">
+<div class="zfl zre">autoridades mencionadas acima</div>
+<div class="zfl zre">autoridades que exerçam funções de direção, comando ou chefia, nível DAS 101.5, ou superior</div>
+</div>
+</div>
+</div>
+</div>
 </section>
 
 <section class="lepcard bordered"><div class="card-head"><div class="num">6</div><h3>Pegadinhas de prova</h3></div>
 <div class="balao b-vermelho">
-<div class="balao-titulo">Decore estes quatro</div>
 <ul class="plain">
-<li>Suspensão e impedimento: <mark>2 anos</mark>, <strong>não</strong> é 4 anos.</li>
-<li>Reabilitação perante a <mark>PRÓPRIA autoridade</mark> que aplicou a inidoneidade.</li>
-<li>Rescisão do vínculo <mark>NÃO exige</mark> outras condições.</li>
-<li>Multa cumula com tudo, <mark>MENOS inidoneidade</mark>.</li>
+<li>---&gt; Suspensão e impedimento: <mark>2 anos</mark>, não é 4 anos.</li>
+<li>---&gt; Reabilitação perante a <mark>PRÓPRIA autoridade</mark> que aplicou a inidoneidade.</li>
+<li>---&gt; Rescisão do vínculo <mark>NÃO exige</mark> outras condições.</li>
+<li>---&gt; Multa cumula com tudo, <mark>MENOS inidoneidade</mark>.</li>
 </ul>
 </div>
 </section>
