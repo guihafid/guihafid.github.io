@@ -15561,11 +15561,42 @@ async function enviarAnotacoes(){
   for (const k in agora) if (agora[k] && typeof agora[k].html === "string") anotAntes[k] = agora[k].html;
 }
 
+const ID_APARELHO = Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+/* Escuta as gravacoes da propria conta e traz o cronometro de outro aparelho.
+   Pausou no tablet, o computador pausa junto, sem precisar recarregar. */
+function ouvirCronometro(){
+  if (!USUARIO || !sb.channel) return;
+  sb.channel("crono-" + USUARIO.id)
+    .on("postgres_changes",
+        { event:"UPDATE", schema:"public", table:"dados",
+          filter:"usuario=eq." + USUARIO.id },
+        carga => {
+          const vindo = carga && carga.new && carga.new.conteudo;
+          if (!vindo || vindo._origem === ID_APARELHO) return;   // eco meu, ignora
+          const dele = vindo.estudo && vindo.estudo.crono;
+          const meu  = DB.estudo && DB.estudo.crono;
+          if (!dele || !meu) return;
+          // so mexe se mudou de verdade: ligado/desligado, pausado/correndo ou zerado
+          if (dele.ativo === meu.ativo && dele.iniMs === meu.iniMs &&
+              n(dele.acum) === n(meu.acum)) return;
+          meu.ativo = dele.ativo; meu.iniMs = dele.iniMs; meu.acum = dele.acum;
+          meu.mat = dele.mat; meu.cont = dele.cont; meu.tipo = dele.tipo;
+          meu.obs = dele.obs; meu.alvo = dele.alvo; meu.prox = dele.prox;
+          meu.dia = dele.dia; meu.horaIni = dele.horaIni;
+          anterior = instantanea();          // nao devolve isso para a nuvem
+          pulsoCrono();
+          if (emTelaCheia()) atualizarBotaoCrono(); else render();
+        })
+    .subscribe();
+}
+
 async function persistir(texto){
   if (ONDE === "memoria" || !USUARIO){ avisarEstado(rotulo()); return; }
   try{
     const pacote = JSON.parse(texto);
     delete pacote.crimEdit;              // as anotacoes vao pela outra tabela
+    pacote._origem = ID_APARELHO;        // para eu nao reagir ao meu proprio eco
     const { error } = await sb.from("dados").upsert({
       usuario: USUARIO.id, conteudo: pacote, atualizado_em: new Date().toISOString() });
     if (error) throw error;
@@ -15654,6 +15685,7 @@ async function carregar(){
     if (a.error) throw a.error;
     const pacote = (g.data && g.data.conteudo) || null;
     if (pacote){
+      delete pacote._origem;             // marca de controle, nao e dado
       pacote.crimEdit = {};
       (a.data || []).forEach(r => {
         pacote.crimEdit[r.secao] = { html: r.html, data: (r.atualizado_em||"").slice(0,10), ts: Date.parse(r.atualizado_em)||Date.now() };
@@ -17765,6 +17797,7 @@ function anunciar(){
 function liberarPonte(){
   pontePronta = true;
   anunciar();
+  ouvirCronometro();
 }
 
 /* ---------- grava os julgados vindos do Buscador Dizer o Direito ---------- */
@@ -44799,9 +44832,9 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <td class="col-pr">–</td>
 </tr>
 <tr>
-<td class="cond"><b>Suspensão dos direitos políticos</b><span class="det">Só produz efeitos <b style="display:inline">após</b> <em>trânsito em julgado</em>.</span></td>
-<td class="col-ei">Até 14 anos (limite: 20 anos)</td>
-<td class="col-pe">Até 12 anos (limite: 20 anos)</td>
+<td class="cond"><b>Suspensão dos direitos políticos</b><span class="det">Só produz efeitos <b style="display:inline">após</b> <em>trânsito em julgado</em>. <b style="display:inline;color:#1f4e79">(STF — Info 1225)</b><a href="https://buscadordizerodireito.com.br/informativo/1106/1225-stf" target="_blank" rel="noopener" title="Abrir o Informativo 1225 do STF" style="text-decoration:none;font-weight:700;margin-left:3px">↗</a></span></td>
+<td class="col-ei">Até 14 anos (limite: 20 anos)*</td>
+<td class="col-pe">Até 12 anos (limite: 20 anos)*</td>
 <td class="col-pr">–</td>
 </tr>
 <tr>
@@ -44811,10 +44844,10 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <td class="col-pr">Até 24x remuneração</td>
 </tr>
 <tr>
-<td class="cond"><b>Proibição de contratar ou de receber benefícios fiscais ou creditícios com a União, os Estados e os Municípios</b></td>
-<td class="col-ei">Até 14 anos (limite: 20 anos)</td>
-<td class="col-pe">Até 12 anos (limite: 20 anos)</td>
-<td class="col-pr">Até 4 anos (limite: 20 anos)</td>
+<td class="cond"><b>Proibição de contratar ou de receber benefícios fiscais ou creditícios com a União, os Estados e os Municípios</b><span class="det"><a href="https://buscadordizerodireito.com.br/jurisprudencia/14908/a-sancao-de-proibicao-de-contratar-com-o-poder-publico-produz-efeitos-perante-todos-os-entes-da-administracao-publica-e-nao-apenas-perante-o-ente-lesado?categoria=2" target="_blank" rel="noopener" style="color:inherit">A sanção produz efeitos perante <b style="display:inline">todos os entes</b> da Administração Pública, e não apenas perante o ente lesado.</a></span></td>
+<td class="col-ei">Até 14 anos (limite: 20 anos)*</td>
+<td class="col-pe">Até 12 anos (limite: 20 anos)*</td>
+<td class="col-pr">Até 4 anos (limite: 20 anos)*</td>
 </tr>
 <tr>
 <td class="cond"><b>Ressarcimento integral do dano patrimonial</b></td>
@@ -44830,7 +44863,13 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <li>Até <u>90 dias</u> <em>prorrogáveis</em> uma única vez por igual prazo.</li>
 <li><strong>Sem prejuízo da remuneração.</strong></li>
 </ul>
-</div></section><section class="lepcard bordered"><div class="card-head"><div class="num">4</div><h3>Do Procedimento Administrativo e do Processo Judicial <span class="artigo">(arts. 14 a 18-A)</span></h3></div><div class="balao b-azul">
+</div>
+<div class="balao b-azul">
+<p class="balao-tit">Responsabilização de sócios e administradores</p>
+<p><strong>Sócios, administradores e colaboradores</strong> de pessoa jurídica podem ser responsabilizados por improbidade caso fique comprovada a sua <strong><u>participação dolosa</u></strong>, <em>mesmo que não tenham obtido benefícios diretos</em>. <strong style="color:#1f4e79">(STF — Info 1225)</strong><a href="https://buscadordizerodireito.com.br/informativo/1106/1225-stf" target="_blank" rel="noopener" title="Abrir o Informativo 1225 do STF" style="text-decoration:none;font-weight:700;margin-left:3px">↗</a></p>
+</div>
+<p style="font-size:.86em;margin-top:10px;padding-top:7px;border-top:1px solid #bfbfbf;line-height:1.45"><b>*</b> O <b>limite de 20 anos</b> vem do julgamento das <b>ADIs 7.156 e 7.236</b>, em que o Plenário fixou o prazo máximo de 20 anos para a prescrição na ação de improbidade (<b>art. 23</b>), evitando que interrupções sucessivas mantivessem o processo aberto indefinidamente. <u>É prescrição, não dosimetria da pena.</u></p>
+</section><section class="lepcard bordered"><div class="card-head"><div class="num">4</div><h3>Do Procedimento Administrativo e do Processo Judicial <span class="artigo">(arts. 14 a 18-A)</span></h3></div><div class="balao b-azul">
 <p class="balao-tit">Ação por Improbidade Administrativa — características</p>
 <ul class="check">
 <li><u>Repressiva</u> de <u>caráter sancionatório</u></li>
@@ -44852,7 +44891,11 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <li>Bloqueio de contas bancárias</li>
 </ul>
 </li>
-</ul><div class="balao b-verde">
+</ul>
+<div class="balao b-azul">
+<p class="balao-tit">Indisponibilidade em caráter excepcional</p>
+<p><a href="https://buscadordizerodireito.com.br/jurisprudencia/14911/em-situacoes-excepcionais-e-mediante-decisao-fundamentada-o-juiz-pode-decretar-a-indisponibilidade-de-bens-com-base-em-tutela-de-evidencia-ou-em-presuncao-de-urgencia-a-indisponibilidade-pode-abranger-o-dano-ao-erario-a-multa-civil-e-o-enriquecimento-ilicito?categoria=2" target="_blank" rel="noopener" style="color:inherit">Em situações excepcionais e mediante <strong>decisão fundamentada</strong>, o juiz pode decretar a indisponibilidade de bens com base em <strong>tutela de evidência</strong> ou em <strong>presunção de urgência</strong>; a indisponibilidade pode abranger o <u>dano ao erário</u>, a <u>multa civil</u> e o <u>enriquecimento ilícito</u>.</a> <b style="display:inline;color:#1f4e79">(STF — Info 1225)</b><a href="https://buscadordizerodireito.com.br/informativo/1106/1225-stf" target="_blank" rel="noopener" title="Abrir o Informativo 1225 do STF" style="text-decoration:none;font-weight:700;margin-left:3px">↗</a></p>
+</div><div class="balao b-verde">
 <p class="balao-tit">Natureza da ação e foro (STF)</p>
 <p>O <strong>STF</strong> consolidou o entendimento de que a ação de improbidade tem natureza <strong>civil</strong>, logo, <strong>não existe foro por prerrogativa de função</strong> (foro privilegiado), salvo para o Presidente da República em crimes de responsabilidade específicos.</p>
 </div></section><section class="lepcard bordered"><div class="card-head"><div class="num">5</div><h3>Das Disposições Penais <span class="artigo">(arts. 19 a 22)</span></h3></div><div class="balao b-azul">
