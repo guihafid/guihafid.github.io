@@ -15575,14 +15575,12 @@ if ("serviceWorker" in navigator){
    se outro aparelho escreveu enquanto voce estava fora. */
 const COPIA_LOCAL = "hafid-copia-v1";
 const MARCA_LOCAL = "hafid-marca-v1";
-function guardarCopia(pacote){
-  try{ localStorage.setItem(COPIA_LOCAL, JSON.stringify(pacote)); return true; }
-  catch(e){ return false; }
-}
-function lerCopia(){
-  try{ const v = localStorage.getItem(COPIA_LOCAL); return v ? JSON.parse(v) : null; }
-  catch(e){ return null; }
-}
+
+/* So e permitido gravar offline se a sessao COMECOU online. Sessao que nasce
+   offline carregou de uma copia possivelmente velha: devolve-la a nuvem
+   apagaria o que estivesse bom la. Essa era a falha da versao anterior. */
+let sessaoOnline = false;
+
 function lerMarca(){
   try{ return JSON.parse(localStorage.getItem(MARCA_LOCAL)) || {}; }
   catch(e){ return {}; }
@@ -15591,6 +15589,25 @@ function gravarMarca(m){
   try{ localStorage.setItem(MARCA_LOCAL, JSON.stringify(m)); }catch(e){}
 }
 function temPendencia(){ return lerMarca().pendente === true; }
+
+/* Quanta coisa ha num pacote. Serve para barrar envio que esvazia. */
+function tamanhoDe(p){
+  if (!p) return { con:0, ses:0, cad:0 };
+  const n = x => Array.isArray(x) ? x.length : 0;
+  let cad = 0;
+  const c = p.caderno || {};
+  for (const k in c) cad += n(c[k]);
+  return { con: n(p.concursos), ses: n(p.sessoes), cad: cad };
+}
+
+function guardarCopia(pacote){
+  try{ localStorage.setItem(COPIA_LOCAL, JSON.stringify(pacote)); return true; }
+  catch(e){ return false; }
+}
+function lerCopia(){
+  try{ const v = localStorage.getItem(COPIA_LOCAL); return v ? JSON.parse(v) : null; }
+  catch(e){ return null; }
+}
 
 const ID_APARELHO = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -15633,20 +15650,42 @@ async function enviarParaNuvem(texto){
     .select("atualizado_em").single();
   if (error) throw error;
   await enviarAnotacoes();
-  gravarMarca({ visto: data && data.atualizado_em, pendente: false });
   return true;
+}
+
+/* Envia o que esta na tela. Lanca erro se a rede falhar. */
+async function enviarParaNuvem(texto){
+  const pacote = JSON.parse(texto);
+  delete pacote.crimEdit;                // as anotacoes vao pela outra tabela
+  pacote._origem = ID_APARELHO;          // para eu nao reagir ao meu proprio eco
+  const { data, error } = await sb.from("dados")
+    .upsert({ usuario: USUARIO.id, conteudo: pacote,
+              atualizado_em: new Date().toISOString() })
+    .select("atualizado_em").single();
+  if (error) throw error;
+  await enviarAnotacoes();
+  guardarCopia(JSON.parse(texto));       // copia local so DEPOIS de a nuvem aceitar
+  gravarMarca({ visto: data && data.atualizado_em, pendente: false });
 }
 
 async function persistir(texto){
   if (ONDE === "memoria" || !USUARIO){ avisarEstado(rotulo()); return; }
-  const coube = guardarCopia(JSON.parse(texto));   // o aparelho guarda primeiro
+  if (ONDE === "offline" && !sessaoOnline){
+    avisarEstado("o app abriu sem internet — somente leitura, nada sera salvo");
+    return;
+  }
   try{
     await enviarParaNuvem(texto);
     ONDE = "nuvem";
     avisarEstado(rotulo() + " " + new Date().toLocaleTimeString("pt-BR").slice(0,5));
   }catch(e){
-    if (!coube){
-      avisarEstado("sem internet e sem espaço no aparelho — NAO foi salvo");
+    if (!sessaoOnline){                  // nunca enfileira sessao nascida offline
+      avisarEstado("nao consegui salvar — confira sua conexao");
+      return;
+    }
+    const guardou = guardarCopia(JSON.parse(texto));
+    if (!guardou){
+      avisarEstado("sem internet e sem espaco no aparelho — NAO foi salvo");
       return;
     }
     const m = lerMarca(); m.pendente = true; gravarMarca(m);
@@ -15655,37 +15694,55 @@ async function persistir(texto){
   }
 }
 
-/* Sobe o que ficou pendente. Antes de sobrescrever, confere se outro aparelho
-   escreveu enquanto este estava fora: se escreveu, quem decide e voce. */
+/* Sobe o que ficou pendente, com duas travas antes de sobrescrever a nuvem:
+   1) outro aparelho gravou nesse meio-tempo?  2) o que vou mandar esta mais
+   vazio do que o que esta la?  Em qualquer dos dois, quem decide e voce. */
 let sincronizando = false;
 async function sincronizarPendente(){
-  if (sincronizando || !USUARIO || !temPendencia()) return;
-  if (!navigator.onLine) return;
+  if (sincronizando || !USUARIO || !sessaoOnline || !temPendencia()) return;
+  if (navigator.onLine === false) return;
   sincronizando = true;
   try{
     const marca = lerMarca();
     const { data, error } = await sb.from("dados")
-      .select("atualizado_em").eq("usuario", USUARIO.id).maybeSingle();
+      .select("conteudo,atualizado_em").eq("usuario", USUARIO.id).maybeSingle();
     if (error) throw error;
     const naNuvem = data && data.atualizado_em;
 
     if (naNuvem && marca.visto && naNuvem !== marca.visto){
-      const fica = confirm(
-        [ "Outro aparelho salvou enquanto este estava sem internet.", "",
-          "OK = enviar o deste aparelho (substitui o da nuvem)",
-          "Cancelar = descartar o deste aparelho e trazer o da nuvem"
-        ].join(String.fromCharCode(10)));
-      if (!fica){
+      const manter = confirm([
+        "Outro aparelho salvou enquanto este estava sem internet.", "",
+        "OK = enviar o deste aparelho (substitui o da nuvem)",
+        "Cancelar = descartar o deste aparelho e trazer o da nuvem"
+      ].join(String.fromCharCode(10)));
+      if (!manter){
         gravarMarca({ visto: naNuvem, pendente: false });
         location.reload();
         return;
       }
     }
+
+    const aqui = tamanhoDe(DB);
+    const la   = tamanhoDe(data && data.conteudo);
+    const esvazia = (la.con > 0 && aqui.con === 0) ||
+                    (la.ses > 0 && aqui.ses === 0) ||
+                    (la.cad > 0 && aqui.cad === 0);
+    if (esvazia){
+      const seguir = confirm([
+        "ATENCAO: o que este aparelho quer enviar esta mais vazio do que o",
+        "que esta guardado na nuvem.", "",
+        "Na nuvem: " + la.con + " concurso(s), " + la.ses + " sessao(oes), " + la.cad + " erro(s)",
+        "Aqui:     " + aqui.con + " concurso(s), " + aqui.ses + " sessao(oes), " + aqui.cad + " erro(s)", "",
+        "OK = enviar mesmo assim     Cancelar = nao enviar (recomendado)"
+      ].join(String.fromCharCode(10)));
+      if (!seguir){ sincronizando = false; return; }
+    }
+
     await enviarParaNuvem(JSON.stringify(DB));
     ONDE = "nuvem";
     avisarEstado("enviado — " + rotulo());
   }catch(e){
-    // segue pendente; tenta de novo na proxima
+    // segue pendente; tenta de novo depois
   }finally{ sincronizando = false; }
 }
 
@@ -15778,10 +15835,11 @@ async function carregar(){
       });
       adotar(DB, pacote);
       guardarCopia(pacote);            // fica disponivel se a rede cair
-      if (!temPendencia()) gravarMarca({ visto: g.data && g.data.atualizado_em, pendente: false });
+      sessaoOnline = true;             // a partir daqui, gravar offline e seguro
+      gravarMarca({ visto: g.data && g.data.atualizado_em, pendente: temPendencia() });
       anterior = instantanea();
       avisarEstado("retomado — " + rotulo());
-      sincronizarPendente();           // ficou algo de uma sessao offline?
+      sincronizarPendente();           // sobrou algo de uma sessao anterior?
       return;
     }
   }catch(e){
@@ -15790,9 +15848,7 @@ async function carregar(){
       adotar(DB, copia);
       ONDE = "offline";
       anterior = instantanea();
-      avisarEstado(temPendencia()
-        ? "sem internet — há mudanças guardadas neste aparelho esperando envio"
-        : "sem internet — seus dados são os da última vez que você entrou");
+      avisarEstado("sem internet — somente leitura (o app abriu sem conexão)");
       return;
     }
     ONDE = "memoria";
