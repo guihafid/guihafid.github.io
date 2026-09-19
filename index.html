@@ -15569,17 +15569,28 @@ if ("serviceWorker" in navigator){
   });
 }
 
-/* Copia local dos dados, usada quando a rede falha. So para LEITURA:
-   gravar offline exigiria fila de sincronizacao e tratamento de conflito. */
+/* Copia local dos dados. Serve para ler sem internet e tambem para gravar: o
+   que voce muda offline fica guardado aqui e sobe quando a rede volta. A marca
+   guarda o carimbo da ultima versao vinda da nuvem — e com ele que se descobre
+   se outro aparelho escreveu enquanto voce estava fora. */
 const COPIA_LOCAL = "hafid-copia-v1";
+const MARCA_LOCAL = "hafid-marca-v1";
 function guardarCopia(pacote){
-  try{ localStorage.setItem(COPIA_LOCAL, JSON.stringify(pacote)); }
-  catch(e){ /* sem espaco: segue sem copia */ }
+  try{ localStorage.setItem(COPIA_LOCAL, JSON.stringify(pacote)); return true; }
+  catch(e){ return false; }
 }
 function lerCopia(){
   try{ const v = localStorage.getItem(COPIA_LOCAL); return v ? JSON.parse(v) : null; }
   catch(e){ return null; }
 }
+function lerMarca(){
+  try{ return JSON.parse(localStorage.getItem(MARCA_LOCAL)) || {}; }
+  catch(e){ return {}; }
+}
+function gravarMarca(m){
+  try{ localStorage.setItem(MARCA_LOCAL, JSON.stringify(m)); }catch(e){}
+}
+function temPendencia(){ return lerMarca().pendente === true; }
 
 const ID_APARELHO = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -15611,25 +15622,75 @@ function ouvirCronometro(){
     .subscribe();
 }
 
+/* Envia o que esta na tela para a nuvem. Devolve true se conseguiu. */
+async function enviarParaNuvem(texto){
+  const pacote = JSON.parse(texto);
+  delete pacote.crimEdit;                // as anotacoes vao pela outra tabela
+  pacote._origem = ID_APARELHO;          // para eu nao reagir ao meu proprio eco
+  const { data, error } = await sb.from("dados")
+    .upsert({ usuario: USUARIO.id, conteudo: pacote,
+              atualizado_em: new Date().toISOString() })
+    .select("atualizado_em").single();
+  if (error) throw error;
+  await enviarAnotacoes();
+  gravarMarca({ visto: data && data.atualizado_em, pendente: false });
+  return true;
+}
+
 async function persistir(texto){
-  if (ONDE === "offline"){
-    avisarEstado("sem internet — o que você mudar agora NAO sera salvo");
-    return;
-  }
   if (ONDE === "memoria" || !USUARIO){ avisarEstado(rotulo()); return; }
+  const coube = guardarCopia(JSON.parse(texto));   // o aparelho guarda primeiro
   try{
-    const pacote = JSON.parse(texto);
-    delete pacote.crimEdit;              // as anotacoes vao pela outra tabela
-    pacote._origem = ID_APARELHO;        // para eu nao reagir ao meu proprio eco
-    const { error } = await sb.from("dados").upsert({
-      usuario: USUARIO.id, conteudo: pacote, atualizado_em: new Date().toISOString() });
-    if (error) throw error;
-    await enviarAnotacoes();
+    await enviarParaNuvem(texto);
+    ONDE = "nuvem";
     avisarEstado(rotulo() + " " + new Date().toLocaleTimeString("pt-BR").slice(0,5));
   }catch(e){
-    avisarEstado("nao consegui salvar — confira sua conexao");
+    if (!coube){
+      avisarEstado("sem internet e sem espaço no aparelho — NAO foi salvo");
+      return;
+    }
+    const m = lerMarca(); m.pendente = true; gravarMarca(m);
+    ONDE = "offline";
+    avisarEstado("guardado neste aparelho — envio quando a internet voltar");
   }
 }
+
+/* Sobe o que ficou pendente. Antes de sobrescrever, confere se outro aparelho
+   escreveu enquanto este estava fora: se escreveu, quem decide e voce. */
+let sincronizando = false;
+async function sincronizarPendente(){
+  if (sincronizando || !USUARIO || !temPendencia()) return;
+  if (!navigator.onLine) return;
+  sincronizando = true;
+  try{
+    const marca = lerMarca();
+    const { data, error } = await sb.from("dados")
+      .select("atualizado_em").eq("usuario", USUARIO.id).maybeSingle();
+    if (error) throw error;
+    const naNuvem = data && data.atualizado_em;
+
+    if (naNuvem && marca.visto && naNuvem !== marca.visto){
+      const fica = confirm(
+        [ "Outro aparelho salvou enquanto este estava sem internet.", "",
+          "OK = enviar o deste aparelho (substitui o da nuvem)",
+          "Cancelar = descartar o deste aparelho e trazer o da nuvem"
+        ].join(String.fromCharCode(10)));
+      if (!fica){
+        gravarMarca({ visto: naNuvem, pendente: false });
+        location.reload();
+        return;
+      }
+    }
+    await enviarParaNuvem(JSON.stringify(DB));
+    ONDE = "nuvem";
+    avisarEstado("enviado — " + rotulo());
+  }catch(e){
+    // segue pendente; tenta de novo na proxima
+  }finally{ sincronizando = false; }
+}
+
+window.addEventListener("online", sincronizarPendente);
+setInterval(sincronizarPendente, 30000);
 function registrar(){
   clearTimeout(timer); timer = null;
   sincronizarCiclo();            // o andamento vem das sessões, sempre
@@ -15702,7 +15763,7 @@ async function carregar(){
     }).catch(() => {});
   try{
     const [g, a] = await Promise.all([
-      sb.from("dados").select("conteudo").eq("usuario", USUARIO.id).maybeSingle(),
+      sb.from("dados").select("conteudo,atualizado_em").eq("usuario", USUARIO.id).maybeSingle(),
       sb.from("anotacoes").select("secao,html,atualizado_em").eq("usuario", USUARIO.id)
     ]);
     if (g.error) throw g.error;
@@ -15717,8 +15778,10 @@ async function carregar(){
       });
       adotar(DB, pacote);
       guardarCopia(pacote);            // fica disponivel se a rede cair
+      if (!temPendencia()) gravarMarca({ visto: g.data && g.data.atualizado_em, pendente: false });
       anterior = instantanea();
       avisarEstado("retomado — " + rotulo());
+      sincronizarPendente();           // ficou algo de uma sessao offline?
       return;
     }
   }catch(e){
@@ -15727,7 +15790,9 @@ async function carregar(){
       adotar(DB, copia);
       ONDE = "offline";
       anterior = instantanea();
-      avisarEstado("sem internet — seus dados são os da última vez que você entrou");
+      avisarEstado(temPendencia()
+        ? "sem internet — há mudanças guardadas neste aparelho esperando envio"
+        : "sem internet — seus dados são os da última vez que você entrou");
       return;
     }
     ONDE = "memoria";
