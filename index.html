@@ -15381,6 +15381,7 @@ async function descobrirOnde(){
   ONDE = testarNavegador() ? "navegador" : "memoria";
 }
 const rotulo = () => ONDE === "nuvem" ? "salvo na sua conta"
+              : ONDE === "offline" ? "sem internet — somente leitura"
               : "SEM salvamento — use a cópia de segurança";
 
 /* ---------- trocar o conteúdo do DB sem trocar o objeto ----------
@@ -15561,6 +15562,25 @@ async function enviarAnotacoes(){
   for (const k in agora) if (agora[k] && typeof agora[k].html === "string") anotAntes[k] = agora[k].html;
 }
 
+/* Guarda o app no aparelho (sw.js) para que ele abra sem internet. */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+
+/* Copia local dos dados, usada quando a rede falha. So para LEITURA:
+   gravar offline exigiria fila de sincronizacao e tratamento de conflito. */
+const COPIA_LOCAL = "hafid-copia-v1";
+function guardarCopia(pacote){
+  try{ localStorage.setItem(COPIA_LOCAL, JSON.stringify(pacote)); }
+  catch(e){ /* sem espaco: segue sem copia */ }
+}
+function lerCopia(){
+  try{ const v = localStorage.getItem(COPIA_LOCAL); return v ? JSON.parse(v) : null; }
+  catch(e){ return null; }
+}
+
 const ID_APARELHO = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 /* Escuta as gravacoes da propria conta e traz o cronometro de outro aparelho.
@@ -15592,6 +15612,10 @@ function ouvirCronometro(){
 }
 
 async function persistir(texto){
+  if (ONDE === "offline"){
+    avisarEstado("sem internet — o que você mudar agora NAO sera salvo");
+    return;
+  }
   if (ONDE === "memoria" || !USUARIO){ avisarEstado(rotulo()); return; }
   try{
     const pacote = JSON.parse(texto);
@@ -15692,11 +15716,20 @@ async function carregar(){
         anotAntes[r.secao] = r.html;
       });
       adotar(DB, pacote);
+      guardarCopia(pacote);            // fica disponivel se a rede cair
       anterior = instantanea();
       avisarEstado("retomado — " + rotulo());
       return;
     }
   }catch(e){
+    const copia = lerCopia();
+    if (copia){
+      adotar(DB, copia);
+      ONDE = "offline";
+      anterior = instantanea();
+      avisarEstado("sem internet — seus dados são os da última vez que você entrou");
+      return;
+    }
     ONDE = "memoria";
     avisarEstado("nao consegui ler seus dados — confira sua conexao");
     anterior = instantanea();
@@ -29851,6 +29884,8 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">1</div><h3>Conceito</h3></div>
 <ul class="plain"><li>Organização criminosa é a associação de <b>4 ou mais pessoas</b> estruturalmente ordenada e caracterizada pela divisão de tarefas, <b>ainda que informalmente</b>, com objetivo de obter, direta ou indiretamente, vantagem de qualquer natureza, mediante a prática de infrações penais cujas <b>penas máximas sejam superiores a 4 anos, ou que sejam de caráter transnacional</b>.</li></ul>
+<p style="margin-bottom:4px">Sobre a <b>natureza do crime do art. 2º, § 1º</b> (impedir ou embaraçar a investigação):</p>
+<div class="jur">O delito do <b>art. 2º, § 1º</b>, da Lei nº 12.850/2013 é crime <b>material</b>, inclusive na modalidade <b>embaraçar</b>.<span class="jurcite">STJ. 5ª Turma. REsp 1.817.416-SC, Rel. Min. Joel Ilan Paciornik, julgado em 03/08/2021 (Info 703).</span></div>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">2</div><h3>Caso de Aumento de Pena</h3></div>
