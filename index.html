@@ -14624,6 +14624,13 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
 .mat_dh .qd-vd{color:#2e7d32}
 .mat_dh .qd-lr{color:#e07b39}
 .mat_dh .qd-rx{color:#8e44ad}
+
+/* ----- 11 - LEGISLAÇÃO ESTADUAL ----- */
+.guia.legest{background:#D2E6EE}
+.guia.legest.on{background:#1b5e75;color:#fff;border-color:#1b5e75}
+#guias .grupoMenu.legest{border-top:3px solid #1b5e75}
+.grupo.legest{background:#D2E6EE;border-color:#1b5e75;color:#1b5e75}
+.grupo.legest.ativo{background:#1b5e75;color:#fff;border-color:#1b5e75}
 </style>
 
 <div id="capa"></div>
@@ -15246,6 +15253,7 @@ function migrarMateria(velho, novo){
   }
   const i = DB.materias.indexOf(velho);
   if (i < 0) return false;
+  matVinculoRenomear(velho, novo);      // as gavetas do caderno seguem o nome novo
   DB.materias[i] = novo;
   // 1) lançamentos de cada simulado, nas duas modalidades
   ["O","D"].forEach(mod => {
@@ -18868,6 +18876,8 @@ function garantirCadernos(){
   if (!Array.isArray(DB.cadConteudo)) DB.cadConteudo = [];
   if (!Array.isArray(DB.matNovas)) DB.matNovas = [];
   if (!DB.matNome || typeof DB.matNome !== "object") DB.matNome = {};
+  // gaveta -> nome da matéria na lista da Configuração (quem manda no nome e na ordem)
+  if (!DB.matVinculo || typeof DB.matVinculo !== "object") DB.matVinculo = {};
   if (!Array.isArray(DB.matOcultas)) DB.matOcultas = [];
   if (!Array.isArray(DB.matExcluidas)) DB.matExcluidas = [];
   if (!DB.secNome || typeof DB.secNome !== "object") DB.secNome = {};
@@ -20673,6 +20683,7 @@ function janelaMateria(nome){
         'Os lançamentos continuam guardados: recolocando com o mesmo nome, voltam.')) return;
       const k = DB.materias.indexOf(atual);
       if (k >= 0) DB.materias.splice(k,1);
+      recarregarMaterias();
       salvar(); fechar(); render();
     };
     const bOk = el("button","btn verdinho","✔  Salvar");
@@ -20817,7 +20828,7 @@ function telaListas(){
           if (!novoNome){ inp.value = antigo; return; }
           if (novoNome === antigo) return;
           if (!migrarMateria(antigo, novoNome)){ inp.value = antigo; return; }
-          ordenarMaterias(); salvar(); render();
+          ordenarMaterias(); recarregarMaterias(); salvar(); render();
         });
         td.appendChild(inp); tr.appendChild(td);
       } else
@@ -20869,7 +20880,7 @@ function telaListas(){
         novoItem = String(maior+1).padStart(2,"0") + " - " + novoItem;
       }
       DB[chave].push(novoItem);
-      if (chave === "materias") ordenarMaterias();
+      if (chave === "materias"){ ordenarMaterias(); recarregarMaterias(); }
       salvar(); render();
     };
     acoes.appendChild(b); col.appendChild(acoes);
@@ -27018,7 +27029,8 @@ let MATS = {
     { id:"cap-9", c:"c-roxo", cl:"card chapter", t:"Psiquiatria Forense" }
   ]},
   const: {
-    rot:"03 - CONSTITUCIONAL", cls:"const", est:"mat_const",
+    rot:"03 - CONSTITUCIONAL  \u00b7  DIREITO CONSTITUCIONAL", cls:"const",
+    pai:"03 - CONSTITUCIONAL", sub:"DIREITO CONSTITUCIONAL", est:"mat_const",
     lei:{ url:"https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm",
           nome:"a Constitui\u00e7\u00e3o Federal de 1988" }, secoes:[
     { id:"cap-0", c:"c-azul", cl:"card chapter", t:"Teoria Geral do Direito Constitucional" },
@@ -27033,6 +27045,13 @@ let MATS = {
     { id:"cap-9", c:"c-roxo", cl:"card chapter", t:"Tributa\u00e7\u00e3o e Or\u00e7amento" },
     { id:"cap-10", c:"c-amar", cl:"card chapter", t:"Ordem Social" },
     { id:"cap-11", c:"c-verde", cl:"card chapter", t:"Controle de Constitucionalidade" }
+  ]},
+  legconst: {
+    rot:"03 - CONSTITUCIONAL  \u00b7  LEGISLA\u00c7\u00c3O CONSTITUCIONAL", cls:"const",
+    pai:"03 - CONSTITUCIONAL", sub:"LEGISLA\u00c7\u00c3O CONSTITUCIONAL", est:"mat_const",
+    lei:{ url:"https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm",
+          nome:"a Constitui\u00e7\u00e3o Federal de 1988" }, secoes:[
+    { id:"cap-herm", c:"c-roxo", cl:"card chapter", t:"Hermen\u00eautica e Interpreta\u00e7\u00e3o Constitucional \u2014 FGV" }
   ]},
   pcivil: {
     rot:"04 - PROCESSUAL CIVIL", cls:"pcivil", est:"mat_pcivil",
@@ -27160,6 +27179,12 @@ let MATS = {
     { id:"10", c:"c-roxo", cl:"card", t:"Heteroidentifica\u00e7\u00e3o e cotas raciais em concursos p\u00fablicos" },
     { id:"11", c:"c-amar", cl:"card", t:"Agenda 2030 e Objetivos de Desenvolvimento Sustent\u00e1vel" }
   ]},
+  legest: {
+    rot:"11 - LEGISLA\u00c7\u00c3O ESTADUAL", cls:"legest", est:"mat_lep",
+    lei:{ url:"https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14735.htm",
+          nome:"a Lei n\u00ba 14.735/2023 (Lei Org\u00e2nica Nacional das Pol\u00edcias Civis)" }, secoes:[
+    { id:"14735", c:"c-azul", cl:"card", t:"Lei n\u00ba 14.735/2023 \u2014 Lei Org\u00e2nica Nacional das Pol\u00edcias Civis" }
+  ]},
   amb: {
     rot:"12 - DIREITO AMBIENTAL", cls:"amb", est:"mat_amb", secoes:[
     { id:"cap-0", c:"c-azul", cl:"card chapter", t:"Princ\u00edpios e Compet\u00eancias" },
@@ -27231,7 +27256,7 @@ let MATS = {
             nome:"a Lei n\u00ba 6.830/1980 (Lei de Execu\u00e7\u00e3o Fiscal)" } }
   ]}
 };
-let MAT_ORDEM = ["lep", "med", "const", "pcivil", "ppenal", "adm", "legadm", "crim", "civil", "pen1", "pen2", "dh", "amb", "emp", "empleg", "trib", "tribleg"];
+let MAT_ORDEM = ["lep", "med", "const", "legconst", "pcivil", "ppenal", "adm", "legadm", "crim", "civil", "pen1", "pen2", "legest", "dh", "amb", "emp", "empleg", "trib", "tribleg"];
 const secDe = (mat, id) => (MATS[mat] ? MATS[mat].secoes : []).find(x => x.id === String(id));
 
 /* ---------- mat\u00e9rias criadas por voc\u00ea ----------
@@ -27261,14 +27286,51 @@ function matGavetaBase(k){
   const m = matNovas().find(x => x.key === k);
   return m ? m.key : k;
 }
+/* A lista de matérias da Configuração (Listas e parâmetros) manda no NOME e na
+   ORDEM das gavetas do caderno. Cada gaveta fica ligada a um item da lista:
+   as de fábrica pelo número (a "03 - CONSTITUCIONAL" com a "03 - ..." da lista),
+   as que você acrescenta pelo item escolhido. Renomear na Configuração
+   (migrarMateria) leva a ligação junto, mesmo se o número mudar. */
+function matVinculo(k){
+  garantirCadernos();
+  const lista = Array.isArray(DB.materias) ? DB.materias : [];
+  const base = matGavetaBase(k);
+  const v = DB.matVinculo[base];
+  if (v && lista.indexOf(v) >= 0) return v;
+  const f = MATS_FABRICA[k];
+  if (f){
+    // de fábrica: pelo número
+    const num = (String(f.pai || f.rot).match(/^\s*(\d+)/) || [])[1];
+    if (!num) return null;
+    return lista.find(x => parseInt(x, 10) === parseInt(num, 10)) || null;
+  }
+  // criada antes, com nome livre: só se o nome bater com um da lista
+  // (pelo número poderia pôr o seu conteúdo sob o nome de outra matéria)
+  const m = matNovas().find(x => x.key === k);
+  if (!m) return null;
+  const so = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                            .toUpperCase().replace(/\s+/g, " ").replace(/\s*-\s*/g, " - ").trim();
+  return lista.find(x => so(x) === so(m.rot)) || null;
+}
 function matNomeGaveta(k){
   garantirCadernos();
-  const base = matGavetaBase(k);
-  if (DB.matNome[base]) return DB.matNome[base];
+  const v = matVinculo(k);
+  if (v) return v.toLocaleUpperCase("pt-BR");
   const f = MATS_FABRICA[k];
   if (f) return f.pai || f.rot;
   const m = matNovas().find(x => x.key === k);
   return m ? m.rot : k;
+}
+/* todas as gavetas que existem, visíveis ou não (fábrica + as acrescentadas) */
+function matTodasGavetas(){
+  return ORDEM_FABRICA.concat(matNovas().map(m => m.key));
+}
+/* renomear na Configuração: as gavetas ligadas ao nome velho passam ao novo */
+function matVinculoRenomear(velho, novo){
+  garantirCadernos();
+  matTodasGavetas().forEach(k => {
+    if (matVinculo(k) === velho) DB.matVinculo[matGavetaBase(k)] = novo;
+  });
 }
 /* as se\u00e7\u00f5es de uma mat\u00e9ria: as do arquivo mais as que voc\u00ea criou,
    sem as que voc\u00ea excluiu e com os nomes que voc\u00ea trocou */
@@ -27314,11 +27376,15 @@ function aplicarMatNovas(){
     }
     MATS[k].secoes = matSecoesDe(k, MATS[k].secoes);
   });
-  // ordem alfab\u00e9tica pelo nome da gaveta; irm\u00e3s continuam lado a lado
+  // a ordem é a da lista da Configuração; sem ligação vão para o fim, por nome;
+  // irmãs (subpastas da mesma gaveta) continuam lado a lado
   const posicao = {};
   ORDEM_FABRICA.forEach((k, i) => posicao[k] = i);
   matNovas().forEach((m, i) => posicao[m.key] = 1000 + i);
+  const lista = Array.isArray(DB.materias) ? DB.materias : [];
+  const naLista = k => { const v = matVinculo(k); const i = v ? lista.indexOf(v) : -1; return i < 0 ? 1e6 : i; };
   MAT_ORDEM.sort((a, b) =>
+    naLista(a) - naLista(b) ||
     matNomeGaveta(a).localeCompare(matNomeGaveta(b), "pt", { numeric:true }) ||
     posicao[a] - posicao[b]);
 }
@@ -28832,6 +28898,70 @@ function janelaSecoes(gaveta, soEsta){
   document.body.appendChild(fundo);
 }
 
+/* ---------- acrescentar uma matéria ao caderno ----------
+   Só as da lista da Configuração que ainda não têm gaveta à vista. Se a gaveta
+   existe (de fábrica ou acrescentada) e está oculta ou removida, ela volta com o
+   que tinha; senão nasce uma nova, vazia, ligada ao item da lista. */
+function janelaAdicionarMateria(){
+  garantirCadernos();
+  const fundo = el("div","modalFundo");
+  const caixa = el("div","modalCaixa");
+  const sair = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
+  caixa.appendChild(el("h3", null, "Adicionar mat\u00e9ria"));
+  const lista = Array.isArray(DB.materias) ? DB.materias : [];
+  const vistas = MAT_ORDEM.map(k => matVinculo(k)).filter(Boolean);
+  const livres = lista.filter(m => vistas.indexOf(m) < 0);
+  caixa.appendChild(el("p","dica", livres.length
+    ? "Estas mat\u00e9rias est\u00e3o cadastradas no Painel \u203a Configura\u00e7\u00e3o \u2014 Listas e " +
+      "par\u00e2metros e ainda n\u00e3o t\u00eam gaveta. Para ter outra, cadastre-a l\u00e1 primeiro."
+    : "Todas as mat\u00e9rias da sua lista j\u00e1 est\u00e3o aqui. Para ter outra, cadastre-a no " +
+      "Painel \u203a Configura\u00e7\u00e3o \u2014 Listas e par\u00e2metros."));
+  const box = el("div","matLista");
+  livres.forEach(nome => {
+    const guardada = matTodasGavetas().find(k => matVinculo(k) === nome);
+    const L = el("div","matItem");
+    L.appendChild(el("span","mtNome", nome.toLocaleUpperCase("pt-BR")));
+    L.appendChild(el("span","mtQt", guardada ? "volta com o que tinha" : "nova, vazia"));
+    const b = el("button","mini","\uff0b");
+    b.title = "Adicionar esta mat\u00e9ria ao caderno";
+    b.onclick = () => {
+      garantirCadernos();
+      let key;
+      if (guardada){
+        const base = matGavetaBase(guardada);
+        DB.matOcultas = DB.matOcultas.filter(x => x !== base);
+        DB.matExcluidas = DB.matExcluidas.filter(x => x !== base);
+        DB.matVinculo[base] = nome;
+        key = guardada;
+      } else {
+        let n = 1;
+        while (MATS_FABRICA["nova" + n] || matNovas().some(x => x.key === "nova" + n)) n++;
+        key = "nova" + n;
+        DB.matNovas.push({ key, rot: nome.toLocaleUpperCase("pt-BR"), secoes:[
+          { id:"1", c:"c-azul", cl:"card", t:nome, html: matModeloSecao(1, nome) }
+        ]});
+        DB.matVinculo[key] = nome;
+      }
+      salvar(); recarregarMaterias();
+      abaAtual = "mat_" + key;
+      sair(); render(); window.scrollTo(0,0);
+    };
+    L.appendChild(b);
+    box.appendChild(L);
+  });
+  caixa.appendChild(box);
+  const acoes = el("div","modalAcoes");
+  const bV = el("button","secundario","\u2190 Voltar");
+  bV.onclick = () => { sair(); janelaMaterias(); };
+  const bF = el("button","secundario","Fechar");
+  bF.onclick = sair;
+  acoes.appendChild(bV); acoes.appendChild(bF);
+  caixa.appendChild(acoes);
+  fundo.appendChild(caixa);
+  fundo.onclick = ev => { if (ev.target === fundo) sair(); };
+  document.body.appendChild(fundo);
+}
+
 /* ---------- a janela da engrenagem: as mat\u00e9rias ----------
    Lista as 14 que vieram nos arquivos e as que voc\u00ea criou. As de f\u00e1brica
    s\u00f3 aparecem; as suas d\u00e1 para renomear e apagar. */
@@ -28840,10 +28970,10 @@ function janelaMaterias(){
   const caixa = el("div","modalCaixa");
   caixa.appendChild(el("h3", null, "Mat\u00e9rias dos cadernos"));
   caixa.appendChild(el("p","dica",
-    "D\u00e1 para trocar o nome de qualquer mat\u00e9ria: a lista se reordena sozinha, em " +
-    "ordem alfab\u00e9tica. As que voc\u00ea criar nascem com uma se\u00e7\u00e3o vazia, no mesmo " +
-    "formato das outras. O \u2715 tira a mat\u00e9ria da r\u00e9gua: nas de f\u00e1brica isso se " +
-    "desfaz, nas suas \u00e9 definitivo."));
+    "Os nomes e a ordem v\u00eam do Painel \u203a Configura\u00e7\u00e3o \u2014 Listas e par\u00e2metros: " +
+    "\u00e9 l\u00e1 que se renomeia. Aqui voc\u00ea oculta (\u{1F441}) ou remove (\u2715) uma mat\u00e9ria, " +
+    "e acrescenta s\u00f3 as que estiverem cadastradas nessa lista. Remover uma de f\u00e1brica " +
+    "se desfaz; uma que voc\u00ea acrescentou sai de vez, com o que foi escrito nela."));
 
   const lista = el("div","matLista");
   const sair = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
@@ -28862,21 +28992,7 @@ function janelaMaterias(){
       L.appendChild(el("span","mtNome", matNomeGaveta(k)));
       L.appendChild(el("span","mtQt", secoes +
         (secoes === 1 ? " se\u00e7\u00e3o" : " se\u00e7\u00f5es")));
-      const bR = el("button","mini","\u270e");
-      bR.title = "Trocar o nome desta mat\u00e9ria";
-      bR.onclick = () => {
-        const nome = prompt("Novo nome da mat\u00e9ria:", matNomeGaveta(k));
-        if (nome === null) return;
-        const limpo = nome.trim();
-        garantirCadernos();
-        if (!limpo || limpo === (MATS_FABRICA[k] ? (MATS_FABRICA[k].pai || MATS_FABRICA[k].rot)
-                                                 : matNomeGaveta(k)))
-          delete DB.matNome[base];
-        else DB.matNome[base] = limpo;
-        salvar(); recarregarMaterias(); pintar(); render();
-      };
-      L.appendChild(bR);
-      if (!nova){
+      {
         const bO = el("button","mini","\u{1F441}");
         bO.title = "Ocultar esta mat\u00e9ria (some da r\u00e9gua, volta quando voc\u00ea quiser)";
         bO.onclick = () => {
@@ -28932,7 +29048,7 @@ function janelaMaterias(){
     if (DB.matOcultas.length){
       lista.appendChild(el("div","matCab","Ocultas"));
       DB.matOcultas.forEach(base => {
-        const k = ORDEM_FABRICA.find(x => matGavetaBase(x) === base);
+        const k = matTodasGavetas().find(x => matGavetaBase(x) === base);
         const L = el("div","matItem fora");
         L.appendChild(el("span","mtNome", k ? matNomeGaveta(k) : base));
         const bV = el("button","mini olhoOff","\u{1F441}");
@@ -28951,20 +29067,7 @@ function janelaMaterias(){
 
   const acoes = el("div","modalAcoes");
   const bNova = el("button","principal","\uff0b  Adicionar mat\u00e9ria");
-  bNova.onclick = () => {
-    const nome = prompt("Nome da nova mat\u00e9ria:", "15 - NOVA MAT\u00c9RIA");
-    if (!nome || !nome.trim()) return;
-    garantirCadernos();
-    let n = 1;
-    while (MATS["nova" + n] || matNovas().some(x => x.key === "nova" + n)) n++;
-    const key = "nova" + n;
-    DB.matNovas.push({ key, rot:nome.trim().toUpperCase(), secoes:[
-      { id:"1", c:"c-azul", cl:"card", t:nome.trim(), html: matModeloSecao(1, nome.trim()) }
-    ]});
-    salvar(); recarregarMaterias();
-    abaAtual = "mat_" + key;
-    sair(); render(); window.scrollTo(0,0);
-  };
+  bNova.onclick = () => { sair(); janelaAdicionarMateria(); };
   const bFechar = el("button","secundario","Fechar");
   bFechar.onclick = sair;
   acoes.appendChild(bFechar); acoes.appendChild(bNova);
@@ -29197,7 +29300,7 @@ function render(){
   if (modulo === "cCont"){
     const topo = el("div","guiaTopo");
     const eng = el("button","guiaEngr","\u2699");
-    eng.title = "Matérias: criar uma nova, renomear ou apagar";
+    eng.title = "Matérias: ocultar, remover ou adicionar (os nomes vêm da Configuração)";
     eng.onclick = ev => { ev.stopPropagation(); janelaMaterias(); };
     topo.appendChild(eng);
     guias.insertBefore(topo, guias.firstChild);
@@ -32838,6 +32941,473 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <tr><td>Multas PF / PJ</td><td style="text-align:center">R$ 100–10 mil / R$ 1 mil–1 milhão</td></tr>
 <tr><td>Naturalização extraordinária</td><td style="text-align:center">&gt; 15 anos, sem condenação</td></tr>
 <tr><td>Art. 232-A</td><td style="text-align:center">2 a 5 anos + multa; + 1/6 a 1/3</td></tr>
+</table>
+</section>
+
+</div>
+</script>
+<script type="text/plain" id="matS_legest_14735">
+<div class="sec azul"><div class="num">1</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14735.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 14.735/2023 — Lei Orgânica Nacional das Polícias Civis (LONPC)</a></h2></div>
+
+<div class="lep-body">
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Panorama geral</h3></div>
+<table class="t">
+<tr><td style="width:24%"><b>Identificação</b></td><td>Lei nº 14.735, de 23/11/2023 (DOU de 23/11/2023, edição extra)</td></tr>
+<tr><td><b>Objeto</b></td><td>Institui a LONPC e dispõe sobre as <b>normas gerais de funcionamento</b> das polícias civis dos Estados, do DF e dos Territórios</td></tr>
+<tr><td><b>Natureza</b></td><td>Lei federal de <b>normas gerais</b> (CF, art. 24, XVI). Os entes legislam de forma <b>suplementar</b> e têm competência <b>plena</b> sobre o que não foi disciplinado</td></tr>
+<tr><td><b>Estrutura</b></td><td>5 capítulos · 50 artigos</td></tr>
+<tr><td><b>Vigência</b></td><td>Na data da publicação (art. 50), sem vacatio legis</td></tr>
+<tr><td><b>Vetos</b></td><td>Vetos parciais extensos. Em <b>12/06/2024</b> foram promulgadas as partes vetadas do art. 30: incisos X, XI, XIX e XXVIII e § 8º</td></tr>
+<tr><td><b>Dia nacional</b></td><td><b>5 de abril</b> (art. 47)</td></tr>
+</table>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:22%">CAPÍTULO</th><th style="width:18%">ARTS.</th><th>CONTEÚDO</th></tr>
+<tr><td>I — Disposições gerais</td><td>1º a 3º</td><td>Conceito, Susp e competência legislativa</td></tr>
+<tr><td>II — Princípios, diretrizes e competências</td><td>4º a 6º</td><td>19 princípios · 21 diretrizes · 27 competências</td></tr>
+<tr><td>III — Organização e funcionamento</td><td>7º a 18</td><td>10 órgãos essenciais</td></tr>
+<tr><td>IV — Dos policiais civis</td><td>19 a 35</td><td>Cargos, concurso, direitos, deveres e vedações</td></tr>
+<tr><td>V — Disposições finais e transitórias</td><td>36 a 50</td><td>Custódia, Conselho Nacional, vigência</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Natureza normativa e federalismo</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:14%">CF, ART. 24</th><th>REGRA CONSTITUCIONAL</th><th>REFLEXO NA LONPC</th></tr>
+<tr><td><b>§ 1º</b></td><td>A União limita-se a normas gerais</td><td>É o que a lei faz (art. 3º)</td></tr>
+<tr><td><b>§ 2º</b></td><td>A União não exclui a competência suplementar dos Estados</td><td>Art. 3º, parágrafo único, 1ª parte</td></tr>
+<tr><td><b>§ 3º</b></td><td>Sem lei federal de normas gerais, os Estados têm competência plena</td><td>Art. 3º, parágrafo único, 2ª parte: vale para o que a LONPC não disciplinou</td></tr>
+<tr><td><b>§ 4º</b></td><td>Lei federal superveniente de normas gerais <b>suspende a eficácia</b> da lei estadual no que for contrário</td><td>Art. 49: permanecem válidas as leis locais compatíveis</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Três palavras</span> SUPLEMENTAR (detalha a norma geral) · PLENA (legisla sobre o não disciplinado) · SUSPENSA (a lei estadual contrária não é revogada: tem a eficácia suspensa)</div>
+<div class="sub2">Teses do STF cobradas em prova</div>
+<ul class="dash">
+<li><b>Lista tríplice para Delegado-Geral é inconstitucional:</b> as polícias civis são subordinadas aos governadores (CF, art. 144, § 6º). O art. 8º restringe o universo de escolha (delegado em atividade, classe mais elevada) sem retirar a discricionariedade do governador.</li>
+<li><b>Ajuda de custo do art. 22 (piso de 50%):</b> se a lei estadual fixa valor menor, há inconstitucionalidade <b>direta</b>, por ofensa ao art. 24 da CF, e não reflexa. O STF admite, de ofício, afastar o <b>efeito repristinatório indesejado</b> e declarar por arrastamento a inconstitucionalidade das leis locais anteriores não impugnadas.</li>
+<li>A superveniência da norma geral federal <b>não revoga</b> a lei estadual nem gera perda de objeto da ADI: <b>suspende a eficácia</b>.</li>
+</ul>
+<div class="note"><b>Veto do art. 44, § 2º:</b> dava ao Conselho Nacional da Polícia Civil assento no MJSP e em colegiados. O veto foi <b>jurídico</b>, por vício de iniciativa (art. 61, § 1º, II, CF). Veto jurídico (art. 66, § 1º, CF) é <b>controle preventivo de constitucionalidade</b> pelo Chefe do Executivo. Veto por contrariedade ao interesse público é político e não é controle de constitucionalidade.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Conceito e posição institucional (arts. 1º e 2º)</h3></div>
+<ul class="plain"><li><b>Art. 1º:</b> as polícias civis, <b>dirigidas por delegado de polícia em atividade e de classe mais elevada</b>, nomeado pelos governadores dos Estados e do DF, são:</li></ul>
+<ul class="dash">
+<li>instituições <b>permanentes</b>;</li>
+<li>com funções <b>exclusivas e típicas de Estado</b>;</li>
+<li><b>essenciais</b> à justiça criminal;</li>
+<li><b>imprescindíveis</b> à segurança pública e à garantia dos direitos fundamentais no âmbito da investigação criminal.</li>
+</ul>
+<ul class="plain"><li><b>Parágrafo único (atividade de risco):</b> serviços em condições adversas de segurança, <b>com risco à vida</b>, serviços noturnos, chamados a qualquer hora e diligências em <b>todo o território nacional</b>.</li>
+<li><b>Art. 2º:</b> são integrantes <b>operacionais</b> do Susp (Lei 13.675/2018) e <b>compõem</b> o sistema de governança da política de segurança pública dos Estados, do DF e dos Territórios.</li></ul>
+<div class="note">"Em atividade" e "classe mais elevada" são requisitos <b>cumulativos</b>: não pode ser aposentado nem de qualquer classe. No Susp, a polícia civil é integrante <b>operacional</b> (não "estratégica" nem "administrativa"). Ela <b>compõe</b> a governança, não é "subordinada" a ela.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>Lei orgânica de cada ente (art. 3º)</h3></div>
+<ul class="plain"><li>A <b>iniciativa</b> da lei orgânica de cada Estado, do DF e de cada Território cabe ao <b>respectivo governador</b>. Observadas as normas gerais, ela deve trazer regras específicas sobre:</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th>MATÉRIA</th></tr>
+<tr><td style="text-align:center"><b>I</b></td><td><b>E</b>strutura, organização, competências específicas e funcionamento de unidades</td></tr>
+<tr><td style="text-align:center"><b>II</b></td><td><b>R</b>equisitos para investidura em cada cargo, com promoções e progressões</td></tr>
+<tr><td style="text-align:center"><b>III</b></td><td><b>A</b>tribuições funcionais de cada cargo</td></tr>
+<tr><td style="text-align:center"><b>IV</b></td><td><b>D</b>ireitos, prerrogativas, garantias, deveres e vedações</td></tr>
+<tr><td style="text-align:center"><b>V</b></td><td><b>C</b>ódigo de Ética e Disciplina</td></tr>
+<tr><td style="text-align:center"><b>VI</b></td><td><b>D</b>iretrizes para a elaboração da proposta orçamentária</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Art. 3º</span> "ERA DoCumentaDo" — Estrutura · Requisitos · Atribuições · Direitos · Código de ética · Diretrizes orçamentárias</div>
+<div class="note">Pegadinha de abertura: a iniciativa é do <b>governador</b>. Bancas trocam por Delegado-Geral, Assembleia Legislativa ou Conselho Superior.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">5</div><h3>Princípios institucionais básicos (art. 4º)</h3></div>
+<ul class="plain"><li>São <b>19 princípios</b>, em rol <b>exemplificativo</b> ("além de outros previstos em legislação ou regulamentos").</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:7%">INC.</th><th>PRINCÍPIO</th><th style="width:30%">TROCA FREQUENTE</th></tr>
+<tr><td style="text-align:center">I</td><td>Proteção da dignidade humana e dos direitos fundamentais <b>no âmbito da investigação criminal</b></td><td>"exclusivamente na polícia ostensiva"</td></tr>
+<tr><td style="text-align:center">II</td><td><b>Discrição</b> e preservação do sigilo necessário à efetividade da investigação e à intimidade</td><td>"publicidade"</td></tr>
+<tr><td style="text-align:center">III</td><td>Hierarquia e disciplina</td><td></td></tr>
+<tr><td style="text-align:center">IV</td><td>Participação e interação comunitária</td><td></td></tr>
+<tr><td style="text-align:center">V</td><td>Resolução pacífica de conflitos</td><td></td></tr>
+<tr><td style="text-align:center">VI</td><td>Lealdade e ética</td><td></td></tr>
+<tr><td style="text-align:center">VII</td><td>Busca da <b>verdade real</b></td><td>"verdade formal"</td></tr>
+<tr><td style="text-align:center">VIII</td><td><b>Livre convencimento técnico-jurídico do delegado</b></td><td>"livre convencimento motivado do juiz"</td></tr>
+<tr><td style="text-align:center">IX</td><td>Controle de <b>legalidade</b> dos atos policiais civis</td><td>"controle de conveniência"</td></tr>
+<tr><td style="text-align:center">X</td><td>Uso <b>diferenciado</b> da força para preservação da vida, redução do sofrimento e de danos</td><td>"uso progressivo"</td></tr>
+<tr><td style="text-align:center">XI</td><td><b>Continuidade</b> investigativa criminal</td><td>"descontinuidade"</td></tr>
+<tr><td style="text-align:center">XII</td><td>Atuação imparcial na atividade investigativa e de polícia judiciária</td><td></td></tr>
+<tr><td style="text-align:center">XIII</td><td>Gestão direcionada à proteção e valorização dos integrantes</td><td></td></tr>
+<tr><td style="text-align:center">XIV</td><td>Unidade de doutrina e uniformidade de procedimento</td><td></td></tr>
+<tr><td style="text-align:center">XV</td><td>Autonomia, imparcialidade, tecnicidade e cientificidade investigativa, indiciatória, inquisitória, notarial e pericial</td><td>Suprime um dos adjetivos</td></tr>
+<tr><td style="text-align:center">XVI</td><td><b>Essencialidade</b> da investigação policial para a persecução penal</td><td>"subsidiariedade"</td></tr>
+<tr><td style="text-align:center">XVII</td><td>Natureza técnica e imparcial da polícia judiciária, sob a <b>presidência</b> e análise técnico-jurídica <b>do delegado</b></td><td>Presidência do MP</td></tr>
+<tr><td style="text-align:center">XVIII</td><td><b>Identidade</b> de nomenclatura para unidades, serviços e cargos de <b>igual natureza</b></td><td>"natureza diversa"</td></tr>
+<tr><td style="text-align:center">XIX</td><td>Transição da gestão da Delegacia-Geral sem prejudicar a continuidade dos serviços</td><td></td></tr>
+</table>
+<div class="note"><b>Bloco da autonomia do delegado:</b> os incisos VIII, XV, XVI e XVII repetem a lógica da Lei 12.830/2013. A condução da investigação é ato de natureza <b>jurídica</b>, sujeito a análise técnico-jurídica.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">6</div><h3>Diretrizes (art. 5º)</h3></div>
+<ul class="plain"><li>São 21 incisos, com <b>IX e XV vetados</b>, em rol exemplificativo.</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:26%">BLOCO</th><th>DIRETRIZES</th></tr>
+<tr><td><b>Planejamento e efetivo</b></td><td>I — distribuição do efetivo por <b>resolução do Conselho Superior</b>, proporcional a <b>habitantes, extensão territorial e índices de criminalidade</b> · XII — planejamento estratégico e sistêmico · XVII — programas ligados aos planos nacional e estadual</td></tr>
+<tr><td><b>Técnica e tecnologia</b></td><td>II — caráter técnico, científico e jurídico da análise criminal · III — produção de conhecimento com base técnica e científica · X — meios tecnológicos e melhoria permanente das metodologias</td></tr>
+<tr><td><b>Repressão qualificada</b></td><td>IV — atuação especializada · V — ênfase em crimes hediondos e equiparados, corrupção, lavagem, tráfico, crime organizado, cibernéticos, contra a vida, a administração pública e a liberdade · XIX — identificação e recuperação de bens, valores e direitos</td></tr>
+<tr><td><b>Integração e dados</b></td><td>VI — cooperação entre órgãos · VII — integração ao sistema com governança · VIII — proteção e compartilhamento de bancos de dados · XIII — cooperação com sociedade e justiça criminal</td></tr>
+<tr><td><b>Institucional e pessoal</b></td><td>XI — atendimento imediato e permanente · XIV — padronização de doutrina, procedimentos, comunicação social e identidade visual e funcional · XVI — divulgação educativa, com decoro no uso de emblemas e insígnias · XVIII — capacitação continuada, integrada e isonômica · XX — avaliação anual de desempenho individual e produtividade institucional · XXI — atos administrativos normativos</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Inciso V</span> "HC LTO C + VAL" — Hediondos · Corrupção · Lavagem · Tráfico · Organizado · Cibernéticos + contra a Vida, a Administração pública e a Liberdade</div>
+<div class="note"><b>Dica:</b> os <b>custos da capacitação</b> são do <b>órgão policial</b> (XVIII). Os incisos IX e XV vetados viram alternativa errada: "base de dados unificada por UF" <b>não</b> é diretriz (AVALIA/PC MS 2025). O que existe é o inciso VIII.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">7</div><h3>Competências (art. 6º)</h3></div>
+<ul class="plain"><li><b>Caput:</b> ressalvadas a competência <b>da União</b> e as <b>infrações penais militares</b>, compete à polícia civil executar <b>privativamente</b> as funções de polícia judiciária civil e de apuração de infrações penais, materializadas em <b>inquérito policial ou outro procedimento</b> de investigação. São <b>27 incisos</b>.</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th>COMPETÊNCIAS MAIS COBRADAS</th></tr>
+<tr><td style="text-align:center">I</td><td>Cumprir mandados de prisão, busca e apreensão, cautelares e ordens judiciais</td></tr>
+<tr><td style="text-align:center">II</td><td>Preservar locais de infração e controlar o acesso, sem prejuízo de outros órgãos em flagrante</td></tr>
+<tr><td style="text-align:center">III</td><td>Serviços de identificação <b>civil e criminal</b></td></tr>
+<tr><td style="text-align:center">IV</td><td>Atividade pericial oficial, <b>se o órgão central de perícia estiver integrado</b></td></tr>
+<tr><td style="text-align:center">V</td><td>Coleta, preservação e integridade da <b>cadeia de custódia</b> (CPP, arts. 158-A a 158-F)</td></tr>
+<tr><td style="text-align:center">VI</td><td>Inteligência e contrainteligência para prever, prevenir e neutralizar ilícitos</td></tr>
+<tr><td style="text-align:center">VII</td><td>Inspeções, correições e controle interno, ordinário e extraordinário</td></tr>
+<tr><td style="text-align:center">IX</td><td>Integração de bancos de dados do poder público, preservado o sigilo (LAI, art. 23)</td></tr>
+<tr><td style="text-align:center">X</td><td>Cooperar com Judiciário e MP por acordos de cooperação mútua</td></tr>
+<tr><td style="text-align:center">XII</td><td>Poder hierárquico e poder disciplinar</td></tr>
+<tr><td style="text-align:center">XIV</td><td>Custodiar o <b>policial civil</b> condenado ou preso provisório, na falta de unidade exclusiva</td></tr>
+<tr><td style="text-align:center">XV</td><td>Relatórios, <b>recognição visuográfica</b> e <b>laudo investigativo</b></td></tr>
+<tr><td style="text-align:center">XVI</td><td>Laudo pericial por perito oficial criminal, <b>se a perícia estiver integrada</b></td></tr>
+<tr><td style="text-align:center">XX</td><td>Vistoriar e fiscalizar produtos controlados e emitir alvarás</td></tr>
+<tr><td style="text-align:center">XXIII</td><td>Administrar <b>privativamente</b> as tecnologias da instituição</td></tr>
+<tr><td style="text-align:center">XXVII</td><td>Atos procedimentais com autonomia, imparcialidade, técnica e cientificidade</td></tr>
+</table>
+<ul class="dash">
+<li><b>§ 1º:</b> atribuições exercidas <b>exclusivamente por policiais civis em atividade</b>.</li>
+<li><b>§ 2º:</b> convênios e acordos com entidades públicas e privadas, <b>nacionais ou estrangeiras</b>, com inclusão <b>paritária</b> de representantes de todos os cargos policiais.</li>
+</ul>
+<div class="note">Os incisos IV e XVI são <b>condicionais</b>: só valem se o órgão central de perícia estiver integrado à polícia civil. A mesma condição aparece no art. 19, III.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">8</div><h3>Estrutura organizacional básica (art. 7º)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th>ÓRGÃO ESSENCIAL</th><th style="width:30%">NATUREZA</th></tr>
+<tr><td style="text-align:center">I</td><td>Delegacia-Geral de Polícia Civil</td><td>Direção</td></tr>
+<tr><td style="text-align:center">II</td><td>Conselho Superior de Polícia Civil</td><td>Colegiado</td></tr>
+<tr><td style="text-align:center">III</td><td>Corregedoria-Geral de Polícia Civil</td><td>Controle interno</td></tr>
+<tr><td style="text-align:center">IV</td><td>Escola Superior de Polícia Civil</td><td>Ensino e pesquisa</td></tr>
+<tr><td style="text-align:center">V</td><td>Unidades de execução</td><td>Atividade-fim</td></tr>
+<tr><td style="text-align:center">VI</td><td>Unidades de inteligência</td><td>Atividade-fim</td></tr>
+<tr><td style="text-align:center">VII</td><td>Unidades técnico-científicas</td><td>Atividade-fim</td></tr>
+<tr><td style="text-align:center">VIII</td><td>Unidades de apoio administrativo e estratégico</td><td>Atividade-meio</td></tr>
+<tr><td style="text-align:center">IX</td><td>Unidades de saúde</td><td>Atividade-meio</td></tr>
+<tr><td style="text-align:center">X</td><td>Unidades de tecnologia</td><td>Atividade-meio</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Art. 7º</span> 4 órgãos com nome próprio (Delegacia-Geral, Conselho, Corregedoria, Escola) + 6 unidades: "EITA, ST!" — Execução · Inteligência · Técnico-científicas · Apoio · Saúde · Tecnologia</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">9</div><h3>Delegacia-Geral (art. 8º)</h3></div>
+<ul class="plain"><li>Chefe: <b>Delegado-Geral de Polícia Civil</b>, <b>nomeado pelo governador</b> e escolhido dentre os delegados <b>em atividade da classe mais elevada</b>.</li></ul>
+<div class="sub2">Planejamento estratégico de gestão em até 30 dias da nomeação</div>
+<ul class="dash">
+<li><b>I:</b> metas <b>qualitativas e quantitativas</b> de produtividade e de redução da criminalidade;</li>
+<li><b>II:</b> medidas de otimização e eficiência;</li>
+<li><b>III:</b> diagnóstico de recursos humanos e materiais;</li>
+<li><b>IV:</b> programas de capacitação do efetivo;</li>
+<li><b>V:</b> proposta de estrutura organizacional, com criação ou extinção de unidades, a ser implementada <b>por lei específica</b>.</li>
+</ul>
+<div class="note">O Delegado-Geral <b>propõe</b>, mas criar ou extinguir unidade exige <b>lei específica</b>. Questão que fale em "portaria do Delegado-Geral" está errada.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">10</div><h3>Conselho Superior de Polícia Civil (art. 9º)</h3></div>
+<ul class="dash">
+<li><b>Presidido pelo Delegado-Geral</b> e integrado por policiais civis.</li>
+<li>Composto por representantes de <b>todos os cargos efetivos</b>.</li>
+<li>Admite <b>eleição</b> dos membros e <b>participação paritária</b>, respeitada a lei do ente.</li>
+</ul>
+<div class="sub2">Onde mais o Conselho Superior aparece</div>
+<ul class="dash">
+<li><b>Art. 5º, I:</b> resolução de distribuição do efetivo;</li>
+<li><b>Art. 10, § 3º:</b> julga o recurso contra demissão (primeira instância recursal);</li>
+<li><b>Art. 20, § 3º:</b> define o que é atividade jurídica no concurso de delegado;</li>
+<li><b>Art. 30, § 13:</b> comissão da promoção por bravura.</li>
+</ul>
+<div class="jur">(CEBRASPE — Del Pol PC DF 2026) <b>ERRADO:</b> "o Conselho Superior é composto exclusivamente por delegados em atividade da classe mais elevada". A composição abrange <b>todos os cargos efetivos</b>.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">11</div><h3>Corregedoria-Geral (art. 10)</h3></div>
+<ul class="plain"><li>Dotada de <b>autonomia</b>. Pratica controle interno, correição, orientação e zelo pela qualidade e avaliação do serviço, com atuação <b>preventiva e repressiva</b> diante de infrações <b>disciplinares e penais</b> praticadas por seus servidores <b>no exercício da função</b>.</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:12%">§</th><th>REGRA</th></tr>
+<tr><td><b>1º</b></td><td>Corregedor-Geral <b>designado pelo Delegado-Geral</b>, dentre delegados da classe mais elevada</td></tr>
+<tr><td><b>2º</b></td><td>Quem foi lotado na Corregedoria tem a <b>faculdade</b> de lotação subsequente em unidade administrativa por, <b>no mínimo, 1 ano</b></td></tr>
+<tr><td><b>3º</b></td><td><b>Duplo grau de revisão</b>, só na <b>demissão</b>: recurso ao <b>Conselho Superior</b> e, em última instância, ao <b>Chefe do Poder Executivo</b></td></tr>
+</table>
+<div class="note">Erros plantados: Corregedor "eleito" (é <b>designado</b>); recurso "direto ao governador" (antes vai ao <b>Conselho Superior</b>); "permanência máxima de um biênio" (o § 2º trata de lotação <b>posterior</b>, por no mínimo 1 ano).</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">12</div><h3>Escola Superior de Polícia Civil (art. 11)</h3></div>
+<ul class="dash">
+<li>Órgão de <b>formação, capacitação, pesquisa e extensão</b>, responsável pelos recursos humanos.</li>
+<li>Dirigida por <b>delegado da classe mais elevada</b>, <b>preferencialmente</b> com especialização em administração ou educação. A especialização é preferência, não requisito.</li>
+<li><b>§ 1º:</b> pode ofertar graduação e pós-graduação lato ou stricto sensu, com equivalência às universidades públicas, observado o MEC.</li>
+<li><b>§ 2º:</b> o curso de formação pode valer como <b>pós-graduação</b> para fins de titulação.</li>
+<li><b>§ 3º:</b> docentes <b>designados pelo diretor</b>, preferencialmente da instituição, com notório saber, habilitação técnica ou formação pedagógica, selecionados por <b>edital na imprensa oficial</b>.</li>
+<li><b>§ 4º:</b> participa dos processos seletivos dos concursos da polícia civil.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">13</div><h3>Unidades de execução e critérios de criação (arts. 12 e 13)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th>UNIDADE DE EXECUÇÃO</th></tr>
+<tr><td style="text-align:center">I</td><td>Unidades policiais circunscricionais, distritais ou regionais</td></tr>
+<tr><td style="text-align:center">II</td><td>Unidades policiais especializadas</td></tr>
+<tr><td style="text-align:center">III</td><td>Coordenadoria de Recursos e Operações Especiais</td></tr>
+<tr><td style="text-align:center">IV</td><td>Departamento de Identificação Civil</td></tr>
+</table>
+<ul class="dash">
+<li><b>§ 1º (especializadas possíveis):</b> corrupção, crime organizado, crimes contra a vida, lavagem, cibernéticos, ambientais, violência doméstica e familiar, vulneráveis, proteção animal e interceptação telefônica, de informática e telemática.</li>
+<li><b>§ 2º:</b> as unidades de <b>lavagem de dinheiro</b> e de <b>interceptação</b> têm efetivo <b>exclusivamente de policiais civis</b>.</li>
+<li><b>§§ 3º a 5º:</b> o DIC emite documentos, gere registros fotográficos e sinais corporais, coleta impressões digitais, palmares e plantares, mantém boletim de vida pregressa e formulários de risco de vida, respeitadas intimidade, vida privada e honra. É coordenado por policial civil designado pelo Delegado-Geral, com habilitação específica e da classe mais elevada. Os bancos de identificação civil, criminal e funcional são responsabilidade da polícia civil.</li>
+<li><b>Art. 13 (preferencialmente):</b> índice analítico de criminalidade e violência regionais; especialização por natureza dos delitos; população, extensão territorial e densidade demográfica.</li>
+</ul>
+<div class="note">Não confunda o <b>art. 13</b> (criação de unidades e distribuição de cargos) com o <b>art. 5º, I</b> (distribuição do efetivo por resolução do Conselho Superior: habitantes, extensão territorial e criminalidade).</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">14</div><h3>Inteligência x técnico-científicas (arts. 14 e 15)</h3></div>
+<div class="cgrid">
+<div class="cell cell-azul"><div class="ch">INTELIGÊNCIA (art. 14)</div>
+<ul class="dash"><li>Diretoria de Inteligência Policial;</li><li>Coordenadorias Regionais de Inteligência;</li><li>Núcleos de Inteligência em unidades especializadas;</li><li>Coordenadoria de Doutrina de Inteligência Policial e Treinamento;</li><li>Coordenadoria de Contrainteligência Policial.</li></ul></div>
+<div class="cell cell-verde"><div class="ch">TÉCNICO-CIENTÍFICAS (art. 15)</div>
+<ul class="dash"><li>Instituto de <b>C</b>riminalística;</li><li>Instituto de <b>M</b>edicina Legal;</li><li>Instituto de <b>I</b>dentificação.</li></ul>
+<p>Só existem se o órgão central de perícia estiver integrado. Chefes designados pelo Delegado-Geral; institutos coordenados por <b>peritos oficiais criminais</b> da área, <b>na ativa e da classe mais elevada</b>.</p></div>
+</div>
+<ul class="plain"><li><b>Art. 15, § 3º:</b> mediante <b>requisição fundamentada</b>, a polícia civil tem livre acesso aos bancos de dados de unidades técnico-científicas <b>não integradas</b>.</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th>UNIDADE</th><th style="width:28%">BLOCO</th><th style="width:18%">ART.</th></tr>
+<tr><td>Departamento de Identificação Civil</td><td>Execução</td><td>12, IV</td></tr>
+<tr><td>Instituto de Identificação</td><td>Técnico-científica</td><td>15, III</td></tr>
+<tr><td>Coordenadoria de Recursos e Operações Especiais</td><td>Execução</td><td>12, III</td></tr>
+<tr><td>Coordenadoria Regional de Inteligência</td><td>Inteligência</td><td>14, II</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Técnico-científicas</span> C-M-I · Criminalística, Medicina Legal, Identificação</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">15</div><h3>Apoio, saúde e tecnologia (arts. 16 a 18)</h3></div>
+<ul class="dash">
+<li><b>Art. 16 (apoio administrativo e estratégico):</b> vinculadas <b>diretamente ao Delegado-Geral</b>; dirigidas <b>preferencialmente</b> por policiais civis com habilitação técnica comprovada.</li>
+<li><b>Art. 17 (saúde):</b> os entes <b>ficam autorizados</b> a instituir, para policiais, <b>dependentes e pensionistas</b>, assistência ambulatorial, clínica, psicológica, psiquiátrica e terapêutica, com encaminhamento de cirurgias complexas. O parágrafo único foi vetado, e o art. 30, § 18, estende a regra ao aposentado.</li>
+<li><b>Art. 18 (tecnologia):</b> as polícias civis <b>podem</b> constituir unidade centralizada de tecnologia para estudo, desenvolvimento, implantação, pesquisa e organização de instrumentos tecnológicos.</li>
+</ul>
+<div class="note">Os arts. 17 e 18 são <b>facultativos</b> ("ficam autorizados" e "podem"). "Os Estados deverão instituir unidades de saúde" está errado.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">16</div><h3>Quadro policial (art. 19)</h3></div>
+<ul class="plain"><li>Todos os cargos são de <b>nível superior</b>:</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th style="width:34%">CARGO</th><th>OBSERVAÇÃO</th></tr>
+<tr><td style="text-align:center">I</td><td>Delegado de polícia</td><td>Dirige a instituição e preside a investigação</td></tr>
+<tr><td style="text-align:center">II</td><td>Oficial investigador de polícia</td><td>Absorve os cargos atuais por transformação (art. 38)</td></tr>
+<tr><td style="text-align:center">III</td><td>Perito oficial criminal</td><td>Só se o órgão central de perícia estiver integrado</td></tr>
+</table>
+<ul class="dash">
+<li><b>§ 1º:</b> cargos permanentes, típicos de Estado e essenciais; atividades exercidas <b>exclusivamente</b> pelos ocupantes dos cargos.</li>
+<li><b>§ 2º:</b> atribuições definidas na CF, no CPP e na legislação extravagante.</li>
+<li><b>§ 3º:</b> exercem autoridade <b>nos limites</b> de suas atribuições legais.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">17</div><h3>Requisitos de ingresso (art. 20)</h3></div>
+<ul class="plain"><li>Concurso de <b>provas ou de provas e títulos</b>, com os requisitos:</li></ul>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:8%">INC.</th><th>REQUISITO</th><th style="width:34%">O QUE A BANCA ESCREVE ERRADO</th></tr>
+<tr><td style="text-align:center">I</td><td>Ser <b>brasileiro</b></td><td>"brasileiro nato"</td></tr>
+<tr><td style="text-align:center">II</td><td>Ter, no mínimo, <b>18 anos</b></td><td>"21 anos"</td></tr>
+<tr><td style="text-align:center">III</td><td>Estar quite com as obrigações eleitorais e militares</td><td></td></tr>
+<tr><td style="text-align:center">IV</td><td>Capacidade física e mental para o cargo</td><td>"aptidão atestada por junta médica"</td></tr>
+</table>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:24%">CARGO</th><th>EXIGÊNCIA ESPECÍFICA</th></tr>
+<tr><td><b>Oficial investigador</b> (§ 1º)</td><td>Superior completo, em nível de graduação, <b>em qualquer área</b>, reconhecido pelo MEC</td></tr>
+<tr><td><b>Perito</b> (§ 2º)</td><td>Superior completo reconhecido pelo MEC; o edital pode prever seleção por área e exigir habilitação específica</td></tr>
+<tr><td><b>Delegado</b> (§§ 3º e 4º)</td><td><b>Bacharelado em Direito</b> + <b>3 anos de atividade jurídica OU policial</b>. O <b>Conselho Superior</b> define o que é atividade jurídica. Concurso de <b>provas e títulos</b>, com <b>OAB em todas as fases</b>. É vedado, na comissão, servidor da segurança pública <b>que não integre a polícia civil</b></td></tr>
+</table>
+<ul class="dash">
+<li><b>§ 5º:</b> a comprovação da formação e da atividade jurídica ou policial ocorre <b>no ato da posse</b>.</li>
+<li><b>§ 6º:</b> lei do ente pode prever prova física, psicotécnico, avaliação médica e investigação social.</li>
+</ul>
+<div class="mnemo"><span class="lbl">Art. 20, caput</span> B · 18 · Q · C — Brasileiro · 18 anos · Quite · Capaz</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">18</div><h3>Títulos, prova oral, formação e lotação (arts. 21 a 23)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:14%">DISP.</th><th>REGRA</th></tr>
+<tr><td><b>Art. 21</b></td><td>No concurso de <b>delegado</b>, o tempo de atividade <b>policial civil</b> vale <b>30% da pontuação máxima da prova de títulos</b>, de <b>0,5 a 2 pontos percentuais por ano</b>, escalonados ou não</td></tr>
+<tr><td><b>§ 1º</b></td><td>O edital pode pontuar tempo nos órgãos do art. 144 da CF</td></tr>
+<tr><td><b>§ 2º</b></td><td>A prova de títulos vale <b>no mínimo 10%</b> da nota total</td></tr>
+<tr><td><b>§ 3º</b></td><td><b>Prova oral obrigatória</b> para delegado, com critérios objetivos, auditoria e recurso individualizado</td></tr>
+<tr><td><b>§ 4º</b></td><td>Os entes podem adotar o critério do caput nos demais cargos</td></tr>
+<tr><td><b>Art. 22</b></td><td>Curso de formação <b>eliminatório</b>; <b>pode</b> haver ajuda de custo <b>não inferior a 50%</b> da remuneração da classe inicial</td></tr>
+<tr><td><b>Art. 23</b></td><td>O edital <b>pode</b> impor tempo mínimo na lotação inicial, conforme criminalidade e interesse público. A investidura é na <b>classe inicial</b></td></tr>
+</table>
+<div class="note">"30% da <b>prova de títulos</b>" não é "30% da nota do certame". A ajuda de custo é <b>faculdade</b>, mas, se concedida, respeita o piso de 50%.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">19</div><h3>Fluxo de pessoal, promoções e permuta (arts. 24 e 25)</h3></div>
+<ul class="dash">
+<li><b>Caput:</b> a lei do ente dispõe sobre fluxo regular, equilíbrio quantitativo e <b>concursos periódicos</b>.</li>
+<li><b>§ 1º:</b> quem pedir exoneração <b>antes de 3 anos</b> de exercício ressarce os gastos de formação, <b>proporcionalmente ao tempo de serviço</b>.</li>
+<li><b>§ 2º:</b> promoções por <b>antiguidade, tempo de serviço na carreira e merecimento</b>, inclusive <b>post mortem</b>.</li>
+<li><b>§ 3º:</b> lei do ente pode prever promoção <b>independentemente de vagas</b> em situações específicas.</li>
+<li><b>§ 4º:</b> promoções de classe por critérios de lei específica (tempo, aperfeiçoamento, merecimento).</li>
+<li><b>§ 5º:</b> para a classe mais elevada, <b>pode</b> ser exigido curso de gestão pública.</li>
+<li><b>§ 6º:</b> lei do ente pode prever critérios <b>mais benéficos</b>.</li>
+<li><b>Art. 25:</b> permuta ou cessão para outro ente, a requerimento, com autorização expressa dos <b>governadores</b> ou por delegação, mantidos direitos, deveres e vedações do <b>ente de origem</b>.</li>
+</ul>
+<div class="jur">(FGV — Del Pol PC PI 2026) A exoneração é <b>livre a qualquer tempo</b>: o § 1º só cria o ônus do ressarcimento proporcional. E a sistemática de promoção <b>não é exauriente</b> na LONPC, pois remete à lei do ente.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">20</div><h3>Atribuições dos cargos (arts. 26 a 29)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:18%">CARGO</th><th>ATRIBUIÇÕES</th><th style="width:26%">VÍNCULO</th></tr>
+<tr><td><b>Delegado</b> (art. 26)</td><td><b>Direção</b> das atividades da polícia civil; <b>presidência, determinação legal, comando e controle</b> das apurações. Preside o <b>inquérito</b> com isenção, <b>autonomia funcional</b> e análise técnico-jurídica</td><td>Preside e comanda</td></tr>
+<tr><td><b>Oficial investigador</b> (art. 27)</td><td>Atribuições apuratórias, cartorárias, procedimentais, obtenção de dados, operações de inteligência e ações investigativas; produz o <b>laudo investigativo</b></td><td>Sob <b>determinação ou coordenação</b> do delegado; peças vão ao delegado</td></tr>
+<tr><td><b>Perito</b> (art. 28)</td><td>Perícia oficial de natureza criminal</td><td>Sob <b>requisição</b> do delegado, com autonomia técnica, científica e funcional</td></tr>
+</table>
+<ul class="plain"><li><b>Art. 29:</b> todos devem atuar com <b>imparcialidade, objetividade, técnica e cientificidade</b>.</li></ul>
+<div class="note">Trocas frequentes: perito "sob determinação" (é <b>requisição</b>); investigador com "autonomia funcional" (ele tem atuação técnica e científica; autonomia funcional é do delegado e do perito); laudo investigativo enviado "ao MP" (vai <b>ao delegado</b>). O delegado dirige o <b>procedimento</b>, não o conteúdo científico do laudo.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">21</div><h3>Direitos do policial em atividade (art. 30, incisos)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:9%">INC.</th><th>DIREITO VIGENTE</th></tr>
+<tr><td style="text-align:center">I</td><td>Identidade funcional com validade nacional, padronizada pelo Executivo federal e expedida pela instituição</td></tr>
+<tr><td style="text-align:center">II</td><td>Registro e <b>livre porte de arma</b> com validade nacional</td></tr>
+<tr><td style="text-align:center">III</td><td>Ingresso e trânsito livre em recintos públicos ou privados em razão da função</td></tr>
+<tr><td style="text-align:center">IV</td><td>Recolhimento em unidade prisional da própria instituição (provisória ou definitiva)</td></tr>
+<tr><td style="text-align:center">V</td><td>Pronta comunicação da prisão ao chefe imediato</td></tr>
+<tr><td style="text-align:center">VI</td><td>Prioridade em transporte e comunicação <b>em missão de caráter emergencial</b></td></tr>
+<tr><td style="text-align:center">VII</td><td>Traslado por órgão público em acidente que dificulte a locomoção ou morte em atividade</td></tr>
+<tr><td style="text-align:center">VIII</td><td>Atendimento prioritário por MP, Defensoria, Judiciário e perícia oficial</td></tr>
+<tr><td style="text-align:center">IX</td><td>Precedência em audiências como testemunha de fato do serviço</td></tr>
+<tr><td style="text-align:center">X e XI</td><td>Licença remunerada para mandato classista, <b>mínimo de 3 dirigentes</b> (promulgados em 2024)</td></tr>
+<tr><td style="text-align:center">XIV</td><td>Escalas compatíveis para <b>gestante e lactante</b></td></tr>
+<tr><td style="text-align:center">XV</td><td>Mesma lotação por <b>6 meses</b> após a licença-maternidade</td></tr>
+<tr><td style="text-align:center">XIX</td><td>Carga horária <b>não superior a 40 h semanais</b>, com horas extras (promulgado)</td></tr>
+<tr><td style="text-align:center">XXVIII</td><td><b>Auxílio-saúde</b> indenizatório (promulgado)</td></tr>
+</table>
+<div class="note"><b>Vetados e não promulgados:</b> incisos XII, XIII, XVI, XVII, XVIII e XX a XXVII, §§ 1º, 11, 16 e 19 e art. 31. As bancas usam o conteúdo vetado como distrator: assistência jurídica por advogado público, ajuda de custo por remoção, diárias antecipadas e indenização de vestimenta e equipamentos. Isso aconteceu na AVALIA/PC MS 2025.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">22</div><h3>Art. 30: parágrafos mais cobrados</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:12%">§</th><th>REGRA</th></tr>
+<tr><td><b>2º</b></td><td>Aposentados mantêm os incisos I, II, IV, V, XVII e XXVIII. O XVII está vetado, então a remissão ficou órfã. A comunicação da prisão vai ao setor de veteranos, ao sindicato ou à associação</td></tr>
+<tr><td><b>3º e 4º</b></td><td>Na aposentadoria, <b>conserva o livre porte</b>; possível <b>doação de armas institucionais</b></td></tr>
+<tr><td><b>5º</b></td><td><b>Mediação judicial</b> proposta por órgãos classistas, como alternativa à greve</td></tr>
+<tr><td><b>6º</b></td><td>Quem já pode se aposentar pode optar por funções internas e administrativas, de forma revisível</td></tr>
+<tr><td><b>7º e 8º</b></td><td>Adicional indenizatório por responder por expediente em outra unidade e por cargo ou função de confiança e chefias (o § 8º foi promulgado)</td></tr>
+<tr><td><b>9º</b></td><td>Morte por <b>agressão, moléstia grave, doença ocupacional ou em razão da função</b>: pensão igual à remuneração da <b>classe mais elevada</b>, <b>vitalícia</b> para cônjuge ou companheiro</td></tr>
+<tr><td><b>10</b></td><td>Mandato eletivo ou classista e cessão contam como efetivo exercício</td></tr>
+<tr><td><b>12 e 13</b></td><td>Promoção <b>póstuma independentemente de vagas</b>; promoção por <b>bravura</b> avaliada por comissão do Conselho Superior</td></tr>
+<tr><td><b>14</b></td><td>Não há promoção enquanto durarem os efeitos de condenação judicial transitada ou de PAD definitivo</td></tr>
+<tr><td><b>15</b></td><td><b>Estabilidade após 3 anos</b></td></tr>
+<tr><td><b>17</b></td><td>LC do ente pode prever aposentadoria diferenciada, mais benéfica para o sexo feminino</td></tr>
+<tr><td><b>20</b></td><td>Promoção de classe a classe, admitida a extraordinária</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Inversões</span> Póstuma sem vaga · Estabilidade 3 anos · Pensão também por agressão e moléstia · Lotação 6 meses pós-licença · Aposentado conserva o porte</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">23</div><h3>Remuneração, deveres e vedações (arts. 32 a 35)</h3></div>
+<ul class="dash">
+<li><b>Art. 32:</b> qualquer regime remuneratório, inclusive subsídio, preserva o art. 39, § 3º, e o art. 7º, XXIII e XXIV, da CF.</li>
+<li><b>Art. 33 (11 deveres):</b> observar valores e princípios; obedecer às determinações <b>legais</b> do superior; zelo, disciplina e dedicação; cumprir normas; presteza; moralidade e probidade; proatividade; aperfeiçoamento; economia de material e patrimônio; colaborar com a justiça; respeitar a imagem da instituição.
+<ul class="dash"><li><b>§ 1º:</b> hierarquia e disciplina asseguram a <b>unidade da investigação</b>.</li><li><b>§ 2º:</b> prevenir e reprimir condutas ofensivas, insubordinação e <b>assédio</b>.</li></ul></li>
+<li><b>Art. 34:</b> é vedada, a qualquer tempo e fora da esfera policial, a divulgação de <b>técnicas de investigação</b> e de dados de <b>medida cautelar judicial</b>, sob responsabilidade civil, administrativa e criminal.
+<ul class="dash"><li>Não se aplica a cursos só para profissionais do art. 144 da CF;</li><li>em audiências, o policial deve resguardar o sigilo das técnicas;</li><li>a lei do ente pode criar outras vedações.</li></ul></li>
+<li><b>Art. 35:</b> vedado tratamento diferenciado em promoção, progressão, aposentadoria, lotação e designação, e por sexo, cargo ou limitação física, ressalvado o disposto em lei.</li>
+</ul>
+<div class="note">A obediência é às ordens <b>legais</b>: ordem manifestamente ilegal não vincula. Não há conflito entre o art. 35 e as regras protetivas à mulher (art. 30, XIV e § 17): a ressalva "dispostos em lei" abriga essas normas.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">24</div><h3>Disposições finais e transitórias (arts. 36 a 50)</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:10%">ART.</th><th>CONTEÚDO</th></tr>
+<tr><td>36</td><td>Poder público assegura segurança das instalações e servidores em número adequado</td></tr>
+<tr><td>37</td><td>O ente <b>pode</b> criar o <b>Fundo Especial da Polícia Civil</b>, preferencialmente para valorização remuneratória</td></tr>
+<tr><td>38</td><td>Cargos atuais transformados, renomeados ou aproveitados como <b>oficial investigador</b>, por similitude de atribuições (§§ 1º a 6º vetados)</td></tr>
+<tr><td>39</td><td>Estrutura dos cargos periciais em lei específica (ver Lei 12.030/2009)</td></tr>
+<tr><td>40</td><td><b>Vedada a custódia de preso e de adolescente infrator</b> em unidades da polícia civil, <b>salvo interesse fundamentado na investigação</b></td></tr>
+<tr><td>41</td><td>Funções gratificadas de assessoramento e chefia são <b>privativas de policiais civis</b></td></tr>
+<tr><td>44</td><td><b>Conselho Nacional da Polícia Civil</b>, consultivo e deliberativo; composição e regimento por <b>decreto</b> (§ 2º vetado)</td></tr>
+<tr><td>45 e 46</td><td>Plataformas tecnológicas de registro; data-base de recomposição salarial por lei do ente</td></tr>
+<tr><td>47</td><td>Dia nacional: <b>5 de abril</b></td></tr>
+<tr><td>49</td><td>Permanecem válidas as leis locais <b>não incompatíveis</b></td></tr>
+<tr><td>50</td><td>Vigência na data da publicação</td></tr>
+</table>
+<div class="note">Artigos vetados por inteiro: <b>31, 42, 43 e 48</b>. No art. 40 a exceção é o ponto cobrado, e a vedação alcança preso e adolescente, enquanto o art. 6º, XIV, permite custodiar o <b>policial civil</b> preso.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">25</div><h3>Revisão: números e quem faz o quê</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th>NÚMERO</th><th style="width:60%">ONDE</th></tr>
+<tr><td>18 anos</td><td>Idade mínima (art. 20, II)</td></tr>
+<tr><td>3 anos</td><td>Atividade jurídica ou policial · ressarcimento se exonerar antes · estabilidade</td></tr>
+<tr><td>30 dias</td><td>Planejamento estratégico do Delegado-Geral</td></tr>
+<tr><td>30% · 0,5 a 2 p.p. · 10%</td><td>Títulos no concurso de delegado (art. 21)</td></tr>
+<tr><td>50%</td><td>Piso da ajuda de custo no curso de formação</td></tr>
+<tr><td>1 ano</td><td>Lotação subsequente após a Corregedoria</td></tr>
+<tr><td>6 meses · 40 h · 3 dirigentes</td><td>Pós-licença-maternidade · carga horária · mandato classista</td></tr>
+<tr><td>10 · 19 · 21 · 27</td><td>Órgãos (art. 7º) · princípios (4º) · diretrizes (5º) · competências (6º)</td></tr>
+<tr><td>5 de abril</td><td>Dia nacional da polícia civil</td></tr>
+</table>
+<table class="t" style="table-layout:fixed;">
+<tr><th style="width:30%">AUTORIDADE</th><th>ATO</th></tr>
+<tr><td>Governador</td><td>Nomeia o Delegado-Geral · iniciativa da lei orgânica · autoriza permuta ou cessão</td></tr>
+<tr><td>Delegado-Geral</td><td>Preside o Conselho Superior · designa Corregedor-Geral, coordenador do DIC e chefes das técnico-científicas</td></tr>
+<tr><td>Diretor da Escola</td><td>Designa o corpo docente</td></tr>
+<tr><td>Conselho Superior</td><td>Resolução do efetivo · define atividade jurídica · julga recurso de demissão · comissão de bravura</td></tr>
+<tr><td>Chefe do Executivo</td><td>Última instância recursal na demissão</td></tr>
+<tr><td>Decreto</td><td>Composição e regimento do Conselho Nacional</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">26</div><h3>O que já caiu</h3></div>
+<table class="t" style="table-layout:fixed;">
+<tr><th>ASSERTIVA</th><th style="width:12%">GAB.</th><th style="width:30%">POR QUÊ</th></tr>
+<tr><td>O Conselho Superior é composto exclusivamente por delegados da classe mais elevada <i>(CEBRASPE — Del Pol PC DF 2026)</i></td><td style="text-align:center"><b>E</b></td><td>Todos os cargos efetivos (art. 9º)</td></tr>
+<tr><td>A LONPC regulamenta competência exclusiva da União <i>(FUNDATEC — Del Pol PC RS 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Competência concorrente (CF, art. 24, XVI)</td></tr>
+<tr><td>Antes da LONPC, os Estados exerciam competência legislativa plena sobre a matéria <i>(FUNDATEC 2025)</i></td><td style="text-align:center"><b>C</b></td><td>CF, art. 24, § 3º</td></tr>
+<tr><td>Lei federal superveniente suspende a lei estadual em tudo o que lhe for contrário <i>(FUNDATEC 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Só lei de normas gerais e só no que contrariar essas normas</td></tr>
+<tr><td>É constitucional exigir lista tríplice para o Delegado-Geral <i>(tese cobrada — FUNDATEC 2025)</i></td><td style="text-align:center"><b>E</b></td><td>CF, art. 144, § 6º</td></tr>
+<tr><td>"Base de dados unificada por UF" é diretriz da polícia civil <i>(AVALIA — PC MS 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Inciso vetado; vale o art. 5º, VIII</td></tr>
+<tr><td>A exoneração só é admitida após 3 anos de exercício <i>(tese cobrada — FGV, Del Pol PC PI 2026)</i></td><td style="text-align:center"><b>E</b></td><td>Livre; só há ressarcimento proporcional</td></tr>
+<tr><td>O Instituto de Identificação é unidade de execução <i>(tema cobrado — UECE, PC CE 2025)</i></td><td style="text-align:center"><b>E</b></td><td>É técnico-científico (art. 15, III); o DIC é de execução</td></tr>
+<tr><td>Idade mínima de 21 anos para ingresso <i>(inédita — Gran)</i></td><td style="text-align:center"><b>E</b></td><td>18 anos (art. 20, II)</td></tr>
+<tr><td>Prioridade em transporte e comunicação em qualquer deslocamento <i>(inédita — Gran)</i></td><td style="text-align:center"><b>E</b></td><td>Só em missão emergencial (art. 30, VI)</td></tr>
 </table>
 </section>
 
@@ -37985,6 +38555,333 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <li>Atos do poder público possuem <b>presunção de validade</b>.</li>
 </ul>
 
+</div>
+</script>
+<script type="text/plain" id="matS_legconst_cap-herm">
+  <div class="chapter-head sec roxo">
+    <div class="num">1</div>
+    <div>
+      <h2>Hermenêutica e Interpretação Constitucional — FGV</h2>
+      <div class="cap-sub">Time descobre × time decide · escolas · métodos · mutação · técnicas de prova</div>
+    </div>
+  </div>
+  <div class="cap-scope-11 cap-body">
+
+<div class="wrap">
+<!-- 1 -->
+<section class="card">
+<div class="card-head"><div class="num">1</div><h2>Antes de começar: aulas recomendadas</h2></div>
+<p class="lead">Antes de começar a leitura é de grande importância que assista as seguintes aulas abaixo:</p>
+<p class="lead">Aula 01: <a href="https://www.youtube.com/watch?v=e-KAYBj7aCQ" target="_blank" rel="noopener">https://www.youtube.com/watch?v=e-KAYBj7aCQ</a></p>
+<p class="lead">Aula 02: <a href="https://www.youtube.com/watch?v=abtD64PS2wU" target="_blank" rel="noopener">https://www.youtube.com/watch?v=abtD64PS2wU</a></p>
+<p class="lead">Aula 03: <a href="https://www.youtube.com/watch?v=brYafBsaeVs" target="_blank" rel="noopener">https://www.youtube.com/watch?v=brYafBsaeVs</a></p>
+<p class="lead">A aula 01 e 02 são de grande importância, principalmente a aula 02. Já a aula 03 fica a seu critério.</p>
+</section>
+<!-- 2 -->
+<section class="card">
+<div class="card-head"><div class="num">2</div><h2>O EIXO DE TUDO: TIME DESCOBRE × TIME DECIDE</h2></div>
+<p class="lead">Para responder as questões de hermenêutica da FGV é necessário olhar para o enunciado e perguntar: "essa interpretação é do time DESCOBRE ou do time DECIDE?"</p>
+<p class="lead">Mas que diabo é isso? Calma!!! A pergunta de fundo de toda a matéria é uma só:</p>
+<p class="kicker">DE ONDE VEM O SENTIDO DA NORMA?</p>
+<p class="lead">Só há duas respostas possíveis, e cada time dá uma.</p>
+<div class="two">
+<div class="col-no">
+<p class="col-title">✘ Time DESCOBRE</p>
+<p class="lead">O sentido JÁ EXISTE, pronto, dentro do texto. O intérprete vai lá e o ENCONTRA. O juiz é como alguém procurando uma resposta que já está escrita — ele não inventa nada, só revela o que já estava lá. Se fizer o trabalho direito, chega ao sentido "correto", que é único e preexistente.</p>
+<p class="kicker">Consequências dessa visão:</p>
+<ul class="efl">
+<li>o sentido é fixo, não muda com o tempo;</li>
+<li>o juiz não cria, só conhece (atividade cognoscitiva);</li>
+<li>valores e realidade não entram (contaminariam o sentido puro);</li>
+<li>prioriza segurança e previsibilidade pela RIGIDEZ (sentido imutável);</li>
+<li>texto = norma (correspondência biunívoca).</li>
+</ul>
+<div class="note-blue"><span class="pin">É a visão antiga, do século XIX e do positivismo. Outro nome para esse time inteiro: FORMALISMO. A FGV a REJEITA.</span></div>
+</div>
+<div class="col-yes">
+<p class="col-title">✔ Time DECIDE (ou ESCOLHE)</p>
+<p class="lead">O texto NÃO traz o sentido pronto. Ele é só o ponto de partida. O sentido se CONSTRÓI quando o intérprete decide, olhando os valores da sociedade e o caso concreto. O juiz não acha uma resposta pronta — ele constrói a resposta, dentro dos limites que o texto permite. Por isso o mesmo texto pode significar coisas diferentes em épocas diferentes.</p>
+<p class="kicker">Consequências:</p>
+<ul class="efl">
+<li>o sentido muda com a realidade (mutação constitucional);</li>
+<li>o juiz decide, não só descobre (atividade decisória);</li>
+<li>valores e fatos entram na norma (validade extrínseca);</li>
+<li>texto ≠ norma (um significante, vários significados possíveis);</li>
+<li>a segurança vem da RACIONALIDADE da decisão (fundamentação, ponderação, efeitos), não da rigidez.</li>
+</ul>
+<div class="note-blue"><span class="pin">É a visão atual, pós-positivista. É onde a FGV se posiciona geralmente.</span></div>
+</div>
+</div>
+<p class="kicker">A REGRA DE OURO DA FGV (decore isto!)</p>
+<div class="note-blue"><b>O TEXTO BALIZA, OS VALORES ESCOLHEM DENTRO DELE.</b> A posição da banca é sempre a do MEIO: o intérprete escolhe o sentido (decide), mas SEM ULTRAPASSAR os limites do texto ("sem descurar dos limites do alicerce semiótico"). Disso saem duas eliminações quase automáticas:<br>• Alternativa que ULTRAPASSA o texto <i>("refratária aos balizamentos semióticos", "ainda que se distancie de referenciais semióticos", tópica pura)</i> <b>→ ERRADA.</b><br>• Alternativa que escolhe <b>DENTRO</b> do que o texto comporta ("entre os significados possíveis e compatíveis com o texto") → tende a ser <b>CERTA.</b></div>
+<p class="kicker">CUIDADO: não confundir os times com a sociedade aberta/fechada!</p>
+<p class="lead">Os times e a "sociedade aberta dos intérpretes" (Häberle) respondem a perguntas DIFERENTES:</p>
+<ul class="efl">
+<li><b>Times descobre/decide</b> → DE ONDE vem o sentido da norma.</li>
+<li><b>Sociedade aberta × fechada (Häberle)</b> → QUEM interpreta a Constituição (fechada = só juízes/órgãos oficiais; aberta = todos que vivem a Constituição).</li>
+</ul>
+<p class="lead">Eles costumam andar juntos (o time decide combina com a sociedade aberta), mas NÃO são sinônimos. Uma questão pode cobrar um sem o outro.</p>
+<p class="kicker">ATENÇÃO: nem todo enunciado é do time decide!</p>
+<p class="lead">Na maioria das questões o enunciado descreve o intérprete-modelo (decide). MAS às vezes o personagem é do time descobre — e aí a lógica INVERTE: a resposta certa é a compatível com o descobre.</p>
+<p class="lead">Sinais de enunciado descobre: "atividade essencialmente cognoscitiva", "opções do Poder Constituinte devem ser identificadas e prestigiadas", "evitar o arbítrio do caso concreto". Nesse caso, a alternativa certa gira em torno do TEXTO (ex.: "teoria semiótica de interpretação"), e mutação/tópica/realismo/decisória viram as erradas.</p>
+</section>
+<!-- 3 -->
+<section class="card">
+<div class="card-head"><div class="num">3</div><h2>LINHA DO TEMPO — DE ONDE VEM O SENTIDO DA NORMA</h2></div>
+<div class="note-blue"><span class="pin">TIME DESCOBRE — o sentido já existe pronto; o juiz encontra. (FGV rejeita)</span></div>
+<p class="mini">Tradição europeia continental:</p>
+<p class="lead"><b>1. Positivismo exegético / legalista ou Escola da Exegese / legalismo</b> (França, séc. XIX). Lei é tudo; juiz é "boca da lei", aplica ao pé da letra. Formalismo mais raso. — time DESCOBRE</p>
+<p class="lead"><b>2. Escola Histórica (Savigny)</b>. Base do Método Jurídico/Clássico de interpretação constitucional (Forsthoff). Interpretar é reconstruir o sentido já contido no texto (gramatical, lógico, histórico, sistemático). — time DESCOBRE</p>
+<p class="lead"><b>3. Jurisprudência dos conceitos (Puchta)</b>. Herdeira de Savigny. Formalismo puro: sistema fechado de conceitos, decisão por dedução lógica, sem valores. — time DESCOBRE</p>
+<p class="mini">Tradição norte-americana:</p>
+<p class="lead"><b>4. Originalismo (Scalia)</b>. Interpreta-se a Constituição pelo sentido original, fixado na criação. Sentido fixo, não muda com o tempo; se a realidade mudou, corrige-se por emenda, não por reinterpretação. É o OPOSTO EXATO da mutação constitucional e o par que a FGV mais cobra.</p>
+<div class="note-blue"><span class="pin">TRANSIÇÃO — rompem o formalismo (time DECIDE, versões iniciais/radicais)</span></div>
+<p class="lead"><b>5. Jurisprudência dos interesses (Ihering, Heck)</b>. Primeira ruptura. O juiz olha os interesses reais e os FINS da norma, não a dedução de conceitos. — time DECIDE (versão inicial)</p>
+<p class="lead"><b>6. Escola do Direito Livre (Kantorowicz)</b>. Ruptura radical. O juiz cria o direito quase sem amarra do texto. — time DECIDE (versão radical)</p>
+<p class="lead"><b>6-b. Realismo jurídico (Holmes, Llewellyn — EUA; e escola escandinava)</b>. Ruptura radical, primo do Direito Livre. O direito é o que os tribunais DE FATO decidem; foco na conduta real do juiz e na PREVISÃO do comportamento judicial. Cético quanto às regras. — time DECIDE (versão radical)</p>
+<p class="kicker">FRONTEIRA</p>
+<p class="lead"><b>7. Positivismo normativista (Kelsen, 1934)</b>. Ciência pura do direito, sem valores; direito ≠ moral. A norma é uma MOLDURA com vários sentidos possíveis; escolher um é ATO DE VONTADE do intérprete, não ciência.</p>
+<ul class="efl">
+<li>→ DESCOBRE na teoria dos valores (separação direito/moral) — <b>é assim que cai na FGV</b></li>
+<li>→ tangencia DECIDE na teoria da interpretação (moldura + ato de vontade)</li>
+</ul>
+<div class="note-blue"><span class="pin">TIME DECIDE — o intérprete constrói o sentido, dentro dos limites do texto. (FGV adota)</span></div>
+<p class="lead"><b>8. Lógica do razoável (Recaséns Siches, séc. XX)</b>. O raciocínio jurídico não funciona como a matemática. Recaséns opõe o LOGOS DO RACIONAL (dedução, silogismo, subsunção — leva a resultados absurdos) ao LOGOS DO RAZOÁVEL (o raciocínio próprio do direito, feito de prudência e bom senso).</p>
+<p class="lead">Interpretar pelo razoável é pesar quatro coisas que a dedução ignora: os FINS da norma, os VALORES em jogo, as CIRCUNSTÂNCIAS do caso e as CONSEQUÊNCIAS da decisão ("estimativa dos efeitos posteriores"). Rejeita o mecanicismo da subsunção.</p>
+<p class="mini">Exemplo clássico: placa proíbe "cães" na plataforma; chega um homem com um urso. A dedução diz "urso não é cão, pode entrar" (absurdo); o razoável olha a finalidade — impedir animais perigosos — e proíbe o urso. Propósito acima da letra.</p>
+<p class="lead">Como o "razoável" de cada época muda com a sociedade, o sentido acompanha: a lógica do razoável FUNDAMENTA A MUTAÇÃO. Faz parte da família consequencialista (junto de pragmatismo, consequencialismo e contextualismo), todos atentos ao impacto da decisão na realidade.</p>
+<p class="lead"><b>9. Pós-positivismo (Alexy, Dworkin, Müller, Häberle, Hesse, Smend)</b>. Valores, princípios, ponderação, realidade e caso concreto; norma construída, não descoberta. — time DECIDE. É onde a FGV se posiciona.</p>
+<p class="kicker">Conceitos que NÃO são escolas (transversais — não force na linha!)</p>
+<p class="lead">Mutação constitucional (fenômeno), tópica/pensamento problemático (método — ver seção 3), cognoscitivo × decisório (modos de agir), sujeito × objeto (premissa), semiótica (campo do significado), contextualismo (postura), utilitarismo/consequencialismo/pragmatismo (teorias éticas de decisão), validade intrínseca × extrínseca (fundamento). O que importa é o TIME de cada um, não o lugar na cronologia.</p>
+</section>
+<!-- 4 -->
+<section class="card">
+<div class="card-head"><div class="num">4</div><h2>MÉTODOS DE INTERPRETAÇÃO CONSTITUCIONAL</h2></div>
+<p class="lead">(Lista DIFERENTE da linha do tempo! A linha = escolas/correntes. Aqui = métodos de interpretação da Constituição. A imagem esquematizada peguei no livro do Pedro Lenza.)</p>
+<p class="kicker">Métodos de interpretação (esquema)</p>
+<div class="legit">
+<div class="lc"><h4>Jurídico / hermenêutico clássico</h4><div>Forsthoff <span class="tag tu">descobre</span></div></div>
+<div class="lc"><h4>Tópico-problemático (tópica)</h4><div>Viehweg <span class="tag te">decide</span></div></div>
+<div class="lc"><h4>Hermenêutico-concretizador</h4><div>Hesse <span class="tag te">decide</span></div></div>
+<div class="lc"><h4>Científico-espiritual</h4><div>Smend <span class="tag te">decide</span></div></div>
+<div class="lc"><h4>Normativo-estruturante</h4><div>Müller <span class="tag te">decide</span></div></div>
+<div class="lc"><h4>Comparação constitucional</h4><div>Häberle <span class="tag te">decide</span></div></div>
+</div>
+<p class="kicker" style="font-size:17px;margin-top:18px">1. Método Jurídico ou Hermenêutico Clássico (Ernst Forsthoff) — time DESCOBRE</p>
+<ul class="efl">
+<li>Considera a Constituição como uma LEI COMUM.</li>
+<li>Vale-se dos seguintes elementos: genético, gramatical, lógico, sistemático, histórico, <b>TELEOLÓGICO</b> (fins da norma — cuidado: não é "teológico"!), popular, doutrinário e evolutivo.</li>
+<li>É o ÚNICO método do time descobre. Todos os outros cinco são time decide.</li>
+</ul>
+<p class="kicker" style="font-size:17px;margin-top:18px">2. Método Tópico-problemático (Theodor Viehweg) — time DECIDE (radical)</p>
+<ul class="efl">
+<li>PARTE-SE DE UM PROBLEMA CONCRETO PARA A NORMA.</li>
+<li>Diante do caráter aberto das normas constitucionais, o intérprete deve buscar a solução A PARTIR DO PROBLEMA.</li>
+<li>A norma é vista como um PONTO DE PARTIDA para a discussão, e não como uma solução pronta e acabada.</li>
+</ul>
+<div class="note-blue"><b>ATENÇÃO AQUI!!!! A FGV MUITAS VEZES COBRA UMA DIFERENÇA QUE PARTE DESSE MÉTODO: a) Pensamento problemático</b> = a ideia geral de dar peso ao problema concreto, ao caso, à situação real — SEM abandonar o texto. FGV ACEITA. "Refratária ao pensamento problemático" costuma ser FALSO; "sensível ao pensamento problemático" costuma ser VERDADEIRO.<br><b>b) Tópica pura</b> = a forma EXTREMA, em que o problema domina totalmente e o texto vira descartável. FGV REJEITA. "Incompatível/não se harmoniza com a tópica pura" costuma ser VERDADEIRO. <b>A palavra "PURA" é o gatilho: muda a resposta!</b></div>
+<p class="kicker" style="font-size:17px;margin-top:18px">3. Método Hermenêutico-concretizador (Konrad Hesse) — time DECIDE (o preferido da FGV!)</p>
+<ul class="efl">
+<li>PARTE-SE DA NORMA PARA O PROBLEMA (inverso da tópica). O texto é ponto de partida E LIMITE.</li>
+<li>Pressupõe que a interpretação é uma atividade de CONCRETIZAÇÃO da Constituição.</li>
+<li>Três pilares: pressupostos subjetivos (as PRÉ-COMPREENSÕES do intérprete), pressupostos objetivos (a realidade social como "pano de fundo") e o CÍRCULO HERMENÊUTICO (diálogo constante entre eles até a compreensão final).</li>
+<li>É a encarnação da regra de ouro: escolhe dentro do que o texto comporta.</li>
+</ul>
+<p class="kicker" style="font-size:17px;margin-top:18px">4. Método Científico-espiritual (Rudolf Smend) — time DECIDE</p>
+<ul class="efl">
+<li>A Constituição é vista como um SISTEMA DE VALORES e um elemento do processo de INTEGRAÇÃO política e social.</li>
+<li>A interpretação não deve se prender à literalidade, mas captar os VALORES subjacentes e a realidade social que integra a comunidade.</li>
+<li>Palavra-assinatura: <b>INTEGRAÇÃO / valores que unem a comunidade.</b></li>
+</ul>
+<p class="kicker" style="font-size:17px;margin-top:18px">5. Método Normativo-estruturante (Friedrich Müller) — time DECIDE</p>
+<ul class="efl">
+<li>O TEXTO da norma (a "ponta do iceberg") NÃO SE CONFUNDE com a NORMA jurídica em si (texto ≠ norma; não há correspondência biunívoca).</li>
+<li>A norma é o resultado do texto somado a um "pedaço" da realidade social.</li>
+<li>O intérprete deve levar em conta o PROGRAMA NORMATIVO (texto) e o ÂMBITO NORMATIVO (realidade).</li>
+<li>Palavra-assinatura: <b>texto ≠ norma / programa + âmbito normativo.</b></li>
+</ul>
+<p class="kicker">Como distinguir Smend de Müller (os dois trazem "realidade"):</p>
+<ul class="efl">
+<li>Smend pergunta: <b>PARA QUE serve a Constituição?</b> (função: integrar a comunidade por valores)</li>
+<li>Müller pergunta: <b>DO QUE a norma é feita?</b> (estrutura: texto + realidade)</li>
+<li>Achou "integração/comunidade" → Smend. Achou "texto não se confunde com norma / programa e âmbito" → Müller. São assinaturas exclusivas.</li>
+</ul>
+<p class="kicker" style="font-size:17px;margin-top:18px">6. Método da Comparação Constitucional (Peter Häberle) — time DECIDE</p>
+<ul class="efl">
+<li>A interpretação dos institutos se implementa mediante COMPARAÇÃO dos vários ordenamentos.</li>
+<li>Estabelece-se uma comunicação entre várias Constituições.</li>
+<li>Partindo dos 4 métodos/elementos de Savigny (gramatical, lógico, histórico e sistemático), Häberle sustenta a canonização da comparação constitucional como um QUINTO MÉTODO de interpretação.</li>
+<li>Häberle também é o autor da SOCIEDADE ABERTA DOS INTÉRPRETES (todos que vivem a Constituição a interpretam).</li>
+</ul>
+<p class="kicker" style="font-size:17px;margin-top:18px">7. Nova Interpretação Constitucional (Luís Roberto Barroso)</p>
+<ul class="efl">
+<li>Abordagem dinâmica e evolutiva; a Constituição como "texto vivo".</li>
+<li>Busca equilibrar estabilidade e adaptabilidade para enfrentar desafios contemporâneos.</li>
+<li>Promove o ativismo judicial na proteção de direitos fundamentais e da dignidade humana.</li>
+<li>Cuidado: mesmo aqui, o STF NUNCA é intérprete <b>EXCLUSIVO</b> da Constituição (sociedade aberta!). "Exclusivo" marca erro.</li>
+</ul>
+<p class="kicker">Escala das três posições</p>
+<table class="eff"><thead><tr><th><b>Discurso</b></th><th><b>O que domina</b></th><th><b>Time</b></th><th><b>Combina com</b></th></tr></thead><tbody><tr><td style="width:auto">Sociológico</td><td>a realidade</td><td>decide radical</td><td>Escola do Direito Livre / realismo</td></tr><tr><td style="width:auto">Sociossemiótico</td><td>texto + realidade</td><td>decide moderado (FGV)</td><td>pós-positivismo / concretizador</td></tr><tr><td style="width:auto">Semiótico</td><td>o texto</td><td>descobre</td><td>formalismo / originalismo</td></tr></tbody></table>
+<p class="lead">Case cada extremo com a escola do MESMO GRAU. Realidade radical → Direito Livre. Texto → formalismo. O prefixo entrega: "socio" = contexto; "semiótico" = linguagem.</p>
+</section>
+<!-- 5 -->
+<section class="card">
+<div class="card-head"><div class="num">5</div><h2>ASSINATURAS DE AUTOR (quando várias alternativas são do time decide)</h2></div>
+<p class="lead">Não basta a alternativa ser do time certo — ela tem que apontar o AUTOR/FUNDAMENTO que o enunciado usou. Ache a palavra-assinatura:</p>
+<table class="eff"><thead><tr><th><b>Pista no enunciado</b></th><th><b>Autor / conceito</b></th></tr></thead><tbody><tr><td style="width:auto">texto ≠ norma / programa + âmbito normativo / "não há correspondência biunívoca"</td><td>Müller — metódica estruturante</td></tr><tr><td style="width:auto">integração da comunidade / ordem de valores que une</td><td>Smend — científico-espiritual</td></tr><tr><td style="width:auto">pré-compreensão / concretiza no caso / círculo hermenêutico</td><td>Hesse — concretizador</td></tr><tr><td style="width:auto">sociedade aberta dos intérpretes / comparação de ordenamentos</td><td>Häberle</td></tr><tr><td style="width:auto">fins e interesses reais da norma</td><td>Jurisprudência dos interesses (Ihering/Heck)</td></tr><tr><td style="width:auto">prudência / estimativa dos efeitos / consequências / recusa à subsunção mecânica</td><td>Lógica do razoável (Recaséns)</td></tr><tr><td style="width:auto">maior número + sacrifício de uma parcela</td><td>Utilitarismo</td></tr><tr><td style="width:auto">sentido depende do contexto / validade extrínseca</td><td>Contextualismo</td></tr><tr><td style="width:auto">conduta real dos tribunais / previsão do que o juiz decidirá</td><td>Realismo jurídico</td></tr><tr><td style="width:auto">problema acima do texto / texto descartável</td><td>Tópica pura (Viehweg) — FGV rejeita</td></tr><tr><td style="width:auto">vontade do constituinte / sentido original fixo</td><td>Originalismo (descobre!)</td></tr><tr><td style="width:auto">moldura com vários sentidos / ato de vontade</td><td>Kelsen</td></tr></tbody></table>
+<div class="note-blue"><span class="pin">ARMADILHA RECORRENTE: realismo jurídico como distrator. Se o enunciado fala de PONDERAR VALORES ou construir o sentido do texto, NÃO é realismo (que trata da conduta dos tribunais). Só marque realismo se o enunciado falar do que os juízes de fato decidem.</span></div>
+</section>
+<!-- 6 -->
+<section class="card">
+<div class="card-head"><div class="num">6</div><h2>MUTAÇÃO CONSTITUCIONAL (bloco próprio — cai demais!)</h2></div>
+<p class="lead"><b>Definição</b> — mudança de SENTIDO da norma SEM mudar o texto, por força da realidade. "Evolutividade informal da ordem constitucional". Pressupõe texto ≠ norma (se texto = norma, mutação seria impossível).</p>
+<p class="lead"><b>Natureza</b> — é um PODER CONSTITUINTE DIFUSO — exercido por vários atores (Judiciário, Legislativo, Executivo, sociedade, práticas), SEM protagonista único. "Judiciário protagonista/exclusivo" marca erro.</p>
+<p class="lead"><b>Relação com a rigidez</b> — a mutação CONVIVE com (e até pressupõe) a Constituição RÍGIDA: como o texto é difícil de emendar, o sentido se adapta informalmente. "Incompatível com Constituição rígida" é FALSO.</p>
+<p class="lead"><b>Fatores que a possibilitam</b> — plasticidade das normas (polissemia), dinamismo social, rigidez constitucional e cultura jurídica. Negar a relevância desses fatores é FALSO.</p>
+<p class="lead"><b>LIMITES (o mais cobrado!)</b> — a mutação é legítima, MAS dentro dos limites do texto. Ela NÃO pode subverter a força normativa da Constituição nem fazer os fatos/condicionantes sociais PREVALECEREM sobre o texto. Alternativa que estoura o limite ("fatores reais de poder subvertem a Constituição", "sempre que houver mudança social") = ERRADA.</p>
+<p class="kicker">Par para decorar:</p>
+<table class="eff"><thead><tr><th><b>REFORMA</b></th><th><b>MUTAÇÃO</b></th></tr></thead><tbody><tr><td style="width:auto">muda o TEXTO</td><td>muda o SENTIDO</td></tr><tr><td style="width:auto">formal (emenda)</td><td>informal (interpretação)</td></tr><tr><td style="width:auto">poder constituinte reformador</td><td>poder constituinte difuso</td></tr></tbody></table>
+<p class="lead">Oposto exato da mutação: ORIGINALISMO. Fundamentos da mutação: lógica do razoável, metódica estruturante, pós-positivismo. Gatilhos no enunciado: "vicissitudes do ambiente sociopolítico", "conteúdo distinto daquele outrora prevalecente", "higidez textual não desnatura a evolutividade", "novos significados, imutabilidade dos significantes".</p>
+</section>
+<!-- 7 -->
+<section class="card">
+<div class="card-head"><div class="num">7</div><h2>PRINCÍPIOS DE INTERPRETAÇÃO E TÉCNICAS DE CONTROLE</h2></div>
+<p class="kicker">6.1 Princípios de interpretação constitucional</p>
+<p class="lead"><b>Unidade da Constituição</b> — interpretar a Constituição como um TODO harmônico, "não em tiras" (Eros Grau). Não há hierarquia entre normas constitucionais originárias; as tensões se conciliam.</p>
+<p class="lead"><b>Concordância prática / harmonização (Hesse)</b> — quando DOIS bens/normas constitucionais colidem, harmoniza-se ambos: cada um cede o mínimo, com a maior amplitude possível a cada um, SEM supressão total de nenhum. É entre NORMAS/BENS — não entre os Poderes! (Não confundir com conflitualidade intrínseca, que é tensão DENTRO de uma norma.)</p>
+<p class="lead"><b>Direitos fundamentais NÃO são absolutos</b> — todos são relativos e ponderáveis. Alternativa com "absoluto", "sempre prevalece", "descartando o outro interesse" = ERRADA. Na colisão (ex.: liberdade de expressão × intimidade), pondera-se no caso; nenhum lado vence sempre.</p>
+<p class="lead"><b>Princípios próprios</b> — a interpretação constitucional aproveita os elementos tradicionais (gramatical, sistemático, teleológico, histórico), mas tem princípios PRÓPRIOS para superar as limitações da interpretação pensada para a lei comum. (Nem descarta o clássico, nem se limita a ele.)</p>
+<p class="kicker">6.2 Interpretação conforme a Constituição</p>
+<ul class="efl">
+<li>Escolhe, entre os sentidos possíveis do texto (polissemia), o COMPATÍVEL com a Constituição.</li>
+<li>Dimensão <b>POSITIVA</b>: "este texto DEVE ser lido assim". PRESERVA a norma (declara constitucional num certo sentido) — NÃO decreta inconstitucionalidade; existe para EVITÁ-LA.</li>
+<li>NÃO altera a literalidade do texto.</li>
+<li>Busca compatibilidade com a CONSTITUIÇÃO — não a "vontade do legislador" (isso seria interpretação subjetiva/originalista).</li>
+<li>Cabe TANTO no controle DIFUSO quanto no ABSTRATO/concentrado.</li>
+<li>É usada TAMBÉM em matéria penal e processual penal (com os limites da legalidade estrita — ex.: não ampliar tipo penal contra o réu). "Não é utilizada em matéria penal" = FALSO.</li>
+</ul>
+<p class="kicker">6.3 Declaração de nulidade parcial SEM redução de texto</p>
+<ul class="efl">
+<li>Dimensão <b>NEGATIVA</b>: "este texto NÃO PODE ser lido assim". Exclui UM sentido inconstitucional, mantendo os demais válidos.</li>
+<li>O texto NÃO é alterado e a norma NÃO é afastada do mundo jurídico (isso seria a inconstitucionalidade total com redução). Só um sentido cai.</li>
+<li>DIFERE da interpretação conforme (positiva × negativa), mas ambas partilham a mesma premissa: um significante, vários significados.</li>
+</ul>
+<div class="note-blue"><b>PAR SEMPRE VERDADEIRO: </b>pluralidade de sentidos no mesmo texto → COMPATÍVEL com interpretação conforme e com nulidade sem redução de texto. "Refratária/incompatível com a nulidade sem redução de texto" (dito do intérprete que reconhece polissemia) = FALSO. Atenção: "compatível com X" na FGV = partilha a premissa, NÃO significa que a técnica foi aplicada no caso!</div>
+<p class="kicker">6.4 Outros conceitos de controle que caíram</p>
+<p class="lead"><b>Legislador negativo (Kelsen)</b> — o tribunal só RETIRA normas (declara inconstitucional), não cria. Modelo clássico do controle concentrado.</p>
+<p class="lead"><b>Decisões manipulativas com efeitos aditivos</b> — o tribunal ACRESCENTA sentido/hipótese que o texto não previa (aproxima-se de legislador positivo), mas SEM reescrever o texto. NÃO são exclusivas do controle por omissão. "Altera o texto original" = FALSO.</p>
+<p class="lead"><b>Inconstitucionalidade CONSEQUENCIAL (por arrastamento/atração)</b> — a norma principal cai e ARRASTA as que dela dependem (ex.: decreto regulamentador). ADMITIDA no controle concentrado.</p>
+<p class="lead"><b>Inconstitucionalidade REFLEXA (indireta)</b> — a ofensa à Constituição é INDIRETA (a norma viola primeiro uma lei; problema de legalidade). NÃO cabe controle concentrado. CONSEQUENCIAL ≠ REFLEXA — igualá-las é a pegadinha clássica!</p>
+<p class="lead"><b>Eficácia contida</b> — norma de aplicabilidade imediata cujo alcance PODE ser restringido por lei. "Refratária à possibilidade de a lei reduzir o rol de beneficiários" = FALSO (a restrição é da natureza da eficácia contida).</p>
+<p class="lead"><b>Constitucionalismo abusivo (Landau)</b> — uso de mecanismos CONSTITUCIONAIS (emenda, reforma) para corroer a democracia, com APARÊNCIA DE LEGALIDADE. NÃO é golpe de Estado nem usa meios "inconstitucionais" — a marca é justamente o disfarce de legalidade.</p>
+<p class="lead"><b>Razão pública (Rawls)</b> — em temas políticos fundamentais (direitos, Constituição), só valem argumentos ACESSÍVEIS A TODOS os cidadãos — independentes de doutrinas religiosas ou metafísicas particulares. (Ex.: fundamentar em "dignidade e igualdade" vale; fundamentar em texto religioso, não.)</p>
+<p class="lead"><b>Criptoconsequencialismo</b> — decidir pelas consequências ESCONDENDO isso sob fundamentação formal ("cripto" = oculto). É CRÍTICA/VÍCIO, não algo a ser "alargado".</p>
+<p class="lead"><b>Consequencialismo ⊃ utilitarismo</b> — utilitarismo é UMA ESPÉCIE de consequencialismo. "Todo consequencialismo é utilitarista" = FALSO.</p>
+<p class="lead"><b>Interpretação subjetiva × objetiva</b> — subjetiva = vontade do LEGISLADOR (liga-se ao originalismo); objetiva = sentido atual da LEI. Na hermenêutica contemporânea prevalece a OBJETIVA.</p>
+<p class="lead"><b>Constituição compromissória</b> — fruto de compromisso entre forças plurais; abriga valores/ideologias EM TENSÃO e por isso ADMITE (exige) ponderação entre eles no caso concreto (a CF/88). NÃO significa "equidistância obrigatória que proíbe prestigiar um valor" — esse é o erro plantado.</p>
+<p class="lead"><b>Sentidos de Constituição (outro assunto — distrator!)</b> — sociológico (Lassalle: fatores reais de poder), político (Schmitt: decisão política fundamental), jurídico (Kelsen: norma pura). É classificação da ESSÊNCIA da Constituição, não método de interpretação. Quando aparecer numa questão de interpretação, desconfie: costuma ser distrator fora de contexto.</p>
+</section>
+<!-- 8 -->
+<section class="card">
+<div class="card-head"><div class="num">8</div><h2>VOCABULÁRIO FGV (traduza e classifique o time!)</h2></div>
+<p class="lead">O vocabulário assusta, mas é revestimento. Traduza para "descobre ou decide?" e a maioria das questões se resolve antes mesmo de você olhar as alternativas.</p>
+<div class="note-blue"><span class="pin">7.1 Termos que marcam TIME DESCOBRE (em enunciado decide = alternativa ERRADA)</span></div>
+<p class="lead"><b>Cognoscitivo / cognitivista</b> — que só CONHECE/descobre o sentido pronto. "Atividade puramente cognoscitiva" = distrator clássico.</p>
+<p class="lead"><b>Subsunção / raciocínio subsuntivo</b> — ENCAIXAR o fato na norma (fato → regra → conclusão), mecanicamente.</p>
+<p class="lead"><b>Raciocínio lógico-dedutivo / silogismo</b> — deduzir como matemática: premissa maior (norma) + premissa menor (fato) = conclusão. É o "logos do racional" que a lógica do razoável critica. Não é escola — é o MÉTODO do time descobre.</p>
+<p class="lead"><b>Validade intrínseca</b> — a norma vale por si mesma, independente da realidade.</p>
+<p class="lead"><b>Separação sujeito cognoscente × objeto cognoscido</b> — intérprete (sujeito) de um lado, norma pronta (objeto) do outro, sem contaminação. Superada pela pré-compreensão.</p>
+<p class="lead"><b>Separação criação × aplicação</b> — a norma nasce pronta na criação; o juiz só aplica. O decide APROXIMA os dois momentos.</p>
+<p class="lead"><b>Correspondência biunívoca texto-norma</b> — um texto = uma única norma. Negá-la ("não há biunívoca") = texto ≠ norma = decide.</p>
+<p class="lead"><b>Formalismo</b> — nome-guarda-chuva do time descobre inteiro (sistema fechado, dedução, valores fora, texto = norma).</p>
+<p class="lead"><b>Teoria semiótica de interpretação (sentido textual)</b> — teoria centrada no TEXTO como fonte do sentido. Compatível com enunciados originalistas/cognitivistas.</p>
+<p class="kicker">7.2 Termos que marcam TIME DECIDE (tendem ao gabarito)</p>
+<p class="lead"><b>Decisório</b> — que ESCOLHE/decide o sentido. "Avança ao plano decisório".</p>
+<p class="lead"><b>Mutação / evolutividade informal</b> — sentido muda sem mudar o texto.</p>
+<p class="lead"><b>Polissemia</b> — ter vários sentidos. Base da mutação e das técnicas que preservam o texto.</p>
+<p class="lead"><b>Aproximação criação-aplicação</b> — a norma se completa quando aplicada; quem aplica também cria.</p>
+<p class="lead"><b>Validade extrínseca</b> — o sentido depende de fatores externos (valores, contexto, consequências).</p>
+<p class="lead"><b>Consequencialista / pragmático</b> — decide olhando consequências / efeitos práticos.</p>
+<p class="lead"><b>Estimativa dos efeitos posteriores</b> — prever as consequências antes de decidir. Ingrediente da lógica do razoável — quase sempre está no gabarito quando o tema é lógica do razoável.</p>
+<p class="lead"><b>Contextualismo</b> — o significado depende do contexto.</p>
+<p class="lead"><b>Utilitarismo</b> — maior bem para o maior número, ainda que sacrifique uma minoria. Pista: "maior número" + "desconsiderados interesses de outra parcela".</p>
+<p class="lead"><b>Pré-compreensão</b> — a visão de mundo que o intérprete traz antes de interpretar (Hesse/Gadamer).</p>
+<p class="lead"><b>Sociedade aberta dos intérpretes</b> — todos que vivem a Constituição a interpretam (Häberle).</p>
+<p class="lead"><b>Pensamento problemático</b> — valorizar o problema concreto sem abandonar o texto. ACEITO (≠ tópica pura, rejeitada).</p>
+<p class="kicker">7.3 Termos neutros / de tradução</p>
+<p class="lead"><b>Axiológico</b> — relativo a VALORES. "Vetores/referenciais axiológicos" = os valores.</p>
+<p class="lead"><b>Deontológico</b> — relativo ao DEVER-SER, à norma. (Alternativa que ISOLA o deontológico dos valores = positivismo = errada.)</p>
+<p class="lead"><b>Teleológico</b> — relativo aos FINS da norma.</p>
+<p class="lead"><b>Semiótico</b> — relativo ao significado/linguagem. Significante = o texto; significado = o sentido.</p>
+<p class="lead"><b>Referenciais/balizamentos semióticos</b> — os LIMITES de sentido do texto. "Refratária aos balizamentos semióticos" = ultrapassa o texto = ERRADA.</p>
+<p class="lead"><b>Conflitualidades intrínsecas</b> — tensões INTERNAS da norma que o intérprete resolve (planos linguístico, axiológico, teleológico). ≠ concordância prática (que é entre DUAS normas).</p>
+<p class="lead"><b>Vicissitudes</b> — MUDANÇAS. "Vicissitudes do ambiente sociopolítico" = a sociedade mudou → gatilho de mutação.</p>
+<p class="lead"><b>Circunstancialismos subjacentes à aplicação</b> — as circunstâncias por trás do caso no momento de aplicar.</p>
+<p class="lead"><b>Higidez textual</b> — o texto permanecer intacto/firme. "Higidez textual não desnatura a evolutividade" = mutação.</p>
+<p class="lead"><b>Individualização do significado</b> — definir/fixar qual sentido será atribuído.</p>
+<p class="lead"><b>Delinear a norma</b> — construir/definir a norma no caso.</p>
+<p class="lead"><b>Atividade intelectiva</b> — a atividade de pensar/raciocinar do intérprete.</p>
+<p class="lead"><b>Refratário / infenso</b> — resistente a, incompatível com, que rejeita.</p>
+<p class="lead"><b>Preterir</b> — deixar de lado, preferir outro no lugar.</p>
+<p class="lead"><b>Preeminência</b> — primazia, maior peso.</p>
+<p class="lead"><b>Prosélito</b> — defensor, adepto de uma ideia.</p>
+<p class="lead"><b>Ínsito</b> — inerente, embutido.</p>
+<p class="lead"><b>Subjacente</b> — que está por trás/por baixo.</p>
+<p class="lead"><b>Cambiável</b> — que pode mudar.</p>
+<p class="lead"><b>Insindicável</b> — que não pode ser controlado/revisado (sindicar = fiscalizar).</p>
+<p class="lead"><b>Elemento filológico</b> — o gramatical/literal (a letra do texto).</p>
+<p class="kicker">7.4 Latinismos</p>
+<p class="lead"><b>Ratio essendi</b> — razão de ser, fundamento.</p>
+<p class="lead"><b>Iter</b> — caminho, percurso ("iter argumentativo" = o percurso do raciocínio).</p>
+<p class="lead"><b>Prima facie</b> — à primeira vista, provisório (posições prima facie ≠ definitivas — teoria externa dos direitos fundamentais).</p>
+</section>
+<!-- 9 -->
+<section class="card">
+<div class="card-head"><div class="num">9</div><h2>TÉCNICAS DE PROVA E ARMADILHAS (leia antes de cada bateria!)</h2></div>
+<p class="kicker">Passo a passo para cada questão</p>
+<ul class="efl">
+<li>1. TRADUZA o enunciado para português comum ANTES de olhar as alternativas. Metade do texto é enfeite (vicissitudes, circunstancialismos...) — risque mentalmente.</li>
+<li>2. Classifique o TIME do enunciado (quase sempre decide — mas confira! Se falar "cognoscitiva + prestigiar opções do constituinte", é descobre e a lógica inverte).</li>
+<li>3. Se houver DOIS personagens (demandante/demandado), classifique CADA UM separadamente antes das alternativas.</li>
+<li>4. Elimine as alternativas do time contrário ao enunciado.</li>
+<li>5. Se sobrarem várias do time certo, decida pela ASSINATURA DE AUTOR (seção 4).</li>
+</ul>
+<p class="kicker">As armadilhas catalogadas</p>
+<p class="lead"><b>Meia-verdade (verdade + mentira)</b> — alternativa composta com uma parte certa grudada numa errada ("compatível com a sociedade aberta, MAS refratária à nulidade sem redução"). TESTE CADA METADE: uma falsa mata a alternativa inteira. Não pare de ler quando a primeira parte soar certa — o veneno costuma estar no fim.</p>
+<p class="lead"><b>Negações em dois passos</b> — "não", "refratária", "infensa", "incompatível", "não encampa" INVERTEM o valor. Calcule: (1) a afirmação nua é verdadeira? (2) a alternativa afirma ou nega? "Não é compatível com a metódica concretista" quando a conduta É concretista = errada; "não se ajusta à tópica pura" quando a conduta respeita o texto = certa.</p>
+<p class="lead"><b>Advérbios/adjetivos absolutos</b> — "sempre", "nunca", "exclusivamente", "puramente", "nenhuma", "todos", "absoluto", "descartando" = bandeira vermelha. O constitucional trabalha com ponderação e relatividade; formulações totais quase sempre erram.</p>
+<p class="lead"><b>Inversão de autor</b> — atribuir a um nome a tese do adversário ("a lógica do razoável NEGA a mutação" — falso: ela a fundamenta). Tenha a etiqueta de time de cada nome.</p>
+<p class="lead"><b>Conceito certo no lugar errado</b> — peça verdadeira, montagem falsa ("resolver conflitualidades intrínsecas serve para assegurar a concordância prática entre normas" — mistura tensão INTERNA de uma norma com colisão ENTRE duas). Teste a LIGAÇÃO que a alternativa afirma.</p>
+<p class="lead"><b>Distrator de outra matéria</b> — sentidos de Constituição (Lassalle/Schmitt/Kelsen), teoria interna×externa, realismo jurídico em questão de ponderação. Identifique QUAL matéria a questão cobra antes de aplicar o que sabe.</p>
+<p class="lead"><b>Enunciado com erro plantado</b> — às vezes o comando pede para achar o ERRO na exposição do personagem ("há uma compreensão errada de..."). Aí releia o enunciado com o mesmo rigor das alternativas — mas cuidado: não invente erro onde não há (coerência interna não prova alternativa certa).</p>
+<p class="lead"><b>Junção de times na mesma frase</b> — "harmônica com Savigny E com a lógica do razoável" — nomes de times opostos não convivem. Errada na hora.</p>
+<p class="lead"><b>"Segurança jurídica" como pretexto</b> — a palavra sozinha não marca time (os dois a buscam: descobre pela rigidez, decide pela racionalidade da decisão). MAS quando usada para BLOQUEAR mutação/valores/fatos ("os aspectos empíricos comprometem a segurança jurídica"), é o argumento formalista = errada.</p>
+<p class="lead"><b>Itens espelhados (I e II opostos)</b> — quando dois itens partilham a mesma premissa e divergem só na conclusão, o erro costuma estar na PREMISSA COMUM ("consequencial é sinônima de reflexa") — e os dois caem juntos.</p>
+<p class="lead"><b>"Compatível com X"</b> — na FGV = partilha a premissa / não conflita. NÃO significa que X foi aplicado no caso. É teste de baixa exigência — por isso "compatível" tende ao gabarito e "refratária/incompatível" tende ao distrator (salvo tópica pura e originalismo!).</p>
+<p class="kicker">Frases-gatilho de gabarito (quando o enunciado é decide)</p>
+<ul class="efl">
+<li>"aproxima os momentos de criação e de aplicação" + "distancia-se da jurisprudência dos conceitos"</li>
+<li>"aspectos contextuais influíram na expansão ou retração de referenciais semióticos"</li>
+<li>"não se ajusta/incompatível com a tópica pura, mas compatível com a nulidade sem redução de texto"</li>
+<li>"não é refratária ao pensamento problemático" / "sensível ao pensamento problemático"</li>
+<li>"refratária a uma rígida separação entre sujeito cognoscente e objeto cognoscido"</li>
+<li>"se distancia da lógica puramente cognitivista / de premissas originalistas"</li>
+<li>"compatível com a lógica do razoável e o contextualismo" / "estimativa dos efeitos posteriores, na perspectiva da prudência"</li>
+<li>"compatível com o utilitarismo e refratária ao originalismo" (quando houver "maior número + sacrifício de parcela")</li>
+</ul>
+<p class="kicker">Frases-gatilho de ERRO (quando o enunciado é decide)</p>
+<ul class="efl">
+<li>"atividade puramente cognoscitiva, não decisória"</li>
+<li>"separação (rígida) entre criação e aplicação"</li>
+<li>"validade intrínseca da norma"</li>
+<li>"valores não podem influir no plano deontológico" / "preterir referenciais axiológicos"</li>
+<li>"refratária/distancia-se dos balizamentos semióticos" (ultrapassar o texto)</li>
+<li>"harmônica com a tópica pura / com a jurisprudência dos conceitos / com Savigny / com o originalismo"</li>
+<li>"o intérprete se arvora em Poder Constituinte" (interpretar ≠ usurpar)</li>
+<li>"incompatível com a interpretação constitucional" (dito da conduta-modelo — o enunciado nunca é o erro)</li>
+</ul>
+</section>
+</div>
 </div>
 </script>
 
