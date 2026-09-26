@@ -28126,13 +28126,19 @@ function matMenuTabela(art, aoTerminar){
    convertida para WebP aqui no aparelho, reduzida, e vai para o espaco de
    arquivos do Supabase (balde "imagens"), numa pasta so desta conta. Na
    anotacao fica apenas o endereco.
-   Limites: 200 KB por imagem e so WebP (o balde recusa o resto) e cota de 125
-   imagens por pessoa, 25 MB no maximo (o banco recusa acima). O app confere
+   Limites: 200 KB por imagem e so WebP (o balde recusa o resto) e cota de 50
+   imagens por pessoa, 10 MB no maximo (o banco recusa acima). O app confere
    antes, para avisar direito. */
 const IMG_BALDE = "imagens", IMG_MAX_BYTES = 200 * 1024, IMG_LARGURA = 1200,
-      IMG_COTA_QTD = 125, IMG_COTA_BYTES = 25 * 1048576;   // 125 x 200 KB cabe em 25 MB
-const IMG_COTA_TXT = "25 MB";
+      IMG_COTA_QTD = 50, IMG_COTA_BYTES = 10 * 1048576;    // 50 x 200 KB cabe em 10 MB
+const IMG_COTA_TXT = "10 MB";
 let imgUso = null;                       // { qtd, bytes } desta conta
+/* "Restam 47 de 50 imagens." — dito a cada imagem colada */
+function imgRestamTxt(){
+  const f = Math.max(0, IMG_COTA_QTD - (imgUso ? imgUso.qtd : 0));
+  if (f === 0) return "Essa foi a última: as " + IMG_COTA_QTD + " imagens da sua cota acabaram.";
+  return (f === 1 ? "Resta 1" : "Restam " + f) + " de " + IMG_COTA_QTD + " imagens.";
+}
 const imgMB = b => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB"
                                : (b / 1048576).toFixed(1).replace(".", ",") + " MB";
 
@@ -28188,7 +28194,7 @@ async function imgEnviar(original){
     throw new Error("é preciso estar conectado para colar imagem");
   const webp = await imgPreparar(original);
   const caminho = USUARIO.id + "/" + (await imgNome(webp));
-  const uso = await imgUsoAtual();
+  const uso = await imgUsoAtual(true);
   if (uso.qtd >= IMG_COTA_QTD || uso.bytes + webp.size > IMG_COTA_BYTES)
     throw new Error("sua cota de imagens acabou (" + imgMB(uso.bytes) + " de " + IMG_COTA_TXT + ", " +
                     uso.qtd + " de " + IMG_COTA_QTD + " imagens)");
@@ -28243,8 +28249,8 @@ async function matColarImagem(ev, art){
     try{
       const r = await imgEnviar(f);
       marca.parentNode.insertBefore(imgTag(r.url), marca);
-      avisoTec("Imagem colada (" + Math.round(r.bytes / 1024) + " KB). Usado: " +
-               imgMB(imgUso.bytes) + " de " + IMG_COTA_TXT + ".");
+      avisoTec((r.jaExistia ? "Essa imagem já estava na sua conta, não gastou cota. "
+                            : "Imagem colada. ") + imgRestamTxt());
     }catch(e){ avisoTec("Não colei a imagem: " + (e.message || e)); }
   }
   marca.remove();
@@ -28255,16 +28261,20 @@ async function matColarImagem(ev, art){
 async function matImgsEmbutidas(art){
   const soltas = [...art.querySelectorAll('img[src^="data:"]')];
   if (!soltas.length) return;
+  let enviadas = 0;
   for (const im of soltas){
     try{
       const blob = await (await fetch(im.getAttribute("src"))).blob();
       const r = await imgEnviar(blob);
       im.replaceWith(imgTag(r.url));
+      enviadas++;
     }catch(e){
       im.remove();
       avisoTec("Tirei uma imagem que veio junto do texto: " + (e.message || e));
     }
   }
+  if (enviadas) avisoTec((enviadas === 1 ? "A imagem que veio no texto foi guardada. "
+                                         : enviadas + " imagens que vieram no texto foram guardadas. ") + imgRestamTxt());
   art.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
