@@ -15704,20 +15704,55 @@ function lerCopia(){
 
 const ID_APARELHO = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-/* Escuta as gravacoes da propria conta e traz o cronometro de outro aparelho.
-   Pausou no tablet, o computador pausa junto, sem precisar recarregar. */
+/* ---------- cronometro entre aparelhos ----------
+   ANTES: o app escutava as gravacoes da tabela `dados`. Cada gravacao fazia a
+   ficha inteira da conta descer para todos os aparelhos abertos, inclusive
+   para o que gravou, que so a descartava. Era a maior parte da saida de dados.
+   AGORA: quando o cronometro muda, este aparelho manda um recado curto, so com
+   o cronometro, por um canal de recados (broadcast) do Supabase. O resto da
+   ficha chega pela conferencia da nuvem (puxarDaNuvem), e so quando mudou.
+   O canal de recados e aberto: quem souber o nome ouve e fala nele. Por isso o
+   nome e um codigo sorteado, guardado na propria ficha (DB.canalCrono), que so
+   os aparelhos desta conta conseguem ler (a ficha e protegida pelas regras). */
+let canalCrono = null, nomeCanal = null, ultimoCronoEnviado = null;
+const cronoTexto = () => JSON.stringify((DB.estudo && DB.estudo.crono) || null);
+
+function sortearCodigo(){
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+}
 function ouvirCronometro(){
   if (!USUARIO || !sb.channel) return;
-  sb.channel("crono-" + USUARIO.id)
-    .on("postgres_changes",
-        { event:"UPDATE", schema:"public", table:"dados",
-          filter:"usuario=eq." + USUARIO.id },
-        carga => {
-          const vindo = carga && carga.new && carga.new.conteudo;
-          if (!vindo || vindo._origem === ID_APARELHO) return;   // eco meu, ignora
-          aplicarCronoDeOutro(vindo.estudo && vindo.estudo.crono);
-        })
+  if (!DB.canalCrono){ DB.canalCrono = sortearCodigo(); salvar(); }
+  ligarCanal();
+}
+/* (re)abre o canal com o codigo da ficha; chamado de novo se o codigo mudar */
+function ligarCanal(){
+  if (!USUARIO || !sb.channel || !DB.canalCrono) return;
+  const nome = "crono-" + DB.canalCrono;
+  if (canalCrono && nomeCanal === nome) return;
+  if (canalCrono){ try{ sb.removeChannel(canalCrono); }catch(e){} }
+  nomeCanal = nome;
+  ultimoCronoEnviado = cronoTexto();
+  canalCrono = sb.channel(nome, { config: { broadcast: { self: false } } })
+    .on("broadcast", { event: "crono" }, msg => {
+      const p = msg && msg.payload;
+      if (!p || p.origem === ID_APARELHO) return;      // eco meu, ignora
+      aplicarCronoDeOutro(p.crono);
+    })
     .subscribe();
+}
+/* o cronometro mudou aqui? manda o recado (so ele, nunca a ficha) */
+function avisarCrono(){
+  if (!canalCrono || !sessaoOnline) return;
+  const t = cronoTexto();
+  if (t === ultimoCronoEnviado) return;
+  ultimoCronoEnviado = t;
+  try{
+    canalCrono.send({ type: "broadcast", event: "crono",
+                      payload: { origem: ID_APARELHO, crono: JSON.parse(t) } });
+  }catch(e){ /* sem conexao: a conferencia da nuvem cobre */ }
 }
 
 /* aplica aqui o cronometro que veio de outro aparelho */
@@ -15735,6 +15770,7 @@ function aplicarCronoDeOutro(dele){
   meu.dia = dele.dia; meu.horaIni = dele.horaIni;
   meu.alarmeOk = n(dele.alarmeOk);
   anterior = instantanea();          // nao devolve isso para a nuvem
+  ultimoCronoEnviado = cronoTexto(); // nem manda o recado de volta
   reagendarAlarme();                 // apitos agendados passam a seguir o novo alarme
   conferirAlarmeAberto();            // desligaram la? desliga aqui
   pulsoCrono();
@@ -15793,6 +15829,7 @@ async function juntarComNuvem(seLivre){
   if (seLivre && (mexendoAgora() || timer)) return null;
   const la = data.conteudo;
   delete la._origem;
+  const codigoLa = la.canalCrono;
   const confiavel = la._v === VERSAO_PACOTE;
   delete la._v;
   const antes = instantanea();
@@ -15804,6 +15841,8 @@ async function juntarComNuvem(seLivre){
   finally{ MARCAS = guardadas; }
   adotar(DB, juntado);
   if (cronoAqui && DB.estudo) DB.estudo.crono = cronoAqui;
+  // dois aparelhos sortearam codigos ao mesmo tempo: fica o que chegou primeiro
+  if (codigoLa && DB.canalCrono !== codigoLa){ DB.canalCrono = codigoLa; ligarCanal(); }
   const depois = instantanea();
   const mudou = antes !== depois;
   if (mudou){
@@ -15914,7 +15953,7 @@ function faixaSalvar(texto, tipo){
   }
 }
 
-function persistir(){ return naFila(persistirAgora); }
+function persistir(){ avisarCrono(); return naFila(persistirAgora); }
 async function persistirAgora(){
   if (ONDE === "memoria" || !USUARIO){
     avisarEstado(rotulo());
@@ -22545,6 +22584,7 @@ function conferirAlarmeAberto(){
   if (!j && !tocando) return;
   if (alarmeValendo()) return;
   pararAlarme();
+  reagendarAlarme();                 // mantém agendado o próximo aviso (+5 min, repetir)
   if (j && j.parentNode) j.parentNode.removeChild(j);
   avisoTec("Alarme desligado em outro aparelho.");
 }
@@ -22594,7 +22634,9 @@ function janelaAlarme(){
   const proxTocado = n(c.prox);
   // marca este alarme como desligado: vai junto com o cronômetro e os outros
   // aparelhos param de tocar na hora
-  const desligar = () => { c.alarmeOk = proxTocado; pararAlarme();
+  // pararAlarme apaga todos os apitos agendados, inclusive os do PROXIMO aviso
+  // (+5 min, repetir) que acabaram de ser marcados: por isso reagenda em seguida
+  const desligar = () => { c.alarmeOk = proxTocado; pararAlarme(); reagendarAlarme();
     if (fundo.parentNode) fundo.parentNode.removeChild(fundo); };
 
   const bSoneca = el("button","btn","+5 min");
@@ -27788,9 +27830,264 @@ function matMenuTabela(art, aoTerminar){
     limparColgroup(t);
   }
 
+  /* ---- menu geral (fora de tabela): inserir balão / tabela, recortar, copiar, colar ----
+     Os balões oferecidos são os que JÁ existem nesta seção: assim o que entra
+     segue o padrão do capítulo e nunca sai com classe sem estilo. */
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+  const NOMES = { note:"Nota", nota:"Nota", jur:"Jurisprudência", juris:"Jurisprudência",
+    balao:"Balão", balloon:"Balão", mnemonico:"Mnemônico", mnemo:"Mnemônico", obs:"Observação",
+    dica:"Dica", atencao:"Atenção", alerta:"Alerta", destaque:"Destaque", exemplo:"Exemplo",
+    lembrete:"Lembrete", pegadinha:"Pegadinha", resumo:"Resumo", info:"Informação",
+    aviso:"Aviso", warn:"Atenção", tip:"Dica", box:"Quadro", quadro:"Quadro", callout:"Destaque",
+    faixa:"Faixa", sumula:"Súmula", tese:"Tese", conceito:"Conceito", importante:"Importante",
+    bizu:"Bizu", ques:"Questão", questao:"Questão", caso:"Caso", zcx:"Quadro" };
+  const CORES = { azul:"azul", blue:"azul", verde:"verde", green:"verde", verm:"vermelho",
+    vermelho:"vermelho", red:"vermelho", amar:"amarelo", amarelo:"amarelo", yellow:"amarelo",
+    roxo:"roxo", purple:"roxo", laranja:"laranja", orange:"laranja", cinza:"cinza", gray:"cinza",
+    grey:"cinza", rosa:"rosa", pink:"rosa" };
+  const semCor = c => !c || c === "transparent" || /rgba\(0, 0, 0, 0\)/.test(c);
+  // é um balão? fundo colorido ou borda, bloco, com texto, e não um cartão inteiro
+  function ehBalao(e){
+    if (!e || e === art || e.nodeType !== 1) return false;
+    if (!/^(DIV|P|ASIDE|BLOCKQUOTE)$/.test(e.tagName)) return false;
+    if (e.closest("table, .card-head, .chapter-head, .ch-head, .mtMenu")) return false;
+    if (e.querySelector("section, h2, h3, .card-head, .chapter-head, .ch-head, img, table")) return false;
+    const st = getComputedStyle(e);
+    if (st.display.indexOf("inline") === 0 || st.display === "none") return false;
+    const fundo = !semCor(st.backgroundColor) && st.backgroundColor !== "rgb(255, 255, 255)";
+    const borda = ["Top","Right","Bottom","Left"].some(l => parseFloat(st["border" + l + "Width"]) > 0 &&
+                                                        st["border" + l + "Style"] !== "none");
+    if (!fundo && !borda) return false;
+    if (e.offsetWidth < 150) return false;
+    // peça de grade ou de linha (células, cartões lado a lado, números)
+    const pai = e.parentElement && getComputedStyle(e.parentElement).display;
+    if (pai && /grid|flex/.test(pai)) return false;
+    // rótulo ou faixa de título: texto curto e sem blocos dentro
+    const temBloco = [...e.children].some(c => /^(P|UL|OL|DIV|BLOCKQUOTE)$/.test(c.tagName));
+    if (!temBloco && (e.textContent || "").trim().length < 40) return false;
+    return true;
+  }
+  // só o de fora: título ou miolo de um balão não é outro balão
+  function ehBalaoExterno(e, raiz){
+    if (!ehBalao(e)) return false;
+    for (let x = e.parentElement; x && x !== raiz && x !== document.body; x = x.parentElement)
+      if (ehBalao(x)) return false;
+    return true;
+  }
+  // nome de cor pelo tom (para quadros sem nome conhecido)
+  function nomeDaCor(rgb){
+    const m = /(\d+),\s*(\d+),\s*(\d+)/.exec(rgb || ""); if (!m) return "";
+    let [r, g, b] = [m[1], m[2], m[3]].map(Number).map(v => v / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (d < 0.06) return "cinza";
+    let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+    return h < 15 ? "vermelho" : h < 40 ? "laranja" : h < 70 ? "amarelo" : h < 165 ? "verde"
+         : h < 255 ? "azul" : h < 290 ? "roxo" : h < 340 ? "rosa" : "vermelho";
+  }
+  function nomeDoModelo(e){
+    const toks = ((e.getAttribute("class") || "") + " " + e.tagName).toLowerCase().split(/[\s_-]+/);
+    const nome = toks.map(t => NOMES[t]).find(Boolean);
+    const cor  = toks.map(t => CORES[t]).find(Boolean);
+    if (nome) return nome + (cor ? " " + cor : "");
+    const st = getComputedStyle(e);
+    const tom = !semCor(st.backgroundColor) && st.backgroundColor !== "rgb(255, 255, 255)"
+      ? st.backgroundColor : st.borderLeftColor;
+    const txt = (e.textContent || "").trim().replace(/\s+/g, " ");
+    return "Quadro " + (nomeDaCor(tom) || "") + " · “" + (txt.length > 22 ? txt.slice(0, 22) + "…" : txt) + "”";
+  }
+  function modelosDeBalao(){
+    const grupos = new Map();
+    const raiz = art.closest(".crimMat") || art;
+    const secoes = raiz === art ? [art] : [art, ...[...raiz.querySelectorAll("section.crimSec")].filter(x => x !== art)];
+    const pesa = e => art.contains(e) ? 1000 : 1;          // os desta seção primeiro
+    secoes.forEach(sec => sec.querySelectorAll("div, p, aside, blockquote").forEach(e => {
+      if (!ehBalaoExterno(e, sec)) return;
+      const cls = (e.getAttribute("class") || "").trim();
+      const chave = e.tagName + "|" + cls + "|" + (cls ? "" : (e.getAttribute("style") || ""));
+      const g = grupos.get(chave);
+      if (g){ g.n += pesa(e); if (art.contains(e) && !art.contains(g.el)) g.el = e; }
+      else grupos.set(chave, { el: e, n: pesa(e) });
+    }));
+    // de outra seção: só entra se, colocado aqui, fica com o mesmo visual
+    const provar = m => {
+      if (art.contains(m.el)) return true;
+      const c = m.el.cloneNode(true);
+      c.style.position = "absolute"; c.style.visibility = "hidden"; c.style.left = "-9999px";
+      art.appendChild(c);
+      const a = getComputedStyle(m.el), b = getComputedStyle(c);
+      const igual = ["backgroundColor","borderLeftColor","borderLeftWidth","borderTopColor","borderTopWidth"]
+        .every(k => a[k] === b[k]);
+      c.remove();
+      return igual;
+    };
+    const lista = [...grupos.values()].sort((a, b) => b.n - a.n).filter(provar).slice(0, 10);
+    const usados = {};
+    lista.forEach(m => {
+      let nome = nomeDoModelo(m.el);
+      usados[nome] = (usados[nome] || 0) + 1;
+      if (usados[nome] > 1) nome += " (" + usados[nome] + ")";
+      m.nome = nome;
+    });
+    return lista;
+  }
+  // onde entra o novo bloco: depois do bloco clicado; nunca dentro de título nem
+  // dentro de outro balão; clicou no vazio de um cartão, entra no fim dele
+  function colocar(alvo, novo){
+    let e = alvo && alvo.nodeType === 1 ? alvo : (alvo && alvo.parentElement);
+    if (!e || !art.contains(e)) e = art;
+    const cab = e.closest(".card-head, .chapter-head, .ch-head, h1, h2, h3, h4, h5, h6");
+    if (cab && cab !== art && art.contains(cab)){ cab.after(novo); return; }
+    if (e === art || e.tagName === "SECTION" || /(^|\s)[\w-]*card[\w-]*(\s|$)/.test(e.className || "")){
+      e.appendChild(novo); return;
+    }
+    let b = e.closest("p, ul, ol, table, blockquote, pre, figure, li");
+    if (b && b.tagName === "LI") b = b.closest("ul, ol") || b;
+    if (!b || !art.contains(b)) b = e;
+    // dentro de um balão: entra depois dele
+    let caixa = b;
+    for (let x = b; x && x !== art; x = x.parentElement) if (ehBalao(x)) caixa = x;
+    (caixa || b).after(novo);
+  }
+  function terminar(novo, alvoTexto){
+    // o cursor já fica no lugar de escrever
+    try{
+      const r = document.createRange();
+      if (alvoTexto) r.selectNodeContents(alvoTexto); else { r.selectNodeContents(novo); r.collapse(true); }
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }catch(e){}
+    art.dispatchEvent(new Event("input", { bubbles: true }));    // guarda a anotação
+  }
+  function inserirBalao(alvo, modelo){
+    const novo = modelo.cloneNode(false);
+    novo.removeAttribute("id");
+    // etiqueta curta no começo (ex.: "MNEMÔNICO") vem junto; título vira "Título"
+    const prim = modelo.firstElementChild;
+    const antesDoPrim = prim ? [...modelo.childNodes].slice(0, [...modelo.childNodes].indexOf(prim))
+                                 .every(n => n.nodeType === 3 && !n.textContent.trim()) : false;
+    if (prim && antesDoPrim && (prim.getAttribute("class") || /^(B|STRONG)$/.test(prim.tagName))){
+      const cp = prim.cloneNode(false);
+      const ehTitulo = /tit/i.test(prim.getAttribute("class") || "") || /^P$/.test(prim.tagName);
+      const t = (prim.textContent || "").trim();
+      cp.textContent = ehTitulo ? "Título" : (t.length <= 25 ? t : "Destaque");
+      novo.appendChild(cp);
+      novo.appendChild(document.createTextNode(ehTitulo ? "" : " "));
+    }
+    const corpo = /^P$/.test(novo.tagName) ? novo : document.createElement("p");
+    const txt = document.createTextNode("Escreva aqui");
+    if (corpo === novo) novo.appendChild(txt);
+    else if (novo.querySelector && [...modelo.children].some(c => c.tagName === "P")){ corpo.appendChild(txt); novo.appendChild(corpo); }
+    else novo.appendChild(txt);
+    colocar(menuAlvo, novo);
+    // fora do lugar de origem o estilo pode depender do contêiner: garante o visual
+    const a = getComputedStyle(modelo), b = getComputedStyle(novo);
+    ["backgroundColor","borderTopColor","borderLeftColor","borderLeftWidth","borderTopWidth"].forEach(k => {
+      if (a[k] !== b[k]){
+        ["background-color","border","border-left","border-radius","padding","color"].forEach(pr =>
+          novo.style.setProperty(pr, a.getPropertyValue(pr)));
+      }
+    });
+    terminar(novo, txt);
+  }
+  function inserirTabela(alvo, cols, lins){
+    // de preferência uma tabela desta seção que tenha cabeçalho de verdade
+    const comCab = [...art.querySelectorAll("table")].find(x => x.rows[0] && x.rows[0].cells[0] &&
+                                                               x.rows[0].cells[0].tagName === "TH");
+    const modelo = comCab || art.querySelector("table.t") || art.querySelector("table");
+    let t;
+    if (modelo){ t = modelo.cloneNode(false); t.removeAttribute("id"); }
+    else {
+      t = document.createElement("table");
+      // o app roda sem <!DOCTYPE>: sem tamanho explícito a tabela vira 16px
+      t.setAttribute("style", "border-collapse:collapse;width:100%;margin:10px 0 14px;font-size:14px;");
+    }
+    const linhaMod = (i) => modelo && modelo.rows[i] ? modelo.rows[i] : null;
+    // cabeçalho sempre em <th>: se o modelo não tem, o <th> puro pega o estilo da matéria
+    const cabTpl = linhaMod(0) && linhaMod(0).cells[0] && linhaMod(0).cells[0].tagName === "TH"
+      ? linhaMod(0).cells[0] : null;
+    const corTpl = linhaMod(1) ? linhaMod(1).cells[Math.min(1, linhaMod(1).cells.length - 1)] : null;
+    function celula(tpl, tag, estilo){
+      const c = tpl ? tpl.cloneNode(false) : document.createElement(tag);
+      if (tpl){ c.removeAttribute("colspan"); c.removeAttribute("rowspan"); c.style.width = ""; c.removeAttribute("width"); }
+      else if (!modelo) c.setAttribute("style", estilo);   // sem modelo: estilo neutro inline
+      c.innerHTML = "<br>";
+      return c;
+    }
+    // o estilo do cabeçalho pode depender de ele estar no <thead>: segue o modelo
+    const usaThead = !!(modelo && modelo.tHead && modelo.tHead.rows.length);
+    const th = usaThead ? document.createElement("thead") : null;
+    const tb = document.createElement("tbody");
+    for (let l = 0; l <= lins; l++){
+      const tr = document.createElement("tr");
+      for (let k = 0; k < cols; k++){
+        tr.appendChild(l === 0
+          ? celula(cabTpl, "th", "border:1px solid #8c96a0;background:#e4e8ec;padding:7px 10px;font-weight:700;text-align:center;")
+          : celula(corTpl, "td", "border:1px solid #8c96a0;padding:7px 10px;vertical-align:top;"));
+      }
+      (l === 0 && th ? th : tb).appendChild(tr);
+    }
+    if (th) t.appendChild(th);
+    t.appendChild(tb);
+    colocar(menuAlvo, t);
+    terminar(t, null);
+    try{ const r = document.createRange(); r.setStart(t.rows[0].cells[0], 0); r.collapse(true);
+         const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }catch(e){}
+  }
+  let menuAlvo = null;
+  function itemInativo(txt, icone){
+    const b = item(txt, icone, () => {});
+    b.style.opacity = ".45"; b.style.pointerEvents = "none";
+    return b;
+  }
+  function menuGeral(ev){
+    if (ev.shiftKey) return;                    // Shift + botão direito: menu do navegador
+    if (!art.contains(ev.target)) return;
+    ev.preventDefault();
+    fechar();
+    menuAlvo = ev.target;
+    const sel = window.getSelection();
+    const temSelecao = !!(sel && !sel.isCollapsed && art.contains(sel.anchorNode));
+    menu = document.createElement("div");
+    menu.className = "mtMenu";
+    menu.addEventListener("mousedown", e => e.preventDefault());   // não tira o cursor do texto
+    const modelos = modelosDeBalao();
+    const amostra = m => {
+      const st = getComputedStyle(m.el);
+      const f = semCor(st.backgroundColor) ? "#fff" : st.backgroundColor;
+      const bd = ["Left","Top"].map(l => st["border" + l + "Width"] !== "0px" ? st["border" + l + "Color"] : null).find(Boolean) || "#999";
+      return '<span style="display:inline-block;width:15px;height:15px;border-radius:3px;background:' +
+             esc(f) + ';border:2px solid ' + esc(bd) + ';vertical-align:middle"></span>';
+    };
+    menu.appendChild(item("Inserir balão", "▭", null, modelos.length
+      ? modelos.map(m => item(esc(m.nome), amostra(m), () => inserirBalao(menuAlvo, m.el)))
+      : [itemInativo("Nenhum balão nesta seção", "∅")]));
+    menu.appendChild(item("Inserir tabela", "▦", null,
+      [[2,2],[2,3],[3,2],[3,3],[4,3],[4,4]].map(([c, l]) =>
+        item(c + " colunas × " + l + " linhas", "▦", () => inserirTabela(menuAlvo, c, l)))));
+    const sep = document.createElement("div");
+    sep.style.cssText = "height:1px;background:#e3e8ee;margin:4px 6px;";
+    menu.appendChild(sep);
+    menu.appendChild(temSelecao ? item("Recortar", "✂", () => document.execCommand("cut")) : itemInativo("Recortar", "✂"));
+    menu.appendChild(temSelecao ? item("Copiar", "⧉", () => document.execCommand("copy")) : itemInativo("Copiar", "⧉"));
+    menu.appendChild(item("Colar", "📋", () => {
+      if (!navigator.clipboard || !navigator.clipboard.readText){ avisoTec("Use Ctrl+V para colar."); return; }
+      navigator.clipboard.readText()
+        .then(t => { if (t) document.execCommand("insertText", false, t); })
+        .catch(() => avisoTec("O navegador não deixou colar por aqui. Use Ctrl+V."));
+    }));
+    const dica = document.createElement("div");
+    dica.style.cssText = "font:12px/1.3 system-ui,sans-serif;color:#7a8594;padding:6px 12px 4px;";
+    dica.textContent = "Shift + botão direito: menu do navegador";
+    menu.appendChild(dica);
+    document.body.appendChild(menu);
+    const lm = menu.getBoundingClientRect();
+    menu.style.left = Math.min(ev.clientX, innerWidth  - lm.width  - 8) + "px";
+    menu.style.top  = Math.min(ev.clientY, innerHeight - lm.height - 8) + "px";
+  }
+
   art.addEventListener("contextmenu", ev => {
     const td = ev.target.closest && ev.target.closest("td,th");
-    if (!td || !art.contains(td)) return;
+    if (!td || !art.contains(td)){ menuGeral(ev); return; }
     const t = td.closest("table"); if (!t) return;
     ev.preventDefault();
     fechar();
