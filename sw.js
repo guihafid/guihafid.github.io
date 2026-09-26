@@ -5,6 +5,10 @@
    publicação, por isso vai primeiro à rede e só cai no cache se ela falhar. */
 
 const VERSAO = "hafid-v1";
+// imagens coladas no caderno (Supabase Storage, balde "imagens"). O nome vem do
+// conteudo, entao nunca mudam: ficam numa gaveta propria, que a troca de versao
+// do app nao apaga.
+const IMAGENS = "hafid-imagens-v1";
 const ESSENCIAIS = [
   "./",
   "./index.html",
@@ -25,7 +29,7 @@ self.addEventListener("install", ev => {
 self.addEventListener("activate", ev => {
   ev.waitUntil(
     caches.keys()
-      .then(nomes => Promise.all(nomes.filter(n => n !== VERSAO).map(n => caches.delete(n))))
+      .then(nomes => Promise.all(nomes.filter(n => n !== VERSAO && n !== IMAGENS).map(n => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -36,8 +40,21 @@ self.addEventListener("fetch", ev => {
 
   const url = new URL(req.url);
 
-  // o Supabase nunca é cacheado: dado velho seria pior que erro de rede
-  if (url.hostname.endsWith("supabase.co")) return;
+  // o Supabase nunca é cacheado: dado velho seria pior que erro de rede.
+  // Exceção: as imagens coladas no caderno, que nunca mudam (nome = conteúdo).
+  if (url.hostname.endsWith("supabase.co")) {
+    if (url.pathname.startsWith("/storage/v1/object/public/imagens/")) {
+      ev.respondWith(
+        caches.open(IMAGENS).then(c => c.match(req).then(achou => achou || fetch(req).then(resp => {
+          // só guarda resposta legível (a imagem pede crossorigin): resposta
+          // opaca ocuparia vários MB da cota do navegador cada uma
+          if (resp && resp.ok && resp.type !== "opaque") c.put(req, resp.clone()).catch(() => {});
+          return resp;
+        })))
+      );
+    }
+    return;
+  }
 
   // imagens e a biblioteca: cache primeiro, porque o nome garante a versão
   const fixo = url.pathname.includes("/img/") ||

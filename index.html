@@ -18289,6 +18289,9 @@ window.addEventListener("message", ev => {
   const d = ev.data;
   if (!d || d.fonte !== "caderno-erros-tec") return;
   if (!pontePronta) return;   // antes disso o DB esta vazio: nao recebe nada
+  // app aberto sem conexao com a conta (somente leitura): nada seria gravado.
+  // Nao responde, nao recebe, nao confirma: a fila fica guardada na extensao.
+  if (!sessaoOnline) return;
 
   if (d.tipo === "ping"){
     anunciar();
@@ -18369,7 +18372,7 @@ function anunciar(){
 // quem libera e o fim do carregamento, em liberarPonte().
 function liberarPonte(){
   pontePronta = true;
-  anunciar();
+  if (sessaoOnline) anunciar();      // somente leitura: a extensao nem sabe que o app esta aqui
   ouvirCronometro();
 }
 
@@ -27504,6 +27507,7 @@ function matLinhaNoVazio(ev, art, mat, id){
 /* o que vai ser guardado: sem as linhas vazias que s\u00f3 servem para o cursor */
 function matHtmlLimpo(art){
   const c = art.cloneNode(true);
+  c.querySelectorAll("[data-enviando]").forEach(e => e.remove());   // imagem ainda subindo
   c.querySelectorAll("[data-contraste]").forEach(e => {
     e.style.removeProperty("color");
     e.removeAttribute("data-contraste");
@@ -27552,6 +27556,8 @@ function matQuadro(mat, id){
     matBordas(art, () => matAnotar(mat, id, art));
     matColunas(art, () => matAnotar(mat, id, art));
     matMenuTabela(art, () => matAnotar(mat, id, art));
+    art.addEventListener("paste", ev => matColarImagem(ev, art));
+    art.addEventListener("drop",  ev => matColarImagem(ev, art));
   }
   return art;
 }
@@ -28112,6 +28118,154 @@ function matMenuTabela(art, aoTerminar){
     menu.style.left = Math.min(ev.clientX, innerWidth  - lm.width  - 8) + "px";
     menu.style.top  = Math.min(ev.clientY, innerHeight - lm.height - 8) + "px";
   });
+}
+
+/* ---------- imagens coladas no caderno ----------
+   A imagem NAO fica dentro da anotacao: pesaria cada gravacao da secao, cada
+   abertura do app e estouraria a copia offline (limite de ~5 MB). Ela e
+   convertida para WebP aqui no aparelho, reduzida, e vai para o espaco de
+   arquivos do Supabase (balde "imagens"), numa pasta so desta conta. Na
+   anotacao fica apenas o endereco.
+   Limites: 200 KB por imagem e so WebP (o balde recusa o resto) e cota de 125
+   imagens por pessoa, 25 MB no maximo (o banco recusa acima). O app confere
+   antes, para avisar direito. */
+const IMG_BALDE = "imagens", IMG_MAX_BYTES = 200 * 1024, IMG_LARGURA = 1200,
+      IMG_COTA_QTD = 125, IMG_COTA_BYTES = 25 * 1048576;   // 125 x 200 KB cabe em 25 MB
+const IMG_COTA_TXT = "25 MB";
+let imgUso = null;                       // { qtd, bytes } desta conta
+const imgMB = b => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB"
+                               : (b / 1048576).toFixed(1).replace(".", ",") + " MB";
+
+async function imgUsoAtual(forcar){
+  if (imgUso && !forcar) return imgUso;
+  const { data, error } = await sb.storage.from(IMG_BALDE).list(USUARIO.id, { limit: 1000 });
+  if (error) throw error;
+  const arqs = (data || []).filter(a => a && a.name && a.name.charAt(0) !== ".");
+  imgUso = { qtd: arqs.length,
+             bytes: arqs.reduce((t, a) => t + n(a.metadata && a.metadata.size), 0) };
+  return imgUso;
+}
+function imgCarregar(blob){
+  return new Promise((ok, falhou) => {
+    const i = new Image();
+    i.onload  = () => { ok(i); URL.revokeObjectURL(i.src); };
+    i.onerror = () => falhou(new Error("esse conteúdo não parece uma imagem"));
+    i.src = URL.createObjectURL(blob);
+  });
+}
+function imgParaWebp(img, largura, qualidade){
+  return new Promise(ok => {
+    const esc = Math.min(1, largura / img.naturalWidth);
+    const c = document.createElement("canvas");
+    c.width  = Math.max(1, Math.round(img.naturalWidth  * esc));
+    c.height = Math.max(1, Math.round(img.naturalHeight * esc));
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => ok(b), "image/webp", qualidade);
+  });
+}
+/* qualquer formato entra; sai sempre WebP de ate 200 KB */
+async function imgPreparar(blob){
+  const img = await imgCarregar(blob);
+  let largura = Math.min(IMG_LARGURA, img.naturalWidth);
+  for (let volta = 0; volta < 5; volta++){
+    for (const q of [0.82, 0.7, 0.58, 0.46]){
+      const b = await imgParaWebp(img, largura, q);
+      if (!b || b.type !== "image/webp")
+        throw new Error("este navegador não converte imagens para WebP (use Chrome, Edge ou Firefox)");
+      if (b.size <= IMG_MAX_BYTES) return b;
+    }
+    largura = Math.round(largura * 0.75);          // ainda grande: diminui e tenta de novo
+  }
+  throw new Error("a imagem é grande demais mesmo reduzida");
+}
+/* nome pelo conteudo: a mesma imagem colada duas vezes ocupa espaco uma vez */
+async function imgNome(b){
+  const h = await crypto.subtle.digest("SHA-256", await b.arrayBuffer());
+  return [...new Uint8Array(h)].slice(0, 8).map(x => x.toString(16).padStart(2, "0")).join("") + ".webp";
+}
+async function imgEnviar(original){
+  if (!USUARIO || !sessaoOnline || navigator.onLine === false)
+    throw new Error("é preciso estar conectado para colar imagem");
+  const webp = await imgPreparar(original);
+  const caminho = USUARIO.id + "/" + (await imgNome(webp));
+  const uso = await imgUsoAtual();
+  if (uso.qtd >= IMG_COTA_QTD || uso.bytes + webp.size > IMG_COTA_BYTES)
+    throw new Error("sua cota de imagens acabou (" + imgMB(uso.bytes) + " de " + IMG_COTA_TXT + ", " +
+                    uso.qtd + " de " + IMG_COTA_QTD + " imagens)");
+  const { error } = await sb.storage.from(IMG_BALDE)
+    .upload(caminho, webp, { contentType: "image/webp", upsert: false, cacheControl: "31536000" });
+  let jaExistia = false;
+  if (error){
+    const msg = [error.message, error.error, error.statusCode, error.status].join(" ");
+    if (/exist|duplicate|409/i.test(msg)) jaExistia = true;          // a mesma imagem ja esta la
+    else if (/row-level|policy|security|403/i.test(msg))
+      throw new Error("o servidor recusou: cota de imagens atingida");
+    else throw new Error(error.message || "falha ao enviar");
+  }
+  if (!jaExistia){ uso.qtd++; uso.bytes += webp.size; }
+  const { data } = sb.storage.from(IMG_BALDE).getPublicUrl(caminho);
+  return { url: data.publicUrl, bytes: webp.size, jaExistia };
+}
+function imgTag(url){
+  const i = document.createElement("img");
+  i.setAttribute("crossorigin", "anonymous");   // antes do src: o service worker so guarda resposta nao opaca
+  i.className = "matImgColada";
+  i.setAttribute("loading", "lazy");
+  i.alt = "";
+  i.setAttribute("style", "max-width:100%;height:auto;display:block;margin:8px auto;border-radius:6px;");
+  i.src = url;
+  return i;
+}
+async function matColarImagem(ev, art){
+  const dt = ev.clipboardData || ev.dataTransfer;
+  if (!dt) return;
+  const arqs = [];
+  [...(dt.files || [])].forEach(f => { if (/^image\//.test(f.type)) arqs.push(f); });
+  if (!arqs.length && dt.items) [...dt.items].forEach(it => {
+    if (it.kind === "file" && /^image\//.test(it.type)){ const f = it.getAsFile(); if (f) arqs.push(f); }
+  });
+  if (!arqs.length){
+    // colagem comum (texto, HTML): se vier imagem embutida junto, trata depois
+    setTimeout(() => matImgsEmbutidas(art), 0);
+    return;
+  }
+  ev.preventDefault();
+  let ponto = null;
+  if (ev.type === "drop" && document.caretRangeFromPoint) ponto = document.caretRangeFromPoint(ev.clientX, ev.clientY);
+  if (!ponto){ const sel = window.getSelection(); if (sel.rangeCount) ponto = sel.getRangeAt(0).cloneRange(); }
+  const marca = document.createElement("span");
+  marca.setAttribute("data-enviando", "1");
+  marca.textContent = "⏳ enviando imagem…";
+  marca.style.cssText = "color:#7a8594;font-style:italic;";
+  if (ponto && art.contains(ponto.startContainer)){ ponto.deleteContents(); ponto.insertNode(marca); }
+  else art.appendChild(marca);
+  for (const f of arqs.slice(0, 5)){
+    try{
+      const r = await imgEnviar(f);
+      marca.parentNode.insertBefore(imgTag(r.url), marca);
+      avisoTec("Imagem colada (" + Math.round(r.bytes / 1024) + " KB). Usado: " +
+               imgMB(imgUso.bytes) + " de " + IMG_COTA_TXT + ".");
+    }catch(e){ avisoTec("Não colei a imagem: " + (e.message || e)); }
+  }
+  marca.remove();
+  art.dispatchEvent(new Event("input", { bubbles: true }));
+}
+/* imagem que veio dentro de texto colado (Word, paginas) chega como data:...
+   e incharia a anotacao: converte e envia, ou tira */
+async function matImgsEmbutidas(art){
+  const soltas = [...art.querySelectorAll('img[src^="data:"]')];
+  if (!soltas.length) return;
+  for (const im of soltas){
+    try{
+      const blob = await (await fetch(im.getAttribute("src"))).blob();
+      const r = await imgEnviar(blob);
+      im.replaceWith(imgTag(r.url));
+    }catch(e){
+      im.remove();
+      avisoTec("Tirei uma imagem que veio junto do texto: " + (e.message || e));
+    }
+  }
+  art.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 /* guarda o que est\u00e1 escrito. N\u00e3o redesenha a tela: o cursor fica onde est\u00e1 */
@@ -34693,7 +34847,16 @@ b) <b>Instrução do 2º grau ou superior</b></li>
         </ul>
       </li>
       <li>Se a corrente passa pelo TRONCO ENCEFÁLICO a pessoa morre por parada respiratória CENTRAL<br>
-          Se a corrente passa pelo TRONCO a pessoa morre por <strong>parada respiratória</strong> PERIFÉRICA (asfixia)</li>
+          Se a corrente passa pelo TRONCO a pessoa morre por <strong>parada respiratória</strong> PERIFÉRICA (asfixia)
+          <div class="medCorrente" style="border:1px solid #e3e1d9;border-radius:10px;overflow:hidden;margin:10px 0 6px;background:#fff;">
+          <table style="border-collapse:collapse;width:100%;font-size:14px;line-height:1.45;margin:0;">
+            <tr><th style="text-align:left;font-weight:400;color:#3d3d3a;background:#f5f4ef;padding:10px 14px;border-bottom:1px solid #e3e1d9;width:50%;">Trajeto da corrente</th><th style="text-align:left;font-weight:400;color:#3d3d3a;background:#f5f4ef;padding:10px 14px;border-bottom:1px solid #e3e1d9;width:50%;">Mecanismo de morte</th></tr>
+            <tr><td style="text-align:left;color:#1f1f1d;padding:10px 14px;border-bottom:1px solid #e3e1d9;vertical-align:top;">Cabeça / tronco encefálico</td><td style="text-align:left;color:#1f1f1d;padding:10px 14px;border-bottom:1px solid #e3e1d9;vertical-align:top;">Parada respiratória central (bulbar)</td></tr>
+            <tr><td style="text-align:left;color:#1f1f1d;padding:10px 14px;border-bottom:1px solid #e3e1d9;vertical-align:top;">Tórax, passando pelo coração</td><td style="text-align:left;color:#1f1f1d;padding:10px 14px;border-bottom:1px solid #e3e1d9;vertical-align:top;">Parada cardíaca (fibrilação ventricular), o mais comum</td></tr>
+            <tr><td style="text-align:left;color:#1f1f1d;padding:10px 14px;vertical-align:top;">Tórax, afetando a musculatura respiratória</td><td style="text-align:left;color:#1f1f1d;padding:10px 14px;vertical-align:top;">Parada respiratória periférica (asfixia por tetanização)</td></tr>
+          </table>
+          </div>
+      </li>
       <li><strong>Efeito Joule</strong>
         <ul><li>Conversão de energia elétrica em calor.</li></ul>
       </li>
@@ -34792,7 +34955,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
   </div>
   <div class="legalbox">
     <div class="lb-head">Sinal de Janesic-Jeliac ou Janesie-Jeliac</div>
-    <div class="lb-body">É uma bolha com conteúdo aéreo (não possui conteúdo líquido), indicando que foi formada em pessoa viva, pois, em seu interior, há a presença de exsudato leucocitário (produzido pelos glóbulos brancos).<br><br>Não se confunde com as bolhas da putrefação.</div>
+    <div class="lb-body">É um sinal usado nas queimaduras para saber se a flictena foi formada em vida. Na pessoa viva, a flictena tem conteúdo seroso (líquido) com exsudato leucocitário (produzido pelos glóbulos brancos), resultado da reação vital. No cadáver, as flictenas também podem se formar pela ação do calor, mas não possuem conteúdo seroso com exsudato leucocitário.<br><br>Não se confunde com as bolhas da putrefação, que não resultam de reação vital.</div>
   </div>
 
   <h3 class="sub">Carbonização</h3>
