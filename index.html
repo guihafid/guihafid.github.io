@@ -15308,6 +15308,13 @@ function migrarMateria(velho, novo){
       E.coresCont[novo] = E.coresCont[velho]; delete E.coresCont[velho];
     }
   }
+  // 5) os cadernos que guardam a matéria em cada linha: erros do TEC (e qualquer
+  //    outro caderno de erros), jurisprudências, teses, súmulas e as anotações da
+  //    tela dos cadernos de conteúdo. Sem isto, as linhas ficavam com o nome velho
+  //    e caíam no bloco "Sem matéria".
+  const trocaMat = arr => { if (Array.isArray(arr)) arr.forEach(x => { if (x && x.mat === velho) x.mat = novo; }); };
+  if (DB.caderno) Object.keys(DB.caderno).forEach(k => trocaMat(DB.caderno[k]));
+  trocaMat(DB.juris); trocaMat(DB.teses); trocaMat(DB.sumulas); trocaMat(DB.cadConteudo);
   if (DB.cores && DB.cores[velho]){ DB.cores[novo] = DB.cores[velho]; delete DB.cores[velho]; }
   if (Array.isArray(DB.ocultas))
     DB.ocultas = DB.ocultas.map(m => m === velho ? novo : m);
