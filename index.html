@@ -1025,6 +1025,45 @@ td.calDia.hoje{border-color:#ED7D31;box-shadow:0 0 0 2px #ED7D31 inset}
   text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
 .calEventos .btn{width:100%;margin-bottom:11px;font-size:11.5px;border-radius:20px}
 .calEventos .semEv{font-size:11px;color:#7a8595;font-style:italic;line-height:15px}
+/* ---- visão do ano (prefixo calAno) ---- */
+.calTopo .btn.calAnoBt.on{background:var(--azulEscuro);color:#fff;border-color:var(--azulEscuro)}
+.calAnoEv{max-height:78vh;overflow-y:auto}
+.calAnoGrade{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.calAnoMes{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:8px 8px 6px}
+.calAnoMes.atual{border-color:#ED7D31;box-shadow:0 0 0 1px #ED7D31}
+.calAnoCab{display:flex;align-items:baseline;gap:6px;cursor:pointer;padding:0 2px 4px;
+  border-bottom:1px solid #eef1f6;margin-bottom:4px}
+.calAnoCab:hover .calAnoNome{text-decoration:underline}
+.calAnoNome{flex:1;font-size:13px;font-weight:800;color:var(--azulEscuro)}
+.calAnoTot{font-size:10.5px;font-weight:800;color:#2E7D32}
+table.calAnoTab{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:2px;margin:0}
+table.calAnoTab th{background:transparent;color:#9aa5b6;font-size:9px;font-weight:bold;
+  padding:0;border:0;text-align:center}
+table.calAnoTab td.calAnoD{height:22px;padding:0;border:1px solid transparent;border-radius:4px;
+  font-size:10px;line-height:20px;text-align:center;color:#8794a8;cursor:pointer;position:relative}
+table.calAnoTab td.calAnoD.est{background:#EAF7EC;border-color:#B6DEB9;color:#1b5e20;font-weight:bold}
+table.calAnoTab td.calAnoD.falta{background:#FCEEEC;border-color:#F1CBC5;color:#B0453A}
+table.calAnoTab td.calAnoD.falta.fds{background:#fbece9}
+table.calAnoTab td.calAnoD.vir{background:#fbfcfe;border-color:#e4e9f1}
+table.calAnoTab td.calAnoD.vir.fds{background:#f4f6fb}
+table.calAnoTab td.calAnoD.fora{background:transparent;border-color:transparent;cursor:default}
+table.calAnoTab td.calAnoD.hoje{background:#ED7D31 !important;border-color:#ED7D31;color:#fff;font-weight:bold}
+table.calAnoTab td.calAnoD.ev{box-shadow:inset 0 -3px 0 var(--calAnoEv,#2F5597)}
+table.calAnoTab td.calAnoD:not(.fora):hover{outline:2px solid var(--azulEscuro);outline-offset:-1px}
+.calLegenda .quadro.calAnoLegEv{background:#fbfcfe;box-shadow:inset 0 -3px 0 #C0392B}
+/* tela estreita: o nome do mês/ano em cima, os botões quebram embaixo */
+@media (max-width:560px){
+  .calTopo.calAnoTopo{flex-wrap:wrap;gap:6px}
+  .calTopo.calAnoTopo .mes{order:-1;flex:1 1 100%}
+  .calTopo.calAnoTopo .lado.dir{flex-wrap:wrap;justify-content:flex-end}
+  .calCorpo{min-width:0}
+  .calAnoGrade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .calAnoMes{padding:6px 4px 4px}
+  .calAnoNome{font-size:12px}
+  .calAnoTot{font-size:9.5px}
+  table.calAnoTab{border-spacing:1px}
+  table.calAnoTab td.calAnoD{height:19px;line-height:17px;font-size:9px;border-radius:3px}
+}
 .evento{border:1px solid var(--borda);border-left:5px solid #999;border-radius:8px;
   background:#fff;padding:8px 10px;margin-bottom:8px;transition:box-shadow .12s,transform .12s}
 .evento:hover{box-shadow:0 3px 10px rgba(15,30,51,.14);transform:translateY(-1px)}
@@ -23594,7 +23633,37 @@ function janelaEvento(base){
   bOk.onclick = gravar;
 }
 
+/* um evento na coluna da esquerda (visão do mês e visão do ano) */
+function calCartaoEvento(ev, comMes){
+  const L = el("div","evento" + (ev.automatico ? " auto" : ""));
+  L.style.borderLeftColor = corEvento(ev.tipo);
+  const d = dataDeISO(ev.data);
+  const cab = el("div","evCab");
+  cab.appendChild(el("span","evDia", String(d.getDate()).padStart(2,"0")));
+  cab.appendChild(el("span","evMes", comMes ? MESES[d.getMonth()].slice(0,3).toLowerCase()
+                                                 : DIAS_SEM[(d.getDay()+6)%7].slice(0,3)));
+  const faltam = diasAte(ev.data);
+  cab.appendChild(el("span","flex"));
+  cab.appendChild(el("span","evFalta" + (faltam != null && faltam >= 0 && faltam <= 15 ? " perto" : ""),
+    faltam == null ? "" : faltam < 0 ? "passou" : faltam === 0 ? "é hoje!"
+      : faltam === 1 ? "amanhã" : "em " + faltam + " dias"));
+  L.appendChild(cab);
+  L.appendChild(el("div","evTit", ev.titulo));
+  const tp = el("div","evTipo", ev.tipo + (ev.automatico ? "  ·  do cadastro de concursos" : ""));
+  tp.style.color = corEvento(ev.tipo);
+  L.appendChild(tp);
+  if (!ev.automatico){
+    L.style.cursor = "pointer";
+    L.title = "Clique para editar";
+    L.onclick = () => janelaEvento(ev);
+  } else {
+    L.title = "Vem da data cadastrada no concurso";
+  }
+  return L;
+}
+
 let calMes = null;                      // "AAAA-MM" que está sendo mostrado
+let calVisao = "mes";                   // "mes" ou "ano" (só nesta página, não vai para a nuvem)
 function telaCalendario(){
   const E = garantirEstudo();
   const tela = document.getElementById("tela");
@@ -23602,9 +23671,10 @@ function telaCalendario(){
   tela.appendChild(el("div","subAba",
     "Verde é dia estudado, vermelho é dia em branco. Clique num dia para ver ou lançar."));
   if (!calMes) calMes = hojeISO().slice(0,7);
+  if (calVisao === "ano"){ calTelaAno(tela, E); return; }
 
   const [ano, mes] = calMes.split("-").map(Number);
-  const topo = el("div","calTopo");
+  const topo = el("div","calTopo calAnoTopo");
   const passo = k => () => {
     const d = new Date(ano, mes-1+k, 1);
     calMes = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
@@ -23615,7 +23685,10 @@ function telaCalendario(){
   const bHoje = el("button","btn","hoje");
   bHoje.onclick = () => { calMes = hojeISO().slice(0,7); render(); };
   const esq = el("div","lado"); esq.appendChild(bAnt);
-  const dir = el("div","lado dir"); dir.appendChild(bProx); dir.appendChild(bHoje);
+  const bAno = el("button","btn calAnoBt","📆 ano todo");
+  bAno.title = "Ver os 12 meses de " + ano + " de uma vez";
+  bAno.onclick = () => { calVisao = "ano"; render(); };
+  const dir = el("div","lado dir"); dir.appendChild(bProx); dir.appendChild(bHoje); dir.appendChild(bAno);
   topo.appendChild(esq);
   topo.appendChild(el("div","mes", MESES[mes-1] + " de " + ano));
   topo.appendChild(dir);
@@ -23643,32 +23716,7 @@ function telaCalendario(){
       "Nada marcado neste mês. Use o botão acima para anotar uma prova, " +
       "uma inscrição ou qualquer compromisso."));
   }
-  eventos.forEach(ev => {
-    const L = el("div","evento" + (ev.automatico ? " auto" : ""));
-    L.style.borderLeftColor = corEvento(ev.tipo);
-    const d = dataDeISO(ev.data);
-    const cab = el("div","evCab");
-    cab.appendChild(el("span","evDia", String(d.getDate()).padStart(2,"0")));
-    cab.appendChild(el("span","evMes", DIAS_SEM[(d.getDay()+6)%7].slice(0,3)));
-    const faltam = diasAte(ev.data);
-    cab.appendChild(el("span","flex"));
-    cab.appendChild(el("span","evFalta" + (faltam != null && faltam >= 0 && faltam <= 15 ? " perto" : ""),
-      faltam == null ? "" : faltam < 0 ? "passou" : faltam === 0 ? "é hoje!"
-        : faltam === 1 ? "amanhã" : "em " + faltam + " dias"));
-    L.appendChild(cab);
-    L.appendChild(el("div","evTit", ev.titulo));
-    const tp = el("div","evTipo", ev.tipo + (ev.automatico ? "  ·  do cadastro de concursos" : ""));
-    tp.style.color = corEvento(ev.tipo);
-    L.appendChild(tp);
-    if (!ev.automatico){
-      L.style.cursor = "pointer";
-      L.title = "Clique para editar";
-      L.onclick = () => janelaEvento(ev);
-    } else {
-      L.title = "Vem da data cadastrada no concurso";
-    }
-    lado.appendChild(L);
-  });
+  eventos.forEach(ev => lado.appendChild(calCartaoEvento(ev)));
   wrap.appendChild(lado);
 
   /* ---------- calendário, à direita ---------- */
@@ -23758,6 +23806,139 @@ function telaCalendario(){
   leg.appendChild(el("span","flex"));
   leg.appendChild(el("span","calResumo",
     hMin(somaMin(doMes)) + " no mês  •  " + diasDistintos(doMes) + " dia(s) estudados"));
+  cxCal.appendChild(leg);
+  wrap.appendChild(cxCal);
+  tela.appendChild(wrap);
+}
+
+/* ---------- visão do ano: os 12 meses lado a lado ----------
+   Mesmas cores do mês (verde estudado, vermelho em branco), num quadradinho
+   por dia. Clicar num dia abre o dia; clicar no nome do mês abre o mês.     */
+function calTelaAno(tela, E){
+  const ano = Number(calMes.slice(0,4));
+  const doAno = sessoes().filter(s => String(s.data).startsWith(ano + "-"));
+  const minDia = {};
+  doAno.forEach(s => { minDia[s.data] = (minDia[s.data] || 0) + n(s.min); });
+  const eventos = [];
+  for (let m = 1; m <= 12; m++) eventos.push(...eventosDoMes(ano + "-" + String(m).padStart(2,"0")));
+  const evDia = {};
+  eventos.forEach(e => (evDia[e.data] = evDia[e.data] || []).push(e));
+  const meta = Math.max(1, n(E.metas.dia));
+  const hoje = hojeISO();
+
+  const topo = el("div","calTopo calAnoTopo");
+  const passo = k => () => { calMes = (ano + k) + calMes.slice(4); render(); };
+  const bAnt = el("button","btn","‹ ano anterior"); bAnt.onclick = passo(-1);
+  const bProx = el("button","btn","próximo ano ›"); bProx.onclick = passo(1);
+  const bHoje = el("button","btn","hoje");
+  bHoje.onclick = () => { calMes = hojeISO().slice(0,7); render(); };
+  const bMes = el("button","btn calAnoBt on","📆 ano todo");
+  bMes.title = "Voltar para o mês";
+  bMes.onclick = () => { calVisao = "mes"; render(); };
+  const esq = el("div","lado"); esq.appendChild(bAnt);
+  const dir = el("div","lado dir"); dir.appendChild(bProx); dir.appendChild(bHoje); dir.appendChild(bMes);
+  topo.appendChild(esq);
+  topo.appendChild(el("div","mes", String(ano)));
+  topo.appendChild(dir);
+
+  const wrap = el("div","calWrap");
+
+  /* eventos do ano, à esquerda */
+  const lado = el("div","calEventos calAnoEv");
+  lado.appendChild(el("div","tit","Eventos do ano"));
+  const bNovo = el("button","btn azulzinho","+ Novo evento");
+  bNovo.onclick = () => janelaEvento({ data: calMes + "-01" });
+  lado.appendChild(bNovo);
+  const bIcs = el("button","btn","📅  Levar para a agenda");
+  bIcs.title = "Gera um arquivo .ics para o Google Agenda ou o Calendário do iPhone";
+  bIcs.style.marginTop = "6px";
+  bIcs.onclick = janelaExportarAgenda;
+  lado.appendChild(bIcs);
+  if (!eventos.length)
+    lado.appendChild(el("div","semEv","Nada marcado neste ano."));
+  eventos.forEach(ev => lado.appendChild(calCartaoEvento(ev, true)));
+  wrap.appendChild(lado);
+
+  /* os 12 meses, à direita */
+  const cxCal = el("div","calCorpo");
+  cxCal.appendChild(topo);
+
+  const dias = Object.keys(minDia).filter(d => minDia[d] > 0).sort();
+  let seqMax = 0, seq = 0, ant = null;
+  dias.forEach(dd => {
+    seq = ant && (dataDeISO(dd) - dataDeISO(ant))/86400000 === 1 ? seq + 1 : 1;
+    seqMax = Math.max(seqMax, seq); ant = dd;
+  });
+  const cards = el("div","calCards");
+  const card = (v, t) => { const c = el("div","calCard");
+    c.appendChild(el("div","cv", v)); c.appendChild(el("div","ct", t)); return c; };
+  cards.appendChild(card(hMin(somaMin(doAno)) || "—", "tempo no ano"));
+  cards.appendChild(card(String(dias.length), "dias estudados"));
+  cards.appendChild(card(seqMax + (seqMax === 1 ? " dia" : " dias"), "melhor sequência"));
+  cxCal.appendChild(cards);
+
+  const grade = el("div","calAnoGrade");
+  for (let m = 1; m <= 12; m++){
+    const chave = ano + "-" + String(m).padStart(2,"0");
+    const cx = el("div","calAnoMes" + (hoje.slice(0,7) === chave ? " atual" : ""));
+    const cab = el("div","calAnoCab");
+    cab.appendChild(el("span","calAnoNome", MESES[m-1]));
+    const totMes = somaMin(doAno.filter(s => String(s.data).startsWith(chave)));
+    cab.appendChild(el("span","calAnoTot", totMes ? hMinRedondo(totMes) : ""));
+    cab.title = "Abrir " + MESES[m-1] + " de " + ano;
+    cab.onclick = () => { calMes = chave; calVisao = "mes"; render(); };
+    cx.appendChild(cab);
+
+    const t = el("table","calAnoTab");
+    const trC = el("tr");
+    ["S","T","Q","Q","S","S","D"].forEach(d => trC.appendChild(el("th",null,d)));
+    t.appendChild(trC);
+    let tr = el("tr"); t.appendChild(tr); let naLinha = 0;
+    const por = td => {
+      if (naLinha === 7){ tr = el("tr"); t.appendChild(tr); naLinha = 0; }
+      tr.appendChild(td); naLinha++;
+    };
+    const desloc = (new Date(ano, m-1, 1).getDay()+6)%7;
+    const ultimo = new Date(ano, m, 0).getDate();
+    for (let i = 0; i < desloc; i++) por(el("td","calAnoD fora"));
+    for (let d = 1; d <= ultimo; d++){
+      const iso = chave + "-" + String(d).padStart(2,"0");
+      const tot = minDia[iso] || 0;
+      const fds = (dataDeISO(iso).getDay()+6)%7 >= 5;
+      const evs = evDia[iso] || [];
+      const td = el("td","calAnoD " + (tot ? "est" : iso > hoje ? "vir" : "falta") +
+        (fds ? " fds" : "") + (iso === hoje ? " hoje" : "") + (evs.length ? " ev" : ""), String(d));
+      if (tot) td.style.background = clarear("#2E7D32", 0.94 - Math.min(1, tot/meta)*0.40);
+      if (evs.length) td.style.setProperty("--calAnoEv", corEvento(evs[0].tipo));
+      td.title = dataBR(iso) + (tot ? " — " + hMin(tot) + " de estudo" : "") +
+        evs.map(e => String.fromCharCode(10) + e.tipo + ": " + e.titulo).join("");
+      td.onclick = () => janelaDia(iso);
+      por(td);
+    }
+    while (naLinha < 7) por(el("td","calAnoD fora"));
+    // todo mês com 6 linhas: os quadros ficam da mesma altura
+    while (t.rows.length < 7){
+      const x = el("tr"); for (let i = 0; i < 7; i++) x.appendChild(el("td","calAnoD fora")); t.appendChild(x);
+    }
+    cx.appendChild(t);
+    grade.appendChild(cx);
+  }
+  cxCal.appendChild(grade);
+
+  const leg = el("div","calLegenda");
+  [["estudei","dia estudado"],["faltei","dia sem estudo"],["porVir","ainda vem"]]
+    .forEach(([cls,rot]) => {
+      const x = el("span","item");
+      x.appendChild(el("span","quadro " + cls));
+      x.appendChild(el("span",null,rot));
+      leg.appendChild(x);
+    });
+  const xe = el("span","item");
+  xe.appendChild(el("span","quadro calAnoLegEv"));
+  xe.appendChild(el("span",null,"tem evento (a cor é a do tipo)"));
+  leg.appendChild(xe);
+  leg.appendChild(el("span","flex"));
+  leg.appendChild(el("span","calResumo","clique no nome do mês para abri-lo"));
   cxCal.appendChild(leg);
   wrap.appendChild(cxCal);
   tela.appendChild(wrap);
