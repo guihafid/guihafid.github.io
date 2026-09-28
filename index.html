@@ -1051,6 +1051,14 @@ table.calAnoTab td.calAnoD.hoje{background:#ED7D31 !important;border-color:#ED7D
 table.calAnoTab td.calAnoD.ev{box-shadow:inset 0 -3px 0 var(--calAnoEv,#2F5597)}
 table.calAnoTab td.calAnoD:not(.fora):hover{outline:2px solid var(--azulEscuro);outline-offset:-1px}
 .calLegenda .quadro.calAnoLegEv{background:#fbfcfe;box-shadow:inset 0 -3px 0 #C0392B}
+.calAnoPer{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-4px 0 12px;
+  padding:7px 10px;border:1px dashed #cdd6e4;border-radius:10px;background:#fbfcfe}
+.calAnoPerRot{font-size:11px;font-weight:800;color:var(--azulEscuro);text-transform:uppercase;
+  letter-spacing:.4px;margin-right:4px}
+.calAnoPerCampo{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#5a6a80;font-weight:bold}
+.calAnoPerCampo input{width:96px;font-size:12px;padding:4px 7px;border:1px solid #cdd6e4;
+  border-radius:6px;text-align:center}
+.calAnoPer .btn{font-size:11.5px;padding:5px 12px;border-radius:20px}
 /* tela estreita: o nome do mês/ano em cima, os botões quebram embaixo */
 @media (max-width:560px){
   .calTopo.calAnoTopo{flex-wrap:wrap;gap:6px}
@@ -23814,40 +23822,105 @@ function telaCalendario(){
 /* ---------- visão do ano: os 12 meses lado a lado ----------
    Mesmas cores do mês (verde estudado, vermelho em branco), num quadradinho
    por dia. Clicar num dia abre o dia; clicar no nome do mês abre o mês.     */
+let calPer = { de:"", ate:"" };        // período personalizado (vazio = ano inteiro)
+const calBR4 = iso => iso ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "";
+// "15/01/2026" (ou 15/01/26, 15012026) -> "2026-01-15"; data que não existe -> ""
+function calLerData(txt){
+  const iso = paraISO(mascaraData(String(txt || "").trim()));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const d = dataDeISO(iso);
+  return isoDeData(d) === iso ? iso : "";
+}
+
 function calTelaAno(tela, E){
+  const temPer = !!(calPer.de && calPer.ate);
   const ano = Number(calMes.slice(0,4));
-  const doAno = sessoes().filter(s => String(s.data).startsWith(ano + "-"));
+  const ini = temPer ? calPer.de  : ano + "-01-01";
+  const fim = temPer ? calPer.ate : ano + "-12-31";
+  const dentro = iso => iso >= ini && iso <= fim;
+
+  // os meses que o período atravessa
+  const meses = [];
+  for (let d = new Date(Number(ini.slice(0,4)), Number(ini.slice(5,7)) - 1, 1);
+       isoDeData(d).slice(0,7) <= fim.slice(0,7); d.setMonth(d.getMonth() + 1))
+    meses.push(isoDeData(d).slice(0,7));
+  const variosAnos = ini.slice(0,4) !== fim.slice(0,4);
+
+  const doPer = sessoes().filter(s => dentro(String(s.data)));
   const minDia = {};
-  doAno.forEach(s => { minDia[s.data] = (minDia[s.data] || 0) + n(s.min); });
+  doPer.forEach(s => { minDia[s.data] = (minDia[s.data] || 0) + n(s.min); });
   const eventos = [];
-  for (let m = 1; m <= 12; m++) eventos.push(...eventosDoMes(ano + "-" + String(m).padStart(2,"0")));
+  meses.forEach(m => eventos.push(...eventosDoMes(m).filter(e => dentro(String(e.data)))));
   const evDia = {};
   eventos.forEach(e => (evDia[e.data] = evDia[e.data] || []).push(e));
   const meta = Math.max(1, n(E.metas.dia));
   const hoje = hojeISO();
 
   const topo = el("div","calTopo calAnoTopo");
-  const passo = k => () => { calMes = (ano + k) + calMes.slice(4); render(); };
-  const bAnt = el("button","btn","‹ ano anterior"); bAnt.onclick = passo(-1);
-  const bProx = el("button","btn","próximo ano ›"); bProx.onclick = passo(1);
-  const bHoje = el("button","btn","hoje");
-  bHoje.onclick = () => { calMes = hojeISO().slice(0,7); render(); };
+  const esq = el("div","lado"), dir = el("div","lado dir");
+  if (temPer){
+    const bInt = el("button","btn","✕ ano inteiro");
+    bInt.title = "Tirar o período e voltar a ver o ano todo";
+    bInt.onclick = () => { calPer = { de:"", ate:"" }; render(); };
+    esq.appendChild(bInt);
+  } else {
+    const passo = k => () => { calMes = (ano + k) + calMes.slice(4); render(); };
+    const bAnt = el("button","btn","‹ ano anterior"); bAnt.onclick = passo(-1);
+    const bProx = el("button","btn","próximo ano ›"); bProx.onclick = passo(1);
+    const bHoje = el("button","btn","hoje");
+    bHoje.onclick = () => { calMes = hojeISO().slice(0,7); render(); };
+    esq.appendChild(bAnt); dir.appendChild(bProx); dir.appendChild(bHoje);
+  }
   const bMes = el("button","btn calAnoBt on","📆 ano todo");
   bMes.title = "Voltar para o mês";
   bMes.onclick = () => { calVisao = "mes"; render(); };
-  const esq = el("div","lado"); esq.appendChild(bAnt);
-  const dir = el("div","lado dir"); dir.appendChild(bProx); dir.appendChild(bHoje); dir.appendChild(bMes);
+  dir.appendChild(bMes);
   topo.appendChild(esq);
-  topo.appendChild(el("div","mes", String(ano)));
+  topo.appendChild(el("div","mes", temPer ? calBR4(ini) + "  a  " + calBR4(fim) : String(ano)));
   topo.appendChild(dir);
+
+  /* escolher um período: só os dias entre as duas datas aparecem */
+  const per = el("div","calAnoPer");
+  per.appendChild(el("span","calAnoPerRot","Personalizar período"));
+  const campo = (rot, valor) => {
+    const c = el("label","calAnoPerCampo");
+    c.appendChild(el("span",null,rot));
+    const i = document.createElement("input");
+    i.placeholder = "dd/mm/aaaa"; i.dataset.mascara = "data"; i.inputMode = "numeric";
+    i.value = calBR4(valor);
+    c.appendChild(i); per.appendChild(c);
+    return i;
+  };
+  const iDe = campo("De", temPer ? calPer.de : "");
+  const iAte = campo("Até", temPer ? calPer.ate : "");
+  const bOk = el("button","btn azulzinho","Mostrar");
+  const aplicar = () => {
+    const de = calLerData(iDe.value), ate = calLerData(iAte.value);
+    if (!de || !ate){
+      alert("Escreva as duas datas, no formato dd/mm/aaaa. Exemplo: 15/01/2026 e 28/07/2026.");
+      (de ? iAte : iDe).focus(); return;
+    }
+    if (de > ate){ alert("A data de início vem depois da data final. Confira as datas."); iDe.focus(); return; }
+    calPer = { de, ate };
+    calMes = de.slice(0,7);
+    render();
+  };
+  bOk.onclick = aplicar;
+  [iDe, iAte].forEach(i => i.addEventListener("keydown", ev => { if (ev.key === "Enter"){ i.blur(); aplicar(); } }));
+  per.appendChild(bOk);
+  if (temPer){
+    const bLimpa = el("button","btn","Limpar");
+    bLimpa.onclick = () => { calPer = { de:"", ate:"" }; render(); };
+    per.appendChild(bLimpa);
+  }
 
   const wrap = el("div","calWrap");
 
-  /* eventos do ano, à esquerda */
+  /* eventos do período, à esquerda */
   const lado = el("div","calEventos calAnoEv");
-  lado.appendChild(el("div","tit","Eventos do ano"));
+  lado.appendChild(el("div","tit", temPer ? "Eventos do período" : "Eventos do ano"));
   const bNovo = el("button","btn azulzinho","+ Novo evento");
-  bNovo.onclick = () => janelaEvento({ data: calMes + "-01" });
+  bNovo.onclick = () => janelaEvento({ data: temPer ? ini : calMes + "-01" });
   lado.appendChild(bNovo);
   const bIcs = el("button","btn","📅  Levar para a agenda");
   bIcs.title = "Gera um arquivo .ics para o Google Agenda ou o Calendário do iPhone";
@@ -23855,13 +23928,14 @@ function calTelaAno(tela, E){
   bIcs.onclick = janelaExportarAgenda;
   lado.appendChild(bIcs);
   if (!eventos.length)
-    lado.appendChild(el("div","semEv","Nada marcado neste ano."));
+    lado.appendChild(el("div","semEv", temPer ? "Nada marcado neste período." : "Nada marcado neste ano."));
   eventos.forEach(ev => lado.appendChild(calCartaoEvento(ev, true)));
   wrap.appendChild(lado);
 
-  /* os 12 meses, à direita */
+  /* os meses, à direita */
   const cxCal = el("div","calCorpo");
   cxCal.appendChild(topo);
+  cxCal.appendChild(per);
 
   const dias = Object.keys(minDia).filter(d => minDia[d] > 0).sort();
   let seqMax = 0, seq = 0, ant = null;
@@ -23872,20 +23946,20 @@ function calTelaAno(tela, E){
   const cards = el("div","calCards");
   const card = (v, t) => { const c = el("div","calCard");
     c.appendChild(el("div","cv", v)); c.appendChild(el("div","ct", t)); return c; };
-  cards.appendChild(card(hMin(somaMin(doAno)) || "—", "tempo no ano"));
+  cards.appendChild(card(hMin(somaMin(doPer)) || "—", temPer ? "tempo no período" : "tempo no ano"));
   cards.appendChild(card(String(dias.length), "dias estudados"));
   cards.appendChild(card(seqMax + (seqMax === 1 ? " dia" : " dias"), "melhor sequência"));
   cxCal.appendChild(cards);
 
   const grade = el("div","calAnoGrade");
-  for (let m = 1; m <= 12; m++){
-    const chave = ano + "-" + String(m).padStart(2,"0");
+  meses.forEach(chave => {
+    const a = Number(chave.slice(0,4)), m = Number(chave.slice(5,7));
     const cx = el("div","calAnoMes" + (hoje.slice(0,7) === chave ? " atual" : ""));
     const cab = el("div","calAnoCab");
-    cab.appendChild(el("span","calAnoNome", MESES[m-1]));
-    const totMes = somaMin(doAno.filter(s => String(s.data).startsWith(chave)));
+    cab.appendChild(el("span","calAnoNome", MESES[m-1] + (variosAnos ? " " + a : "")));
+    const totMes = somaMin(doPer.filter(s => String(s.data).startsWith(chave)));
     cab.appendChild(el("span","calAnoTot", totMes ? hMinRedondo(totMes) : ""));
-    cab.title = "Abrir " + MESES[m-1] + " de " + ano;
+    cab.title = "Abrir " + MESES[m-1] + " de " + a;
     cab.onclick = () => { calMes = chave; calVisao = "mes"; render(); };
     cx.appendChild(cab);
 
@@ -23898,11 +23972,12 @@ function calTelaAno(tela, E){
       if (naLinha === 7){ tr = el("tr"); t.appendChild(tr); naLinha = 0; }
       tr.appendChild(td); naLinha++;
     };
-    const desloc = (new Date(ano, m-1, 1).getDay()+6)%7;
-    const ultimo = new Date(ano, m, 0).getDate();
+    const desloc = (new Date(a, m-1, 1).getDay()+6)%7;
+    const ultimo = new Date(a, m, 0).getDate();
     for (let i = 0; i < desloc; i++) por(el("td","calAnoD fora"));
     for (let d = 1; d <= ultimo; d++){
       const iso = chave + "-" + String(d).padStart(2,"0");
+      if (!dentro(iso)){ por(el("td","calAnoD fora")); continue; }   // fora do período: some
       const tot = minDia[iso] || 0;
       const fds = (dataDeISO(iso).getDay()+6)%7 >= 5;
       const evs = evDia[iso] || [];
@@ -23922,7 +23997,7 @@ function calTelaAno(tela, E){
     }
     cx.appendChild(t);
     grade.appendChild(cx);
-  }
+  });
   cxCal.appendChild(grade);
 
   const leg = el("div","calLegenda");
