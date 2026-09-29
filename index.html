@@ -377,6 +377,9 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cadJur .cadJurPe .cadRev{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#5a6a80}
 .cadJur .cadJurPe .cadRev td{display:inline-block;border:0 !important;padding:0 !important;background:transparent !important}
 .cadJur .cadJurPe .cadRev td input{border:1px solid #d5dde8;border-radius:5px;padding:2px 6px;font-size:11.5px;width:84px}
+.cadChip .cadChipAssunto{font-weight:bold;display:inline-flex;align-items:center;gap:4px}
+.cadChip a.cadChipLinkMini{color:#2F5597;text-decoration:none;font-size:11px}
+.cadCardTopo .cadChip:has(.cadChipAssunto){max-width:100%}
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -2017,6 +2020,9 @@ table.g td.infoCel{position:relative;padding:0 2px;overflow:visible}
 .balaoInfo .pe{margin-top:6px;padding-top:5px;border-top:1px solid #dbe3ee;
   font-size:10px;font-style:italic;color:#8794a8}
 table.g td.infoCel:hover .balaoInfo{display:block}
+/* nos cartões o ⓘ também mostra o balão ao passar o mouse */
+.cadCard td.infoCel{position:relative}
+.cadCard td.infoCel:hover .balaoInfo{display:block;text-align:left;width:300px;max-width:80vw}
 /* perto do rodapé o balão sobe em vez de descer (quem decide é o script) */
 .balaoInfo.acima{top:auto;bottom:calc(100% + 4px)}
 
@@ -19134,14 +19140,14 @@ function cadCartao(o){
   if (o.status){ o.status.classList.add("cadChipCel","cadStatus"); topo.appendChild(o.status); }
   c.appendChild(topo);
 
-  const tit = el("div","cadCardTit" + (o.tit ? "" : " vazio"), o.tit || o.titVazio || "");
-  if (o.titUrl){
+  const tit = o.semTitulo ? null : el("div","cadCardTit" + (o.tit ? "" : " vazio"), o.tit || o.titVazio || "");
+  if (tit && o.titUrl){
     const a = document.createElement("a");
     a.href = o.titUrl; a.target = "_blank"; a.rel = "noopener";
     a.className = "cadCardLink"; a.textContent = "↗"; a.title = o.titUrlDica || "Abrir";
     tit.appendChild(a);
   }
-  c.appendChild(tit);
+  if (tit) c.appendChild(tit);
   if (o.antesCorpo) c.appendChild(o.antesCorpo);
 
   if (o.corpo){
@@ -19149,6 +19155,10 @@ function cadCartao(o){
     if (o.resumido) o.corpo.classList.add("resumido");
     // o link ↗ da célula já foi para o título
     o.corpo.querySelectorAll("a.linkCel").forEach(a => a.remove());
+    // no cartão o texto aparece inteiro: nada de repetir o conteúdo na dica do mouse
+    const cxC = o.corpo.querySelector(".cxRico");
+    if (cxC){ cxC.removeAttribute("title");
+      cxC.addEventListener("input", () => cxC.removeAttribute("title")); }
     c.appendChild(o.corpo);
   }
   if (o.obs && semTags(o.obs).trim()){
@@ -19265,67 +19275,45 @@ function telaCaderno(mod){
   };
   const emCartoes = modoCad(mod) === "cartoes";
 
-  /* o mesmo item em cartão, no padrão do caderno de jurisprudências: título
-     (o conteúdo/assunto, que abre a questão) em cima, o texto no meio (só
-     leitura: altera-se no ⓘ) e status, ⓘ e apagar embaixo. Em "resumir" fica
-     só o título, com o ▾ ver tudo. */
+  /* o mesmo item, em cartão: as células de montarLinha trocam de lugar.
+     Linha de etiquetas: Caderno · Questão ↗ (abre a questão) · Assunto ↗ (abre
+     o conteúdo) · data · motivo; embaixo, o texto (editável, como antes). */
   const montarCartao = (e, li, fase, resumido, tdMat) => {
     const tds = [...montarLinha(e, li).children];
-    let st, rev, info, x;
-    if (semRev) [, , , st, info, x] = tds;
-    else [, , , , st, rev, info, x] = tds;
-    const c = el("div","cadCard cadJur cadErro " + fase.st);
-    if (tdMat){
-      const ch = el("div","cadJurMat");
-      ch.appendChild(el("span",null,"Matéria:"));
-      tdMat.classList.add("cadChipCel"); ch.appendChild(tdMat);
-      c.appendChild(ch);
-    }
+    let sim, conc, q, apr, st, rev, info, x;
+    if (semRev) [sim, q, apr, st, info, x] = tds;
+    else [sim, conc, q, apr, st, rev, info, x] = tds;
+    const data = op.semSim ? dataBR(e.data) : dataDoSim(n(e.sim), e.conc);
+    // o assunto vira uma etiqueta, com o ↗ do conteúdo
     const assunto = String(e.assunto || "").trim();
-    const nq = String(e.q || "").trim();
-    const txtTit = assunto || (nq ? "Questão " + nq : "");
-    const url = e.qUrl || e.assuntoUrl || "";
-    let tit;
-    if (url && txtTit){
-      tit = document.createElement("a");
-      tit.href = url; tit.target = "_blank"; tit.rel = "noopener";
-      tit.title = e.qUrl ? "Abrir a questão no TEC" : "Abrir o conteúdo no TEC";
-      tit.textContent = txtTit;
-    } else tit = el("div", null, txtTit || "Sem " + (semRev ? "conteúdo" : "assunto") + " — clique em ⓘ e escreva");
-    tit.className = "cadJurTit" + (txtTit ? "" : " vazio");
-    c.appendChild(tit);
-
-    const box = el("div","cadJurBox");
-    const fechado = resumido && !jurAbertos.has(e);
-    if (fechado) c.classList.add("soTitulo");
-    if (!fechado){
-      const d = el("div","cadCardCorpo"); const cx = el("div","cxRico cxLeitura");
-      cx.innerHTML = e.aprendi || "";
-      if (!semTags(e.aprendi || "").trim()){ cx.textContent = "(sem anotação — clique em ⓘ para escrever)"; cx.classList.add("vazio"); }
-      d.appendChild(cx);
-      d.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
-      d.addEventListener("dblclick", () => janelaInfoCaderno(e, ctxInfo(e)));
-      box.appendChild(d);
+    let chAss = null;
+    if (assunto){
+      chAss = el("span","cadChipAssunto");
+      chAss.appendChild(el("span", null, assunto));
+      if (e.assuntoUrl){
+        const a = document.createElement("a");
+        a.href = e.assuntoUrl; a.target = "_blank"; a.rel = "noopener";
+        a.className = "cadChipLinkMini"; a.textContent = "↗"; a.title = "Abrir o conteúdo no TEC";
+        chAss.appendChild(a);
+      }
     }
-    const pe = el("div","cadJurPe");
-    st.classList.add("cadChipCel","cadStatus");
-    pe.appendChild(st);
-    if (rev){
-      const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev);
-      pe.appendChild(w);
-    }
-    pe.appendChild(el("span","flex"));
-    if (resumido){
-      const bVer = el("button","btnVerJur", fechado ? "▾ ver tudo" : "▴ recolher");
-      bVer.title = fechado ? "Mostrar o texto desta questão" : "Voltar a mostrar só o título";
-      bVer.onclick = () => { if (fechado) jurAbertos.add(e); else jurAbertos.delete(e); render(); };
-      pe.appendChild(bVer);
-    }
-    info.classList.add("cadPeCel"); x.classList.add("cadPeCel");
-    pe.appendChild(info); pe.appendChild(x);
-    box.appendChild(pe);
-    c.appendChild(box);
-    return c;
+    return cadCartao({
+      fase, resumido,
+      status: st,
+      semTitulo: true,
+      chips: [
+        tdMat ? ["Matéria", tdMat] : null,
+        [op.semSim ? "Caderno" : "Simulado", sim],
+        op.semSim ? null : ["Concurso", conc],
+        ["Questão", q],
+        chAss ? ["", chAss] : null,
+        data ? ["", data] : null,
+        e.motivo ? ["", e.motivo] : null
+      ].filter(Boolean),
+      corpo: apr,
+      rodape: [ rev ? (() => { const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev); return w; })() : null,
+                el("span","flex"), info, x ]
+    });
   };
 
 
@@ -19347,10 +19335,6 @@ function telaCaderno(mod){
                           : tdEdit(e.q, v => e.q = v));
     const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
     tdAprendi.classList.add("justif");        // texto distribuído entre as margens
-    // o texto só se altera no ⓘ (dois cliques também abrem), como na jurisprudência
-    const cxA = tdAprendi.querySelector(".cxRico");
-    if (cxA){ cxA.contentEditable = "false"; cxA.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
-      cxA.addEventListener("dblclick", () => janelaInfoCaderno(e, ctxInfo(e))); }
     tr.appendChild(tdAprendi);
     const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
     tdS.classList.add(FASES.find(f => f.nome === faseDe(e.status)).st);
@@ -19373,10 +19357,10 @@ function telaCaderno(mod){
     sec.appendChild(el("span","tx", fase.titulo));
     // nos cartões o texto vem inteiro; o botão serve para resumir
     const bAlt = emCartoes
-      ? el("button","btnAlturas", aberto ? "⇲ mostrar tudo" : "⇱ resumir")
+      ? el("button","btnAlturas", aberto ? "⇲ mostrar inteiro" : "⇱ resumir")
       : el("button","btnAlturas", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
     bAlt.title = emCartoes
-      ? (aberto ? "Mostrar o texto de todas as questões" : "Mostrar só o título de cada questão")
+      ? (aberto ? "Mostrar as anotações inteiras" : "Mostrar só o começo de cada anotação")
       : aberto
       ? "Voltar cada anotação para uma linha só"
       : "Mostrar as anotações inteiras, sem cortar o texto";
