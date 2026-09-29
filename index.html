@@ -357,12 +357,22 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
   border-radius:6px;letter-spacing:2px;font-weight:bold;text-align:center}
 .limparCad button.perigo{background:#c0392b;color:#fff;border:1px solid #c0392b;border-radius:5px;padding:6px 14px;font-weight:bold;cursor:pointer}
 .limparCad button.perigo:disabled{background:#e6b8b3;border-color:#e6b8b3;cursor:default}
-.matVoltaTopo{position:fixed;right:22px;bottom:22px;z-index:60;width:42px;height:42px;border-radius:50%;
-  border:0;background:var(--azulEscuro);color:#fff;font:bold 20px Arial;cursor:pointer;
+.matVoltaTopo{position:fixed;right:10px;bottom:10px;z-index:60;width:34px;height:34px;border-radius:50%;
+  border:0;background:var(--azulEscuro);color:#fff;font:bold 17px Arial;cursor:pointer;
   box-shadow:0 4px 14px rgba(15,30,51,.3);opacity:0;pointer-events:none;transition:opacity .2s}
 .matVoltaTopo.on{opacity:.9;pointer-events:auto}
 .matVoltaTopo:hover{opacity:1}
 @media print{ .matVoltaTopo{display:none} }
+.modalCaixa.infoJuris{max-height:94vh;overflow:auto}
+.modalCaixa.infoCad .areaInfo.umaLinha.largo{max-width:none}
+.menuRico.fixa{position:static;box-shadow:none;border-color:#d5dde8;display:flex;z-index:auto}
+.modalCaixa.infoCad .barraInfoJur{position:sticky;top:-16px;z-index:5;background:#fff;padding:6px 0 4px}
+.modalCaixa.infoCad .ricoInfo.ricoResumo{min-height:160px;max-height:360px}
+.modalCaixa.infoCad .ricoInfo.ricoCite{min-height:48px;max-height:160px;font-weight:600;color:#444;background:#f4f1ec}
+.cadJur .cxLeitura{cursor:default}
+.cadJur .cadCardCorpo .cxLeitura{font-size:14.5px;line-height:1.6;color:#222;padding:2px;text-align:justify}
+.cadJur .cadJurCite .cxLeitura{margin-top:9px;font-size:13px;line-height:1.5;color:#555;background:#f4f1ec;
+  border-radius:5px;padding:7px 10px;font-weight:600;border-left:3px solid #7a1f1f;text-align:left}
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -386,7 +396,7 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cadChip td.cadChipCel input,.cadChip td.cadChipCel select{border:0;background:transparent;font:bold 11.5px Arial;
   color:#7a1f1f;padding:0;width:auto;min-width:22px;max-width:120px;height:18px}
 .cadChip td.cadChipCel input{width:9ch;text-align:left}
-.cadChip td.cadChipCel a.linkCel{display:none}
+.cadChip td.cadChipCel a.linkCel{display:inline;position:static;margin-left:4px;font-size:11px;color:#2F5597;text-decoration:none}
 .cadCardTopo td.cadStatus{display:inline-block}
 .cadCardTopo td.cadStatus select{border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:2px 8px;
   font:bold 11.5px Arial;height:24px;cursor:pointer}
@@ -17498,6 +17508,24 @@ function abrirMenuRico(ev){
   fecharMenuRico();
   alvoRico = ev.currentTarget;
 
+  const m = montarMenuRico();
+  document.body.appendChild(m);
+  // encaixa o menu na tela, sem passar das bordas
+  const r = m.getBoundingClientRect();
+  const x = Math.max(6, Math.min(ev.clientX, window.innerWidth  - r.width  - 6));
+  const y = Math.max(6, Math.min(ev.clientY, window.innerHeight - r.height - 6));
+  m.style.left = x + "px"; m.style.top = y + "px";
+  m.classList.add("aberto");
+  menuRico = m;
+
+  document.addEventListener("mousedown", foraDoMenuRico, true);
+  document.addEventListener("keydown", escDoMenuRico, true);
+  window.addEventListener("resize", fecharMenuRico);
+}
+
+/* a barrinha de formatação em si (a mesma do botão direito). Os botões agem
+   sobre alvoRico: o campo onde o cursor está. */
+function montarMenuRico(){
   const m = el("div","menuRico");
   // clicar num botão não pode tirar o foco do campo, senão a seleção some
   m.addEventListener("mousedown", e => e.preventDefault());
@@ -17620,18 +17648,16 @@ function abrirMenuRico(ev){
       avisarRico();
     }, fechar), "gMarca");
 
-  document.body.appendChild(m);
-  // encaixa o menu na tela, sem passar das bordas
-  const r = m.getBoundingClientRect();
-  const x = Math.max(6, Math.min(ev.clientX, window.innerWidth  - r.width  - 6));
-  const y = Math.max(6, Math.min(ev.clientY, window.innerHeight - r.height - 6));
-  m.style.left = x + "px"; m.style.top = y + "px";
-  m.classList.add("aberto");
-  menuRico = m;
-
-  document.addEventListener("mousedown", foraDoMenuRico, true);
-  document.addEventListener("keydown", escDoMenuRico, true);
-  window.addEventListener("resize", fecharMenuRico);
+  return m;
+}
+/* a barrinha FIXA, sempre visível no alto de uma janela (ex.: ⓘ do julgado).
+   Vale para o campo em que o cursor estiver. */
+function barraRicoFixa(campos){
+  const m = montarMenuRico();
+  m.classList.add("fixa","aberto");
+  campos.forEach(c => c.addEventListener("focus", () => { alvoRico = c; }));
+  alvoRico = campos[0] || null;
+  return m;
 }
 
 function tdTextoRico(valor, onSet, altMin){
@@ -19218,8 +19244,9 @@ function telaCaderno(mod){
       ].filter(Boolean),
       tit: String(e.assunto || "").trim(),
       titVazio: "Sem " + (semRev ? "conteúdo" : "assunto") + " — clique em ⓘ para escrever",
-      titUrl: e.assuntoUrl || e.qUrl || "",
-      titUrlDica: semRev ? "Abrir a questão no TEC" : "Abrir",
+      // o ↗ do título abre a QUESTÃO (o link do conteúdo só entra se não houver o da questão)
+      titUrl: e.qUrl || e.assuntoUrl || "",
+      titUrlDica: e.qUrl ? "Abrir a questão no TEC" : "Abrir o conteúdo no TEC",
       corpo: apr,
       rodape: [ rev ? (() => { const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev); return w; })() : null,
                 el("span","flex"), info, x ]
@@ -20117,7 +20144,7 @@ function janelaInfoJuris(e){
   campo("Conteúdo (título)", taTema);
 
   const inpRamo = document.createElement("input");
-  inpRamo.className = "areaInfo umaLinha";
+  inpRamo.className = "areaInfo umaLinha largo";
   inpRamo.value = e.ramo || ""; inpRamo.spellcheck = false;
   inpRamo.style.width = "100%"; inpRamo.style.boxSizing = "border-box";
   inpRamo.placeholder = "Ex.: Direito Penal > Crimes contra a honra > Geral";
@@ -20141,10 +20168,23 @@ function janelaInfoJuris(e){
     cxInfo.appendChild(a);
   }
 
+  // o texto do julgado, separado em resumo e citação ("Informações do julgado")
+  const partes = jurDividirTese(e.tese);
+  const cxRes = campoRicoModal(partes.corpo, "ricoResumo");
+  const cxCit = campoRicoModal(partes.cite, "ricoCite");
   const cxObs = campoRicoModal(e.obs);
+  const barraF = barraRicoFixa([cxRes, cxCit, cxObs]);
+  const cxBarra = el("div","campoInfo barraInfoJur");
+  cxBarra.appendChild(el("label", null, "Formatação (vale para o campo onde está o cursor)"));
+  cxBarra.appendChild(barraF);
+  caixa.appendChild(cxBarra);
+  campo("Resumo do julgado", cxRes);
+  campo("Informações do julgado", cxCit);
+  caixa.lastChild.appendChild(el("span","pistaCampo",
+    "a citação: STF. Plenário. ADI 7.390/DF, Rel. Min. …, julgado em … (Info …). Uma por linha."));
   campo("Anotações", cxObs);
   caixa.lastChild.appendChild(el("span","pistaCampo",
-    "botão direito abre a barra de formatação · Ctrl+B negrito · Tab recua a lista"));
+    "Ctrl+B negrito · Tab recua a lista · o botão direito também abre a barra"));
 
   const acoes = el("div","modalAcoes");
   const cancelar = el("button","secundario","Cancelar");
@@ -20155,12 +20195,12 @@ function janelaInfoJuris(e){
   document.body.appendChild(fundo);
   taTema.focus();
 
-  const sair = () => { fecharMenuRico(); fundo.remove(); };
+  const sair = () => { fecharMenuRico(); alvoRico = null; fundo.remove(); };
   cancelar.onclick = sair;
   fundo.addEventListener("click", ev => { if (ev.target === fundo) sair(); });
   caixa.addEventListener("keydown", ev => {
     if (ev.key === "Escape"){ ev.preventDefault(); sair(); }
-    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ev.target !== cxObs){
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ![cxObs, cxRes, cxCit].includes(ev.target)){
       ev.preventDefault(); gravar.click(); }
   });
 
@@ -20171,6 +20211,8 @@ function janelaInfoJuris(e){
     if (inpRamo.value.trim()) e.ramo = inpRamo.value.trim(); else { delete e.ramo; delete e.ramoHtml; }
     e.info = inpInfo.value;
     e.obs  = cxObs.innerHTML;
+    const res = cxRes.innerHTML.trim(), cit = cxCit.innerHTML.trim();
+    e.tese = semTags(cit).trim() ? (semTags(res).trim() ? res + "<br>" + cit : cit) : res;
     salvar(); sair(); render();
   };
 }
@@ -20295,6 +20337,10 @@ function telaJuris(){
     const tdTese = comLink(tdTextoRico(e.tese, v => e.tese = v), e.temaUrl,
       "Abrir só este julgado no Buscador");
     tdTese.classList.add("justif");
+    // o texto do julgado só se altera no ⓘ (dois cliques também abrem)
+    const cxT = tdTese.querySelector(".cxRico");
+    if (cxT){ cxT.contentEditable = "false"; cxT.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
+      cxT.addEventListener("dblclick", () => janelaInfoJuris(e)); }
     tr.appendChild(tdTese);
     tr.appendChild(tdSelect(e.trib, DB.tribunais, v => e.trib = v));
     const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
@@ -20345,14 +20391,16 @@ function telaJuris(){
     if (fechado) c.classList.add("soTitulo");
     const partes = jurDividirTese(e.tese);
     const junta = () => partes.cite ? partes.corpo + "<br>" + partes.cite : partes.corpo;
-    const tdC = tdTextoRico(partes.corpo, v => { partes.corpo = v; e.tese = junta(); });
-    tdC.classList.add("cadCardCorpo");
-    if (!fechado) box.appendChild(tdC);
-    if (partes.cite && !fechado){
-      const tdCi = tdTextoRico(partes.cite, v => { partes.cite = v; e.tese = junta(); });
-      tdCi.classList.add("cadJurCite");
-      box.appendChild(tdCi);
-    }
+    // o cartão é só para ler: editar é no ⓘ (duplo clique no texto também abre)
+    const leitura = (html, cls) => {
+      const d = el("div", cls); const cx = el("div","cxRico cxLeitura");
+      cx.innerHTML = html; d.appendChild(cx);
+      d.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
+      d.addEventListener("dblclick", () => janelaInfoJuris(e));
+      return d;
+    };
+    if (!fechado) box.appendChild(leitura(partes.corpo, "cadCardCorpo"));
+    if (partes.cite && !fechado) box.appendChild(leitura(partes.cite, "cadJurCite"));
     const pe = el("div","cadJurPe");
     st.classList.add("cadChipCel","cadStatus");
     pe.appendChild(st);
@@ -30177,17 +30225,25 @@ document.addEventListener("click", () => {
    quando você troca de tela. */
 function botaoVoltaTopo(tela){
   const b = el("button","matVoltaTopo","↑");
+  b.type = "button";
   b.title = "Voltar ao início";
   b.setAttribute("aria-label","Voltar ao início");
-  b.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  // nunca fica com o foco: assim Enter/Espaço (e o Ctrl+F) não o acionam
+  b.tabIndex = -1;
+  b.addEventListener("mousedown", ev => ev.preventDefault());
+  b.onclick = ev => {
+    if (ev.detail === 0) return;          // clique vindo do teclado: ignora
+    b.blur();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   tela.appendChild(b);
-  const ver = () => b.classList.toggle("on", window.scrollY > 300);
+  const ver = () => b.classList.toggle("on", window.scrollY > 600);
   ver();
   if (!window.__voltaTopoLigado){
     window.__voltaTopoLigado = true;
     window.addEventListener("scroll", () => {
       const x = document.querySelector("#tela .matVoltaTopo");
-      if (x) x.classList.toggle("on", window.scrollY > 300);
+      if (x) x.classList.toggle("on", window.scrollY > 600);
     }, { passive: true });
   }
 }
