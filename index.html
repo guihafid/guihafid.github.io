@@ -907,7 +907,7 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
 .capaBalao{display:flex;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:10px 12px;
   margin-bottom:14px}
-.capaBalao .bAtalho{flex:1 1 150px;display:flex;align-items:center;gap:8px;
+.capaBalao .bAtalho{flex:1 1 124px;display:flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);
   border-radius:7px;padding:9px 12px;color:#e6edf7;font:bold 12px Arial;
   cursor:pointer;text-align:left}
@@ -925,6 +925,12 @@ td.semProva{color:#b6bfcc;background:#f7f8fa;font-style:italic}
 .capaLinhaProx .flex{flex:1}
 .capaLinhaProx .falta{color:#FFD166;font-weight:bold;font-size:14px;white-space:nowrap}
 .capaLinhaProx .falta.perto{color:#FF8A65}
+/* próximos eventos: mesmo desenho das próximas provas */
+.capaEv .capaLinhaProx{cursor:pointer}
+.capaEv .capaLinhaProx:hover{background:rgba(255,255,255,.05)}
+.capaEv .capaLinhaProx .nome{font-size:13px;flex:1 1 220px;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.capaEv .capaEvCor{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
 .capaLinhaProx .falta.passou{color:#8fa6c4;font-weight:normal}
 .capaNums{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .capaNum{flex:1 1 150px;background:rgba(255,255,255,.07);
@@ -24143,15 +24149,25 @@ function calFiltrar(lista){
   }
   return lista;
 }
-function calSeletorFiltro(){
+// base: os eventos do mês (ou do ano/período) na tela, SEM filtro. Só entram
+// na lista os concursos que têm evento ali; "onde" completa o aviso do escolhido
+function calSeletorFiltro(base, onde){
   if (calFiltro.startsWith("c:") && !DB.concursos.some(c => "c:" + c.num === calFiltro)) calFiltro = "";
+  const temConc = new Set(base.filter(e => e.automatico && e.conc != null).map(e => n(e.conc)));
+  const temMeus = base.some(e => !e.automatico);
   const sel = document.createElement("select");
   sel.className = "calFiltroSel";
   sel.title = "Mostrar só os eventos de um concurso";
   const op = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); };
   op("", "Todos os eventos");
-  DB.concursos.forEach(c => op("c:" + c.num, c.nome || "Concurso " + c.num));
-  op("meus", "Só os que eu criei");
+  DB.concursos.forEach(c => {
+    const v = "c:" + c.num, nome = c.nome || "Concurso " + c.num;
+    if (temConc.has(n(c.num))) op(v, nome);
+    // o escolhido fica na lista mesmo sem evento aqui, para você ver que está filtrando
+    else if (calFiltro === v) op(v, nome + " (nada " + onde + ")");
+  });
+  if (temMeus) op("meus", "Só os que eu criei");
+  else if (calFiltro === "meus") op("meus", "Só os que eu criei (nada " + onde + ")");
   sel.value = calFiltro;
   sel.onchange = () => { calFiltro = sel.value; render(); };
   return sel;
@@ -24188,7 +24204,8 @@ function telaCalendario(){
   topo.appendChild(dir);
   const doMes = sessoes().filter(s => String(s.data).startsWith(calMes));
 
-  const eventos = calFiltrar(eventosDoMes(calMes));
+  const eventosTodos = eventosDoMes(calMes);
+  const eventos = calFiltrar(eventosTodos);
   const porDiaEv = {};
   eventos.forEach(e => (porDiaEv[e.data] = porDiaEv[e.data] || []).push(e));
 
@@ -24197,7 +24214,7 @@ function telaCalendario(){
   /* ---------- painel de eventos, à esquerda ---------- */
   const lado = el("div","calEventos");
   lado.appendChild(el("div","tit","Eventos do mês"));
-  if (DB.concursos.length) lado.appendChild(calSeletorFiltro());
+  if (eventosTodos.length || calFiltro) lado.appendChild(calSeletorFiltro(eventosTodos, "neste mês"));
   const bNovo = el("button","btn azulzinho","+ Novo evento");
   bNovo.onclick = () => janelaEvento({ data: calMes + "-01" });
   lado.appendChild(bNovo);
@@ -24337,8 +24354,9 @@ function calTelaAno(tela, E){
   const doPer = sessoes().filter(s => dentro(String(s.data)));
   const minDia = {};
   doPer.forEach(s => { minDia[s.data] = (minDia[s.data] || 0) + n(s.min); });
-  const eventos = [];
-  meses.forEach(m => eventos.push(...calFiltrar(eventosDoMes(m)).filter(e => dentro(String(e.data)))));
+  const eventosTodos = [];
+  meses.forEach(m => eventosTodos.push(...eventosDoMes(m).filter(e => dentro(String(e.data)))));
+  const eventos = calFiltrar(eventosTodos);
   const evDia = {};
   eventos.forEach(e => (evDia[e.data] = evDia[e.data] || []).push(e));
   const meta = Math.max(1, n(E.metas.dia));
@@ -24407,7 +24425,8 @@ function calTelaAno(tela, E){
   /* eventos do período, à esquerda */
   const lado = el("div","calEventos calAnoEv");
   lado.appendChild(el("div","tit", temPer ? "Eventos do período" : "Eventos do ano"));
-  if (DB.concursos.length) lado.appendChild(calSeletorFiltro());
+  if (eventosTodos.length || calFiltro)
+    lado.appendChild(calSeletorFiltro(eventosTodos, temPer ? "no período" : "neste ano"));
   const bNovo = el("button","btn azulzinho","+ Novo evento");
   bNovo.onclick = () => janelaEvento({ data: temPer ? ini : calMes + "-01" });
   lado.appendChild(bNovo);
@@ -30186,11 +30205,54 @@ function montarCapa(){
   });
   cx.appendChild(cxProx);
 
+  // ---- próximos eventos: os 3 mais perto, de hoje em diante ----
+  // (as provas já aparecem no quadro de cima; aqui entram as etapas do
+  // cronograma e os eventos que você criou, com as mesmas regras do Calendário)
+  const hojeI = hojeISO();
+  const evs = [];
+  const d0 = new Date(); d0.setDate(1);
+  for (let i = 0; i < 36 && evs.length < 60; i++){
+    const d = new Date(d0.getFullYear(), d0.getMonth() + i, 1);
+    eventosDoMes(isoDeData(d).slice(0,7)).forEach(e => {
+      if (String(e.data) < hojeI) return;
+      if (e.automatico && e.tipo === "Prova") return;
+      evs.push(e);
+    });
+  }
+  evs.sort((a,b) => String(a.data).localeCompare(String(b.data)));
+  const proxEv = evs.slice(0,3);
+  const cxEv = el("div","capaProx capaEv");
+  cxEv.appendChild(el("div","rot","Próximos eventos"));
+  if (!proxEv.length)
+    cxEv.appendChild(el("div","capaLinhaProx","Nenhum evento marcado daqui para frente."));
+  proxEv.forEach(e => {
+    const c = e.automatico ? DB.concursos.find(x => n(x.num) === n(e.conc)) : null;
+    const nomeC = c ? (c.nome || "Concurso " + c.num) : "";
+    // o título do automático vem como "Concurso — etapa": aqui o concurso vai na etiqueta
+    const tit = nomeC && String(e.titulo).startsWith(nomeC + " — ")
+      ? String(e.titulo).slice(nomeC.length + 3) : String(e.titulo || "");
+    const dias = diasAte(e.data);
+    const L = el("div","capaLinhaProx");
+    const bola = el("span","capaEvCor"); bola.style.background = corEvento(e.tipo);
+    L.appendChild(bola);
+    const nm = el("span","nome", tit); nm.title = tit;
+    L.appendChild(nm);
+    L.appendChild(el("span","tipo", nomeC || e.tipo));
+    L.appendChild(el("span","data", dataBR(e.data)));
+    L.appendChild(el("span","falta" + (dias <= 30 ? " perto" : ""),
+      dias === 0 ? "é hoje!" : dias === 1 ? "falta 1 dia" : "faltam " + dias + " dias"));
+    L.onclick = () => { calMes = String(e.data).slice(0,7); calVisao = "mes"; fecharCapa("eCal"); };
+    L.title = "Abrir o Calendário em " + dataBR(e.data);
+    cxEv.appendChild(L);
+  });
+  cx.appendChild(cxEv);
+
   // ---- balão de atalhos: o que se costuma fazer ao abrir o app ----
   const balao = el("div","capaBalao");
   [ ["eCrono", "▶", "Iniciar atividade"],
     ["gradeO", "✎", "Lançar simulados"],
     ["cicloCron", "🗓", "Cronograma de estudos"],
+    ["cicloAtual", "🔄", "Ciclo de estudos"],
     ["eCal", "📅", "Calendário"],
     ["cConteudo", "📖", "Caderno de conteúdo"] ].forEach(([id, ico, rot]) => {
     const b = el("button","bAtalho");
