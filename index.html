@@ -380,6 +380,14 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cadChip .cadChipAssunto{font-weight:bold;display:inline-flex;align-items:center;gap:4px}
 .cadChip a.cadChipLinkMini{color:#2F5597;text-decoration:none;font-size:11px}
 .cadCardTopo .cadChip:has(.cadChipAssunto){max-width:100%}
+.modalCaixa.avisoExt{width:min(460px,92vw);text-align:center;padding:22px 22px 16px}
+.avisoExt .avisoExtIco{font-size:34px;line-height:1;margin-bottom:6px}
+.avisoExt h3{margin:4px 0 10px}
+.avisoExt .avisoExtTxt{font-size:13.5px;line-height:1.55;color:#333;margin:0 0 10px}
+.avisoExt .avisoExtDica{font-size:11.5px;color:#7a8595;margin:0 0 14px}
+.avisoExt .modalAcoes{justify-content:center}
+.avisoExt a.avisoExtBt{display:inline-block;text-decoration:none;padding:7px 16px;border-radius:5px;
+  background:var(--azulEscuro);color:#fff;font-weight:bold;font-size:13px}
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -18631,9 +18639,11 @@ function avisoTec(texto){
    a fila de questões. Confirmamos o que entrou para ela poder limpar a fila.
 ---------------------------------------------------------------------- */
 let pontePronta = false;      // vira true so quando os dados ja estao na tela
+let temExtensao = false;      // a extensão respondeu nesta aba (então já está instalada)
 window.addEventListener("message", ev => {
   const d = ev.data;
   if (!d || d.fonte !== "caderno-erros-tec") return;
+  temExtensao = true;
   if (!pontePronta) return;   // antes disso o DB esta vazio: nao recebe nada
   // app aberto sem conexao com a conta (somente leitura): nada seria gravado.
   // Nao responde, nao recebe, nao confirma: a fila fica guardada na extensao.
@@ -19174,7 +19184,67 @@ function cadCartao(o){
   return c;
 }
 
+/* ---------- aviso da extensão, na PRIMEIRA vez em cada caderno ----------
+   Uma vez por área (erros do TEC, jurisprudência, erros dos simulados).
+   Fica marcado na conta (DB.avisosExt), então não volta nem em outro
+   aparelho. Não aparece para quem já tem a extensão (ela se anuncia pela
+   ponte) nem no celular, onde extensão do Chrome não funciona. */
+const EXT_URL = "https://chromewebstore.google.com/detail/cadernos-tec-e-jurisprud%C3%AA/pnmijbpkaalifdeagncmhejcjheacijc?utm_source=ext_app_menu";
+const AVISO_EXT = {
+  tec:   { tit: "Capture as questões do TEC com um clique",
+           txt: "Com a extensão <b>Cadernos – TEC e Jurisprudências</b> no Chrome, você aperta " +
+                "<b>Alt+Shift+E</b> na questão do TEC Concursos e ela entra sozinha neste caderno: " +
+                "número, link, matéria, assunto e a sua anotação — sem copiar e colar." },
+  juris: { tit: "Capture os julgados do Buscador com um clique",
+           txt: "Com a extensão <b>Cadernos – TEC e Jurisprudências</b> no Chrome, você aperta " +
+                "<b>Alt+Shift+J</b> no Buscador Dizer o Direito e o julgado entra sozinho neste caderno: " +
+                "título, resumo, citação, tribunal, informativo e data — também teses e súmulas." },
+  sim:   { tit: "Mande os erros dos simulados direto para cá",
+           txt: "Com a extensão <b>Cadernos – TEC e Jurisprudências</b> no Chrome, você aperta " +
+                "<b>Alt+Shift+S</b> no simulado (Projeto em Delta, Dedicação Delta ou outro site) e a " +
+                "questão errada entra sozinha neste caderno, com a sua anotação." }
+};
+function avisoExtensao(area){
+  const A = AVISO_EXT[area];
+  if (!A || !DB) return;
+  const vistos = DB.avisosExt || {};
+  if (vistos[area]) return;
+  // celular/tablet: não há extensão do Chrome; fica para quando entrar pelo computador
+  const movel = window.matchMedia && window.matchMedia("(pointer: coarse)").matches && window.innerWidth < 1000;
+  if (movel) return;
+  const aba = abaAtual;
+  setTimeout(() => {                                   // dá tempo de a extensão se anunciar
+    const v = DB.avisosExt || (DB.avisosExt = {});
+    if (v[area] || abaAtual !== aba || document.querySelector(".avisoExt")) return;
+    v[area] = hojeISO();                               // marcado já ao mostrar: é uma vez só
+    salvar();
+    if (temExtensao) return;                           // já tem: não precisa avisar
+    const fundo = el("div","modalFundo");
+    const caixa = el("div","modalCaixa avisoExt");
+    caixa.appendChild(el("div","avisoExtIco","🧩"));
+    caixa.appendChild(el("h3", null, A.tit));
+    const p = el("p","avisoExtTxt"); p.innerHTML = A.txt; caixa.appendChild(p);
+    caixa.appendChild(el("p","avisoExtDica",
+      "É grátis e funciona no Google Chrome do computador. Depois de instalar, deixe o app aberto numa aba."));
+    const ac = el("div","modalAcoes");
+    const depois = el("button","secundario","Agora não");
+    const inst = document.createElement("a");
+    inst.className = "principal avisoExtBt"; inst.href = EXT_URL; inst.target = "_blank"; inst.rel = "noopener";
+    inst.textContent = "Instalar a extensão";
+    ac.appendChild(depois); ac.appendChild(inst);
+    caixa.appendChild(ac);
+    fundo.appendChild(caixa); document.body.appendChild(fundo);
+    const sair = () => fundo.remove();
+    depois.onclick = sair;
+    inst.addEventListener("click", () => setTimeout(sair, 200));
+    fundo.addEventListener("click", ev => { if (ev.target === fundo) sair(); });
+    caixa.addEventListener("keydown", ev => { if (ev.key === "Escape") sair(); });
+    depois.focus();
+  }, 1500);
+}
+
 function telaCaderno(mod){
+  avisoExtensao(mod === "T" ? "tec" : "sim");
   const op = CADERNOS_ERRO[mod] || CADERNOS_ERRO.O;
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba", op.titulo));
@@ -20321,6 +20391,7 @@ function celulaInfoJuris(e){
 }
 
 function telaJuris(){
+  avisoExtensao("juris");
   garantirCadernos();
   jurLimparCaderno();
   const tela = document.getElementById("tela");
@@ -20669,6 +20740,7 @@ function importarTeses(){
 }
 
 function telaTeses(){
+  avisoExtensao("juris");
   garantirCadernos();
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba","CADERNO DE JURISPRUDÊNCIAS - TESES"));
@@ -20876,6 +20948,7 @@ function importarSumulas(){
 }
 
 function telaSumulas(){
+  avisoExtensao("juris");
   garantirCadernos();
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba","CADERNO DE JURISPRUDÊNCIAS - SÚMULAS"));
