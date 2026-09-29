@@ -301,6 +301,7 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cronoColaOk{font-size:11px;color:#1b5e20;background:#EAF7EC;border:1px solid #B6DEB9;
   border-radius:5px;padding:5px 8px;margin:0 0 7px;line-height:15px}
 .cronoCorpo table.g td.cronoRecem{background:#EAF7EC !important}
+.cronoAviso.corteAvisoD{margin:8px 10px}
 @media (max-width:560px){
   .cronoCola table.cronoColaTab th:nth-child(4),.cronoCola table.cronoColaTab td:nth-child(4){display:none}
   .cronoCola table.cronoColaTab th:nth-child(2){width:auto}
@@ -1227,6 +1228,13 @@ table.calAnoTab td.calAnoD:not(.fora):hover{outline:2px solid var(--azulEscuro);
 .fogoDia.feito{border-color:#F2C94C;background:#FFFBEB}
 .fogoDia.feito .r{color:#8a6b12}
 .fogoDia.futuro{opacity:.55}
+.acoesConfig.seqConfig{background:#FFF8EE;border-color:#F2C9A0}
+.acoesConfig.seqConfig .seqCampo{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#1F3864;
+  font-weight:bold;margin-right:10px}
+.acoesConfig.seqConfig .seqCampo input[type=text],.acoesConfig.seqConfig .seqCampo input:not([type]){width:64px;
+  padding:3px 6px;font-size:12px;text-align:center;border:1px solid #d9b98f;border-radius:4px;background:#fff}
+.fogoDia.parcial{border-style:dashed;border-color:#E9B872;background:#FFF8EE}
+.fogoMinimo{font-size:11px;color:#7a8595;margin:4px 0 12px;text-align:center}
 .fogoDia.hoje{box-shadow:0 0 0 2px rgba(237,125,49,.35)}
 .fogoDia .selo{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);
   width:17px;height:17px;border-radius:50%;background:#F2A93B;color:#fff;
@@ -1603,6 +1611,9 @@ table.tabCentro{margin-left:auto;margin-right:auto;width:auto}
 #barra2 .segm button{background:#dfe6ef;color:#5a6a80}
 #barra2 .segm button:hover{background:#cdd8e6;color:var(--azulEscuro)}
 #barra2 .segm button.on{background:#ED7D31;color:#fff}
+/* "Simulados e Provas" é mais comprido: um pouco menos de folga em cada botão
+   para os módulos e o ↶ ↷ continuarem cabendo numa linha só */
+#barra2 .segm button{padding:3px 10px}
 #guias{position:relative;top:auto;z-index:37}
 /* Configuração vive no menu da conta; o botão fica só como ponte interna */
 #btnConfig{display:none}
@@ -15001,7 +15012,7 @@ async function abrirPerfil(){
     <button data-mod="cad" class="on">Cadastro de concurso</button>
     <button data-mod="est">Estudos</button>
     <button data-mod="cCont">Cadernos de conteúdo</button>
-    <button data-mod="sim">Simulados</button>
+    <button data-mod="sim">Simulados e Provas</button>
     <button data-mod="cTec">Caderno de erros do TEC</button>
     <button data-mod="cJur">Caderno de jurisprudências</button>
     <button data-mod="cal">Calendário</button>
@@ -15454,6 +15465,16 @@ function concursoDeFoco(mod, bl){
   return ordem.length ? ordem[0] : null;
 }
 
+/* reprovou na objetiva? (nota de corte preenchida e o líquido da PROVA abaixo
+   dela). Aí a discursiva daquela prova não é corrigida: o bloco PROVA da
+   discursiva sai das telas de lançamento. Os lançamentos continuam guardados;
+   apagou a nota de corte (ou ela deixou de reprovar), o bloco volta.
+   Os simulados discursivos não mudam. */
+function reprovouObjetiva(c){
+  if (!c || c.corteObj == null || c.corteObj === "" || !temObjetiva(c)) return false;
+  const s = calcBloco("O", -c.num, c);
+  return !!s && s.liq < n(c.corteObj);
+}
 function blocos(mod){
   const out = []; let cod = 1;
   DB.concursos.forEach(c => {
@@ -15462,7 +15483,9 @@ function blocos(mod){
     const data = mod === "O" ? c.dataObj : c.dataDis;
     const qtd  = mod === "O" ? c.nSimO : c.nSimD;
     const lista = [];
-    if (data) lista.push({ cod:-c.num, tipo:"PROVA", ordem:0, conc:c });
+    // o cod dos simulados não depende da PROVA: tirá-la não mexe nos lançamentos
+    if (data && !(mod === "D" && reprovouObjetiva(c)))
+      lista.push({ cod:-c.num, tipo:"PROVA", ordem:0, conc:c });
     for (let i = 0; i < qtd; i++) lista.push({ cod:cod++, tipo:"SIM", ordem:i+1, conc:c });
     out.push(...lista);
   });
@@ -17791,6 +17814,12 @@ function telaGrade(mod){
     "Uma linha por matéria em cada simulado. Preencha apenas as células AMARELAS (ficha e colunas de lançamento)."));
 
   const bl = blocos(mod);
+  // a PROVA discursiva que saiu por reprovação na objetiva: diz o porquê
+  if (mod === "D") DB.concursos.filter(c => c.dataDis && temDiscursiva(c) && reprovouObjetiva(c))
+    .forEach(c => tela.appendChild(el("div","cronoAviso corteAvisoD",
+      "A prova discursiva de " + (c.nome || "concurso " + c.num) + " não aparece aqui: a nota da objetiva " +
+      "ficou abaixo da nota de corte, então ela não é corrigida. Os lançamentos continuam guardados; " +
+      "se a nota de corte for apagada no Cadastro O (bloco PROVA), ela volta.")));
   if (!bl.length){ tela.appendChild(el("div","vazioAviso",
     "Nenhum simulado nem prova cadastrada nesta modalidade. Vá em Cadastro de Concursos e informe o número de simulados (e a data da prova).")); return; }
 
@@ -17803,6 +17832,9 @@ function telaGrade(mod){
   layout.appendChild(lat); layout.appendChild(rol);
   tela.appendChild(layout);
 
+  // o bloco escolhido sumiu (ex.: PROVA discursiva de quem reprovou na objetiva)
+  if (gradeSel[mod] && gradeSel[mod].cod !== undefined && !bl.some(b => b.cod === gradeSel[mod].cod))
+    gradeSel[mod] = "auto";
   // ao abrir a aba, mostra só o concurso da próxima prova, e não tudo de uma vez
   if (gradeSel[mod] === "auto"){
     const foco = concursoDeFoco(mod, bl);
@@ -17905,6 +17937,28 @@ function telaGrade(mod){
         bloco.appendChild(linha);
       });
 
+      // PROVA da objetiva: a nota de corte (a mesma de Desempenho nas provas
+      // reais) e a situação. Reprovou? a PROVA da discursiva sai das outras abas.
+      if (ehProva && mod === "O"){
+        const lC = el("div","linha");
+        lC.appendChild(el("div","cel rotulo","Nota de Corte"));
+        const cC = el("div","cel campo edit");
+        const iC = campoInput(c.corteObj ?? "", v => {
+          c.corteObj = String(v).trim() === "" ? null : n(v);
+          recalcGrade(mod, b.cod, c);
+        });
+        iC.inputMode = "decimal";
+        iC.title = "Nota de corte da prova objetiva. É o mesmo campo de Desempenho nas Provas Reais.";
+        cC.appendChild(iC);
+        lC.appendChild(cC); lC.appendChild(el("div","cel vazio"));
+        bloco.appendChild(lC);
+        const lS = el("div","linha");
+        lS.appendChild(el("div","cel rotulo","Situação na Prova"));
+        const cS = el("div","cel campo fixo corteSit");
+        lS.appendChild(cS); lS.appendChild(el("div","cel vazio"));
+        bloco.appendChild(lS);
+      }
+
       const cab = el("div","linha cabecG");
       ["cNum","cMat","cDado","cDado","cDado","cDado","cDado","cDado","cDado","cSit"]
         .forEach((cls,k) => cab.appendChild(el("div","cel "+cls, TIT[k])));
@@ -17985,6 +18039,24 @@ function recalcGrade(mod, cod, c){
     t.querySelector("."+k).textContent = s ? num2(val) : "");
   t.querySelector(".tpct").textContent = s ? pct1(s.pct) : "";
   pintaSit(t.querySelector(".tsit"), s ? situacao(s.pct) : "");
+  const cs = bloco.querySelector(".corteSit");
+  if (cs){
+    const corte = c.corteObj;
+    cs.style.background = ""; cs.style.color = ""; cs.style.fontWeight = "";
+    cs.title = "";
+    if (corte == null || !s) cs.textContent = corte == null ? "" : "aguardando os lançamentos";
+    else {
+      const ap = s.liq >= n(corte);
+      const dif = num2(Math.abs(s.liq - n(corte)));
+      cs.textContent = ap ? "APROVADO" : "NÃO APROVADO";
+      cs.style.background = ap ? "#00B050" : "#C00000";
+      cs.style.color = "#fff"; cs.style.fontWeight = "bold";
+      cs.title = ap ? "Passou por " + dif + " ponto(s)." : "Faltaram " + dif + " ponto(s).";
+      if (!ap && temDiscursiva(c))
+        cs.title += " A prova discursiva deste concurso não aparece nas abas da discursiva. " +
+          "Os lançamentos ficam guardados: apague a nota de corte para trazê-la de volta.";
+    }
+  }
 }
 
 /* ===================== TELA: desempenho (lista) ===================== */
@@ -21054,6 +21126,39 @@ function telaListas(){
     "A cópia abre um painel no alto da tela. Restaurar apaga o que você digitou aqui."));
   tela.appendChild(barraAcoes);
 
+  // ---- sequência de estudos (foguinho) e o que aparece no topo ----
+  const Em = garantirEstudo().metas;
+  const barraSeq = el("div","acoesConfig seqConfig");
+  barraSeq.appendChild(el("span","rot","SEQUÊNCIA E TOPO:"));
+  const lMin = el("label","seqCampo");
+  lMin.appendChild(el("span",null,"Tempo mínimo por dia para contar a sequência"));
+  const iMin = document.createElement("input");
+  iMin.placeholder = "00:01"; iMin.dataset.mascara = "tempo"; iMin.inputMode = "numeric";
+  iMin.title = "Ex.: 2 (ou 2:00) = 2 horas · 5:30 = 5h30 · vazio = qualquer estudo conta";
+  iMin.value = seqMinimo() > 0 ? seqMinTexto(seqMinimo()) : "";
+  iMin.addEventListener("change", () => {
+    const m = seqMinDe(iMin.value);
+    if (m > 0) Em.seqMin = m; else delete Em.seqMin;
+    iMin.value = m > 0 ? seqMinTexto(m) : "";
+    salvar(); pintarFogo();
+  });
+  iMin.addEventListener("keydown", ev => { if (ev.key === "Enter") iMin.blur(); });
+  lMin.appendChild(iMin);
+  barraSeq.appendChild(lMin);
+  const caixa = (rot, chave, depois) => {
+    const l = el("label","seqCampo");
+    const c = document.createElement("input"); c.type = "checkbox"; c.checked = !!Em[chave];
+    c.onchange = () => { if (c.checked) Em[chave] = true; else delete Em[chave]; salvar(); depois(); };
+    l.appendChild(c); l.appendChild(el("span",null,rot));
+    barraSeq.appendChild(l);
+  };
+  caixa("Ocultar o foguinho 🔥 do topo", "ocultarFogo", pintarFogo);
+  caixa("Ocultar o tempo do cronômetro no topo", "ocultarCrono", pulsoCrono);
+  barraSeq.appendChild(el("span","nota",
+    "Vazio = qualquer estudo conta (00:01). \"2\" ou \"2:00\" = 2 horas; \"5:30\" = 5h30. " +
+    "Ocultar não para o cronômetro: ele continua correndo e aparece em Iniciar atividade."));
+  tela.appendChild(barraSeq);
+
   // ---- apagar dados: cada botão pede a frase digitada antes de agir ----
   const barraApagar = el("div","acoesConfig");
   barraApagar.style.background = "#fbeeee";
@@ -21245,7 +21350,8 @@ function telaProvas(){
     "Data (disc.)","Nº de Peças","Parâmetro (1º)","Minha Nota","Nota de Corte","Diferença","Situação","Nota Geral"]);
   const evoObj = [], rotObj = [];
   DB.concursos.forEach(c => {
-    const sO = calcBloco("O", -c.num, c), sD = calcBloco("D", -c.num, c);
+    const semDis = reprovouObjetiva(c);          // reprovou na objetiva: discursiva não corrigida
+    const sO = calcBloco("O", -c.num, c), sD = semDis ? null : calcBloco("D", -c.num, c);
     const fO = fichaDe("O", -c.num), fD = fichaDe("D", -c.num);
     const notaO = sO ? sO.liq : "", notaD = sD ? sD.liq : "";
     const difO = (notaO !== "" && c.corteObj != null) ? notaO - c.corteObj : "";
@@ -21267,6 +21373,17 @@ function telaProvas(){
     tr.appendChild(tdS);
     add(dataBR(c.dataDis));
     tr.appendChild(tdEdit(c.nPecas ?? "", v => c.nPecas = v === "" ? null : n(v)));
+    if (semDis){
+      add("—"); add("—"); add("—"); add("—");
+      const tdN = el("td", null, "NÃO CORRIGIDA");
+      tdN.title = "Reprovou na objetiva: a discursiva não é corrigida. Apague a nota de corte da objetiva para trazê-la de volta.";
+      tdN.style.background = "#D9D9D9"; tdN.style.color = "#595959"; tdN.style.fontWeight = "bold";
+      tr.appendChild(tdN);
+      add(num2(n(notaO)) || "");
+      t.tbody.appendChild(tr);
+      if (sO){ rotObj.push(c.nome); evoObj.push(sO.pct === "" ? "" : sO.pct); }
+      return;
+    }
     add(fD.param || ""); add(num2(notaD));
     tr.appendChild(tdEdit(c.corteDis ?? "", v => c.corteDis = v === "" ? null : n(v), render));
     add(difD === "" ? "" : num2(difD));
@@ -22728,7 +22845,8 @@ function pulsoCrono(){
   const c = crono();
   const barra = document.getElementById("cronoBar");
   if (barra){
-    barra.classList.toggle("on", !!c.ativo);
+    // oculto em Painel › Configuração: o cronômetro continua correndo normalmente
+    barra.classList.toggle("on", !!c.ativo && !garantirEstudo().metas.ocultarCrono);
     barra.classList.toggle("pausado", c.ativo && !c.iniMs);
     const r = barra.querySelector(".rel");
     if (r) r.textContent = (c.iniMs ? (c.modo === "regressiva" ? "⏳ " : "⏱ ") : "⏸ ") +
@@ -22995,9 +23113,25 @@ function janelaAlarme(){
 }
 
 /* ===================== sequência de dias (foguinho) ===================== */
-// dias seguidos com estudo: a atual (viva se hoje ou ontem) e o recorde
+/* Tempo mínimo do dia para ele entrar na sequência (Painel › Configuração).
+   Vazio = qualquer estudo conta (o "00:01"). Guardado em minutos, junto das
+   metas; "2" sozinho quer dizer 2 horas, "5:30" é 5h30.                     */
+const seqMinimo = () => Math.max(0, n(garantirEstudo().metas.seqMin));
+const diaConta = min => { const m = seqMinimo(); return m > 0 ? min >= m - 1e-9 : min > 0; };
+function seqMinDe(txt){
+  const t = String(txt ?? "").trim();
+  if (!t) return 0;
+  if (/^\d{1,2}$/.test(t)) return n(t) * 60;               // "2" = 2 horas
+  return minDe(t);
+}
+const seqMinTexto = m => { const h = Math.floor(m/60), mi = Math.round(m - h*60);
+  return String(h).padStart(2,"0") + ":" + String(mi).padStart(2,"0"); };
+// dias seguidos com estudo: a atual (viva se hoje ou ontem) e o recorde.
+// Só conta o dia que somou pelo menos o tempo mínimo.
 function sequencias(){
-  const dias = [...new Set(sessoes().map(s => s.data).filter(Boolean))].sort();
+  const porDia = {};
+  sessoes().forEach(s => { if (s.data) porDia[s.data] = (porDia[s.data] || 0) + n(s.min); });
+  const dias = Object.keys(porDia).filter(d => diaConta(porDia[d])).sort();
   if (!dias.length) return { atual:0, recorde:0, ultimo:"", hoje:false };
   let recorde = 0, corrida = 0, ant = null;
   dias.forEach(d => {
@@ -23014,6 +23148,7 @@ function sequencias(){
 function pintarFogo(){
   const chip = document.getElementById("fogoBar");
   if (!chip) return;
+  chip.style.display = garantirEstudo().metas.ocultarFogo ? "none" : "";
   const q = sequencias();
   chip.querySelector(".tx").textContent = q.atual + (q.atual === 1 ? " dia" : " dias");
   chip.classList.toggle("apagado", q.atual === 0);
@@ -23041,14 +23176,21 @@ function janelaFogo(){
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const nomeDia = DIAS_SEM[(hoje.getDay()+6)%7];
   const minHoje = somaMin(sessoes().filter(s => s.data === hojeISO()));
+  const minimo = seqMinimo();
   const frase = q.hoje
       ? nomeDia + " produtiva. Parabéns! 🎉  (" + hMin(minHoje) + " hoje)"
+    : (minimo > 0 && minHoje > 0)
+      ? "Hoje: " + hMin(minHoje) + ". Faltam " + hMin(minimo - minHoje) + " para o dia contar. 💪"
     : q.atual
       ? "Sua sequência está de pé — ainda dá tempo de estudar hoje. 💪"
       : (sessoes().length
           ? "A sequência caiu. Registre um estudo hoje e comece outra."
           : "Registre o primeiro estudo e comece a sua sequência.");
   cx.appendChild(el("div","fogoFrase", frase));
+  const lm = el("div","fogoMinimo", "⏱ Tempo mínimo para o dia contar: " +
+    (minimo > 0 ? seqMinTexto(minimo) : "00:01 (qualquer estudo)"));
+  lm.title = "Muda em Painel › Configuração";
+  cx.appendChild(lm);
 
   // ---- a semana ----
   const seg = iniSemana(hoje);
@@ -23058,12 +23200,15 @@ function janelaFogo(){
     const iso = isoDeData(d);
     const min = somaMin(sessoes().filter(s => s.data === iso));
     const futuro = d > hoje;
-    const cel = el("div","fogoDia" + (min ? " feito" : futuro ? " futuro" : " vazio") +
+    const conta = diaConta(min);
+    const cel = el("div","fogoDia" + (conta ? " feito" : min ? " parcial" : futuro ? " futuro" : " vazio") +
       (iso === hojeISO() ? " hoje" : ""));
     cel.appendChild(el("span","r", r));
-    if (min){
+    if (conta){
       cel.appendChild(el("span","selo","✓"));
       cel.title = dataBR(iso) + " — " + hMin(min);
+    } else if (min){
+      cel.title = dataBR(iso) + " — " + hMin(min) + ", abaixo do mínimo (" + seqMinTexto(minimo) + ")";
     } else {
       cel.title = dataBR(iso) + (futuro ? " — ainda vem" : " — sem estudo");
     }
@@ -27419,9 +27564,11 @@ function telaTempoEstudo(){
     maior = Math.max(maior, atual);
     anterior = d;
   });
-  const ultimoDia = dias[dias.length-1];
-  const distancia = -diasAte(ultimoDia);
-  const sequenciaViva = distancia <= 1 ? atual : 0;
+  // a sequência segue a mesma regra do foguinho (tempo mínimo do dia)
+  const seqQ = sequencias();
+  maior = seqQ.recorde;
+  const ultimoDia = seqQ.ultimo || dias[dias.length-1];
+  const sequenciaViva = seqQ.atual;
 
   const cards = el("div","estCards");
   cards.appendChild(cartao("Tempo total", hMin(total), todas.length + " registro(s)"));
@@ -30005,7 +30152,7 @@ function montarCapa(){
     mods.appendChild(c);
   };
 
-  cartao("#ED7D31","CONTROLE DE SIMULADOS","SIMULADOS","gradeO",
+  cartao("#ED7D31","SIMULADOS E PROVAS","SIMULADOS E PROVAS","gradeO",
     [[N.feitos,"Simulados lançados"],
      [N.media === "" ? "—" : pct1(N.media),"Média objetiva"],
      [N.pendentes,"Questões a revisar"]],
@@ -30053,7 +30200,7 @@ function montarCapa(){
   cx.appendChild(el("div","capaRodape",
     "Volte aqui quando quiser pelo botão ⌂ Início, na barra de cima. " +
     "Todos os módulos também ficam lado a lado na barra de cima: Cadastro de concurso, " +
-    "Estudos, Cadernos de conteúdo, Simulados, Caderno de erros do TEC, " +
+    "Estudos, Cadernos de conteúdo, Simulados e Provas, Caderno de erros do TEC, " +
     "Caderno de jurisprudências e Calendário."));
 }
 
