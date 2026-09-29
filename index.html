@@ -336,6 +336,7 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .jurImp td.jurImpOrig{font-weight:bold;color:#333}
 .jurImp td.jurImpQtd{color:#7a8595;text-align:right;white-space:nowrap}
 .jurImp table.jurImpTab select{width:100%;font-size:12px;padding:3px 4px}
+.infoJuris .jurRamoLinks a{color:#2F5597;text-decoration:underline}
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -18660,13 +18661,85 @@ function liberarPonte(){
 }
 
 /* ---------- grava os julgados vindos do Buscador Dizer o Direito ---------- */
+
+/* ---------- arruma o julgado que chegou com "sujeira" no texto ----------
+   A extensão (e a página do julgado copiada inteira) trazem, no começo do
+   texto, a linha de assunto com links ("Direito Processual Penal > Execução
+   penal > Temas diversos"), às vezes o título, "Origem: STJ - Informativo: 878",
+   os botões da página e "Resumo do julgado:"; e, no fim, os "Comentários do
+   julgado" inteiros. Aqui: título -> tema, assunto -> ⓘ (com os links),
+   origem -> tribunal/informativo, e o texto fica só com o resumo.
+   Se não houver nada disso, devolve o julgado igual (pode rodar de novo). */
+const JUR_LIXO = /^(lido|favorito|lidofavorito|julgado lido|imprimir|tela cheia|cadernos?|a ?\+|a ?-|copiar( copiar)?|intelig[eê]ncia artificial|saiba mais|enviar|pergunte ou pe[cç]a algo.*|sugest[oõ]es de perguntas e comandos|ver julgados semelhantes.*|ver julgado|marcar como lido|favoritar|adicionar aos cadernos|em \d+ caderno\(s\))$/i;
+function jurLimpar(d, semLink){
+  const orig = String(d.tese || "");
+  const linhas = orig.replace(/<\/(p|div|h\d|li)>\s*/gi, "<br>")
+    .replace(/<(p|div|h\d)(\s[^>]*)?>/gi, "").split(/<br\s*\/?>/i);
+  const tx = l => semTags(l).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  // linha de assunto: com link do Buscador (categoria=), 2 a 4 partes; sem link,
+  // 3 ou 4 partes curtas, começando com maiúscula e sem ponto no fim
+  const ehRamo = (l, t) => {
+    if (t.length > 220 || !/>/.test(t)) return false;
+    const partes = t.split(/\s*>\s*/).filter(Boolean);
+    if (/categoria=/.test(l)) return partes.length >= 2 && partes.length <= 4;
+    if (!semLink) return false;          // texto já gravado: só com o link do Buscador
+    return partes.length >= 3 && partes.length <= 4 && partes.every(p => p.length < 70) &&
+           /^[A-ZÀ-Ú]/.test(t) && !/[.;:]$/.test(t);
+  };
+  const r = Object.assign({}, d);
+  let mudou = false, i = 0;
+  const proxima = k => { for (let j = k; j < linhas.length; j++){ const t = tx(linhas[j]); if (t) return j; } return -1; };
+  while (i < linhas.length){
+    const t = tx(linhas[i]);
+    if (!t){ i++; continue; }
+    if (JUR_LIXO.test(t)){ i++; mudou = true; continue; }
+    const mo = t.match(/^Origem:\s*([A-Za-z]{2,5})\s*-\s*Informativo:\s*(\d+)/i);
+    if (mo){ if (!r.trib) r.trib = mo[1].toUpperCase(); if (!r.info) r.info = mo[2]; i++; mudou = true; continue; }
+    if (/^Resumo do julgado:?$/i.test(t)){ i++; mudou = true; continue; }
+    if (ehRamo(linhas[i], t)){
+      if (!r.ramo) r.ramo = t.replace(/\s*>\s*/g, " > ");
+      if (!r.ramoHtml && /<a\s/i.test(linhas[i])) r.ramoHtml = linhas[i].trim();
+      i++; mudou = true; continue;
+    }
+    if (r.tema && jurNorm(t) === jurNorm(r.tema)){ i++; mudou = true; continue; }
+    // título solto no começo: é a linha logo antes da linha de assunto
+    const j = proxima(i + 1);
+    if (!r.tema && j > 0 && ehRamo(linhas[j], tx(linhas[j]))){ r.tema = t; i++; mudou = true; continue; }
+    break;
+  }
+  if (!mudou && !/Coment[aá]rios do julgado/i.test(semTags(orig))) return d;
+  const corpo = [];
+  for (; i < linhas.length; i++){
+    if (/^Coment[aá]rios do julgado/i.test(tx(linhas[i]))){ mudou = true; break; }
+    corpo.push(linhas[i]);
+  }
+  if (!mudou) return d;
+  if (corpo.length) corpo[0] = corpo[0].replace(/^(\s|&nbsp;)*Resumo do julgado:\s*/i, "");
+  while (corpo.length && !tx(corpo[corpo.length-1])) corpo.pop();
+  while (corpo.length && !tx(corpo[0])) corpo.shift();
+  r.tese = corpo.join("<br>");
+  return r;
+}
+// arruma os julgados que já estão no caderno (só mexe em quem tem o problema)
+function jurLimparCaderno(){
+  const L = DB.juris || [];
+  let n = 0;
+  L.forEach((e, k) => {
+    const x = jurLimpar(e);
+    if (x !== e){ L[k] = Object.assign(e, x); n++; }
+  });
+  if (n) salvar();
+  return n;
+}
+
 function aplicarJuris(dados){
   if (!Array.isArray(dados)) dados = [dados];
   const lista = DB.juris || (DB.juris = []);
   const vistos = [];
   let novos = 0, repetidos = 0, semMat = 0;
 
-  dados.forEach(d => {
+  dados.forEach(d0 => {
+    const d = jurLimpar(d0);
     const chave = String(d.temaUrl || d.tema || "").trim();
     vistos.push(chave);
     // repetido = mesmo link, OU mesmo título com o mesmo texto (um veio com link
@@ -18694,6 +18767,7 @@ function aplicarJuris(dados){
       dataRev: ""
     });
     if (d.ramo) lista[lista.length-1].ramo = String(d.ramo);
+    if (d.ramoHtml) lista[lista.length-1].ramoHtml = String(d.ramoHtml);
     novos++;
   });
 
@@ -19573,7 +19647,11 @@ function jurCompletar(o){
   if (!info){ const ms = [...txt.matchAll(/\(Info\s*(\d+)/gi)]; if (ms.length) info = ms[ms.length-1][1]; }
   let data = o.data || "";
   if (!data){
-    const m = txt.match(/julgad[oa]s?\s+(?:dia\s+)?em\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{4})/i);
+    // com várias citações, vale a do próprio informativo (ex.: "... (Info 878)")
+    const RXD = /julgad[oa]s?\s+(?:dia\s+)?em\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{4})/i;
+    const linhas = txt.split("\n").filter(l => RXD.test(l));
+    const alvo = (info && linhas.find(l => new RegExp("Info\\s*" + info + "\\b", "i").test(l))) || linhas[0];
+    const m = alvo && alvo.match(RXD);
     if (m) data = m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
   }
   return Object.assign({}, o, { trib, info: String(info), data });
@@ -19635,6 +19713,21 @@ function jurLerColagem(texto, html){
     if (doc.querySelector("article.julgado .jt")) return jurDeRevisao(doc);
     links = [...doc.querySelectorAll("a[href]")].map(a => ({ href: a.href, texto: a.textContent }))
       .filter(a => /^https?:/.test(a.href) && a.texto.trim().length > 15);
+  }
+  // a página de UM julgado, copiada inteira ("Resumo do julgado:")
+  if (/Resumo do julgado/i.test(t) && (t.match(/Origem:\s*[A-Za-z]{2,5}\s*-\s*Informativo/gi) || []).length <= 1){
+    const linhas = t.replace(/\r/g, "").split("\n");
+    let ramoHtml = "";
+    if (html){
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const cats = [...doc.querySelectorAll("a[href*='categoria=']")].slice(0, 3);
+      if (cats.length) ramoHtml = cats.map(a => '<a href="' + a.href + '" target="_blank">' +
+        jurEsc(a.textContent.trim()) + "</a>").join(" &gt; ");
+    }
+    const d = jurLimpar({ tese: linhas.map(jurEsc).join("<br>"), tema: "" }, true);
+    if (ramoHtml) d.ramoHtml = ramoHtml;
+    const r = jurCompletar(Object.assign(d, { origem: String(d.ramo || "").split(">")[0].trim() }));
+    return r.tema || r.tese ? [r] : [];
   }
   return jurDeBuscador(t, links);
 }
@@ -19809,8 +19902,15 @@ function janelaInfoJuris(e){
   const inpRamo = document.createElement("input");
   inpRamo.className = "areaInfo umaLinha";
   inpRamo.value = e.ramo || ""; inpRamo.spellcheck = false;
+  inpRamo.style.width = "100%"; inpRamo.style.boxSizing = "border-box";
   inpRamo.placeholder = "Ex.: Direito Penal > Crimes contra a honra > Geral";
-  campo("Assunto", inpRamo);
+  const cxRamo = campo("Assunto", inpRamo);
+  if (e.ramoHtml){
+    const lk = el("div","pistaCampo jurRamoLinks");
+    lk.innerHTML = e.ramoHtml;
+    lk.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
+    cxRamo.appendChild(lk);
+  }
 
   const inpInfo = document.createElement("input");
   inpInfo.className = "areaInfo umaLinha";
@@ -19851,7 +19951,7 @@ function janelaInfoJuris(e){
     e.data = paraISO(inpData.value);
     e.trib = selTrib.value;
     e.tema = taTema.value;
-    if (inpRamo.value.trim()) e.ramo = inpRamo.value.trim(); else delete e.ramo;
+    if (inpRamo.value.trim()) e.ramo = inpRamo.value.trim(); else { delete e.ramo; delete e.ramoHtml; }
     e.info = inpInfo.value;
     e.obs  = cxObs.innerHTML;
     salvar(); sair(); render();
@@ -19898,6 +19998,7 @@ function celulaInfoJuris(e){
 
 function telaJuris(){
   garantirCadernos();
+  jurLimparCaderno();
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba","CADERNO DE JURISPRUDÊNCIAS - INFORMATIVOS"));
   tela.appendChild(el("div","subAba",
