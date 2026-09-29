@@ -301,6 +301,14 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cronoColaOk{font-size:11px;color:#1b5e20;background:#EAF7EC;border:1px solid #B6DEB9;
   border-radius:5px;padding:5px 8px;margin:0 0 7px;line-height:15px}
 .cronoCorpo table.g td.cronoRecem{background:#EAF7EC !important}
+.cronoCorpo table.g tr.cronoForaCal td{opacity:.5}
+.cronoReprov{margin:10px 0 0;padding:9px 12px;background:#FBF7EE;border:1px solid #eadfc4;
+  border-left:4px solid #B7791F;border-radius:6px}
+.cronoReprov .cronoReprovRot{font-size:11.5px;font-weight:bold;color:#7a5a12;line-height:15px}
+.cronoReprov .cronoReprovOp{display:flex;gap:16px;margin:6px 0 4px}
+.cronoReprov .cronoReprovOp label{display:inline-flex;align-items:center;gap:5px;font-size:12px;
+  font-weight:bold;color:#1F3864;cursor:pointer}
+.cronoReprov .cronoReprovDica{font-size:10.5px;color:#8794a8;font-style:italic;line-height:14px}
 .cronoAviso.corteAvisoD{margin:8px 10px}
 @media (max-width:560px){
   .cronoCola table.cronoColaTab th:nth-child(4),.cronoCola table.cronoColaTab td:nth-child(4){display:none}
@@ -1061,6 +1069,8 @@ td.calDia.hoje{border-color:#ED7D31;box-shadow:0 0 0 2px #ED7D31 inset}
   text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
 .calEventos .btn{width:100%;margin-bottom:11px;font-size:11.5px;border-radius:20px}
 .calEventos .semEv{font-size:11px;color:#7a8595;font-style:italic;line-height:15px}
+.calEventos select.calFiltroSel{width:100%;box-sizing:border-box;margin:0 0 8px;padding:4px 6px;font-size:11.5px;
+  border:1px solid #cdd6e4;border-radius:6px;background:#fff;color:#1F3864;font-weight:bold}
 /* ---- visão do ano (prefixo calAno) ---- */
 .calTopo .btn.calAnoBt.on{background:var(--azulEscuro);color:#fff;border-color:var(--azulEscuro)}
 .calAnoEv{max-height:78vh;overflow-y:auto}
@@ -15475,6 +15485,10 @@ function reprovouObjetiva(c){
   const s = calcBloco("O", -c.num, c);
   return !!s && s.liq < n(c.corteObj);
 }
+/* Reprovou na objetiva e não marcou "Sim" no Cronograma da prova (padrão: Não)?
+   As datas da fase discursiva saem do calendário, da agenda e das próximas provas.
+   Ficam guardadas: marcou "Sim" ou deixou de reprovar, voltam. */
+const escondeDatasDis = c => reprovouObjetiva(c) && !c.manterDatasReprov;
 function blocos(mod){
   const out = []; let cod = 1;
   DB.concursos.forEach(c => {
@@ -17939,16 +17953,18 @@ function telaGrade(mod){
 
       // PROVA da objetiva: a nota de corte (a mesma de Desempenho nas provas
       // reais) e a situação. Reprovou? a PROVA da discursiva sai das outras abas.
-      if (ehProva && mod === "O"){
+      if (ehProva){
+        const campoCorte = mod === "O" ? "corteObj" : "corteDis";
         const lC = el("div","linha");
         lC.appendChild(el("div","cel rotulo","Nota de Corte"));
         const cC = el("div","cel campo edit");
-        const iC = campoInput(c.corteObj ?? "", v => {
-          c.corteObj = String(v).trim() === "" ? null : n(v);
+        const iC = campoInput(c[campoCorte] ?? "", v => {
+          c[campoCorte] = String(v).trim() === "" ? null : n(v);
           recalcGrade(mod, b.cod, c);
         });
         iC.inputMode = "decimal";
-        iC.title = "Nota de corte da prova objetiva. É o mesmo campo de Desempenho nas Provas Reais.";
+        iC.title = "Nota de corte da prova " + (mod === "O" ? "objetiva" : "discursiva") +
+          ". Aparece também em Desempenho nas Provas Reais.";
         cC.appendChild(iC);
         lC.appendChild(cC); lC.appendChild(el("div","cel vazio"));
         bloco.appendChild(lC);
@@ -18041,10 +18057,13 @@ function recalcGrade(mod, cod, c){
   pintaSit(t.querySelector(".tsit"), s ? situacao(s.pct) : "");
   const cs = bloco.querySelector(".corteSit");
   if (cs){
-    const corte = c.corteObj;
+    const corte = mod === "O" ? c.corteObj : c.corteDis;
     cs.style.background = ""; cs.style.color = ""; cs.style.fontWeight = "";
     cs.title = "";
-    if (corte == null || !s) cs.textContent = corte == null ? "" : "aguardando os lançamentos";
+    if (corte == null || !s){
+      cs.textContent = corte == null ? "" : "—";
+      if (corte != null) cs.title = "Aguardando os lançamentos da prova";
+    }
     else {
       const ap = s.liq >= n(corte);
       const dif = num2(Math.abs(s.liq - n(corte)));
@@ -18052,7 +18071,7 @@ function recalcGrade(mod, cod, c){
       cs.style.background = ap ? "#00B050" : "#C00000";
       cs.style.color = "#fff"; cs.style.fontWeight = "bold";
       cs.title = ap ? "Passou por " + dif + " ponto(s)." : "Faltaram " + dif + " ponto(s).";
-      if (!ap && temDiscursiva(c))
+      if (mod === "O" && !ap && temDiscursiva(c))
         cs.title += " A prova discursiva deste concurso não aparece nas abas da discursiva. " +
           "Os lançamentos ficam guardados: apague a nota de corte para trazê-la de volta.";
     }
@@ -20383,11 +20402,17 @@ function janelaCronograma(numInicial){
         : "Este concurso não tem prova " + (temObjetiva(c) ? "discursiva" : "objetiva") +
           ": as etapas dela não aparecem aqui."));
 
+    const semDis = escondeDatasDis(c);
+    if (semDis)
+      corpo.appendChild(el("div","cronoAviso",
+        "Você não atingiu a nota de corte da objetiva: as datas da fase discursiva (em cinza) " +
+        "não aparecem no Calendário. Para continuar vendo, marque \u201cSim\u201d no fim desta janela."));
     const t = tabela(["Atividade","Datas previstas"], ["57%","43%"]);
     t.classList.add("cadZeb","tabLimpa");
     t.style.margin = "0";
     etapas.forEach(p => {
-      const tr = el("tr");
+      const tr = el("tr", semDis && p.so === "D" ? "cronoForaCal" : null);
+      if (semDis && p.so === "D") tr.title = "Fora do Calendário: reprovado na objetiva";
       const tdR = el("td","esq" + (p.forte ? " cronoForte" : ""), p.rot);
       tr.appendChild(tdR);
 
@@ -20452,6 +20477,30 @@ function janelaCronograma(numInicial){
       t.tbody.appendChild(tr);
     });
     corpo.appendChild(t);
+
+    // ---- reprovado na objetiva: as datas da discursiva continuam no calendário? ----
+    if (temDiscursiva(c)){
+      const cxR = el("div","cronoReprov");
+      cxR.appendChild(el("div","cronoReprovRot",
+        "Se eu não for aprovado na objetiva, continuar mostrando as datas da discursiva no Calendário?"));
+      const op = el("div","cronoReprovOp");
+      [["Sim", true], ["Não", false]].forEach(([rot, v]) => {
+        const l = el("label");
+        const r = document.createElement("input");
+        r.type = "radio"; r.name = "cronoReprov" + num;
+        r.checked = !!c.manterDatasReprov === v;
+        r.onchange = () => { if (v) c.manterDatasReprov = true; else delete c.manterDatasReprov;
+          salvar(); montar(); };
+        l.appendChild(r); l.appendChild(el("span", null, rot));
+        op.appendChild(l);
+      });
+      cxR.appendChild(op);
+      cxR.appendChild(el("div","cronoReprovDica",
+        "Vale quando a nota de corte (Cadastro O › PROVA) fica acima da sua nota. " +
+        "Com \u201cNão\u201d, a prova discursiva, o padrão de resposta, os recursos e o resultado " +
+        "somem do Calendário e das próximas provas. As datas continuam guardadas aqui."));
+      corpo.appendChild(cxR);
+    }
 
     // ---- link do edital: fica no fim, depois de todas as etapas ----
     const cxEd = el("div","cronoEdital");
@@ -21343,7 +21392,8 @@ function telaProvas(){
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba","DESEMPENHO NAS PROVAS REAIS"));
   tela.appendChild(el("div","subAba",
-    "Resultado consolidado de cada concurso. Você digita apenas as notas de corte e o nº de questões/peças."));
+    "Resultado consolidado de cada concurso. Aqui você digita só o nº de peças; as notas de corte " +
+    "vêm do bloco PROVA do Cadastro O e do Cadastro D."));
 
   const t = tabela(["Nº","Concurso","Banca","Cargo",
     "Data (obj.)","Questões","Parâmetro (1º)","Minha Nota","Nota de Corte","Diferença","% Geral","Situação",
@@ -21361,7 +21411,10 @@ function telaProvas(){
     add(c.num); add(c.nome,"esq"); add(c.banca); add(c.cargo,"esq");
     add(dataBR(c.dataObj)); add(c.questoes || ""); add(fO.param || "");
     add(num2(notaO));
-    tr.appendChild(tdEdit(c.corteObj ?? "", v => c.corteObj = v === "" ? null : n(v), render));
+    // a nota de corte é digitada no bloco PROVA do Cadastro O; aqui só aparece
+    const tdCO = el("td", null, c.corteObj != null ? num2(c.corteObj) : "");
+    tdCO.title = "Preencha em Simulados e Provas › Cadastro O › PROVA";
+    tr.appendChild(tdCO);
     add(difO === "" ? "" : num2(difO)); add(sO ? pct2(sO.pct) : "");
     const tdS = el("td");
     if (notaO !== "" && c.corteObj != null){
@@ -21385,7 +21438,9 @@ function telaProvas(){
       return;
     }
     add(fD.param || ""); add(num2(notaD));
-    tr.appendChild(tdEdit(c.corteDis ?? "", v => c.corteDis = v === "" ? null : n(v), render));
+    const tdCD = el("td", null, c.corteDis != null ? num2(c.corteDis) : "");
+    tdCD.title = "Preencha em Simulados e Provas › Cadastro D › PROVA";
+    tr.appendChild(tdCD);
     add(difD === "" ? "" : num2(difD));
     const tdV = el("td");
     if (notaD !== "" && c.corteDis != null){
@@ -23758,23 +23813,25 @@ function eventosDoMes(mes){
   const lista = [];
   DB.concursos.forEach(c => {
     [["Prova objetiva", c.dataObj, temObjetiva(c)],
-     ["Prova discursiva", c.dataDis, temDiscursiva(c)]].forEach(([q, data, tem]) => {
+     ["Prova discursiva", c.dataDis, temDiscursiva(c) && !escondeDatasDis(c)]].forEach(([q, data, tem]) => {
       if (tem && String(data || "").startsWith(mes))
         lista.push({ data, titulo:(c.nome || "Concurso") + " — " + q,
-          tipo:"Prova", automatico:true });
+          tipo:"Prova", automatico:true, conc:c.num });
     });
   });
   // etapas do cronograma da prova, digitadas na janela Cronograma da prova
   const CR = garantirCronogramas();
   DB.concursos.forEach(c => {
     const dados = CR[c.num] || {};
+    const semDis = escondeDatasDis(c);
     etapasDe(c).forEach(p => {
       if (p.tipo === "prova") return;           // a data da prova já entrou acima
+      if (semDis && p.so === "D") return;       // reprovou na objetiva: fase discursiva some
       const reg = dados[p.id] || {};
       const nome = c.nome || "Concurso " + c.num;
       const por = (data, sufixo) => {
         if (!String(data || "").startsWith(mes)) return;
-        lista.push({ data, tipo:p.ev || "Compromisso", automatico:true,
+        lista.push({ data, tipo:p.ev || "Compromisso", automatico:true, conc:c.num,
           titulo: nome + " — " + p.rot + (sufixo ? " (" + sufixo + ")" : "") });
       };
       if (p.tipo === "periodo"){
@@ -24074,6 +24131,31 @@ function calCartaoEvento(ev, comMes){
   return L;
 }
 
+/* filtro da coluna de eventos: "" = todos, "c:<nº>" = um concurso,
+   "meus" = só os eventos que você criou. Vale para o mês e para o ano, e
+   também para as marcas nos dias. Só nesta página, não vai para a nuvem. */
+let calFiltro = "";
+function calFiltrar(lista){
+  if (calFiltro === "meus") return lista.filter(e => !e.automatico);
+  if (calFiltro.startsWith("c:")){
+    const num = n(calFiltro.slice(2));
+    return lista.filter(e => e.automatico && n(e.conc) === num);
+  }
+  return lista;
+}
+function calSeletorFiltro(){
+  if (calFiltro.startsWith("c:") && !DB.concursos.some(c => "c:" + c.num === calFiltro)) calFiltro = "";
+  const sel = document.createElement("select");
+  sel.className = "calFiltroSel";
+  sel.title = "Mostrar só os eventos de um concurso";
+  const op = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); };
+  op("", "Todos os eventos");
+  DB.concursos.forEach(c => op("c:" + c.num, c.nome || "Concurso " + c.num));
+  op("meus", "Só os que eu criei");
+  sel.value = calFiltro;
+  sel.onchange = () => { calFiltro = sel.value; render(); };
+  return sel;
+}
 let calMes = null;                      // "AAAA-MM" que está sendo mostrado
 let calVisao = "mes";                   // "mes" ou "ano" (só nesta página, não vai para a nuvem)
 function telaCalendario(){
@@ -24106,7 +24188,7 @@ function telaCalendario(){
   topo.appendChild(dir);
   const doMes = sessoes().filter(s => String(s.data).startsWith(calMes));
 
-  const eventos = eventosDoMes(calMes);
+  const eventos = calFiltrar(eventosDoMes(calMes));
   const porDiaEv = {};
   eventos.forEach(e => (porDiaEv[e.data] = porDiaEv[e.data] || []).push(e));
 
@@ -24115,6 +24197,7 @@ function telaCalendario(){
   /* ---------- painel de eventos, à esquerda ---------- */
   const lado = el("div","calEventos");
   lado.appendChild(el("div","tit","Eventos do mês"));
+  if (DB.concursos.length) lado.appendChild(calSeletorFiltro());
   const bNovo = el("button","btn azulzinho","+ Novo evento");
   bNovo.onclick = () => janelaEvento({ data: calMes + "-01" });
   lado.appendChild(bNovo);
@@ -24124,9 +24207,10 @@ function telaCalendario(){
   bIcs.onclick = janelaExportarAgenda;
   lado.appendChild(bIcs);
   if (!eventos.length){
-    lado.appendChild(el("div","semEv",
-      "Nada marcado neste mês. Use o botão acima para anotar uma prova, " +
-      "uma inscrição ou qualquer compromisso."));
+    lado.appendChild(el("div","semEv", calFiltro
+      ? "Nenhum evento deste filtro neste mês."
+      : "Nada marcado neste mês. Use o botão acima para anotar uma prova, " +
+        "uma inscrição ou qualquer compromisso."));
   }
   eventos.forEach(ev => lado.appendChild(calCartaoEvento(ev)));
   wrap.appendChild(lado);
@@ -24254,7 +24338,7 @@ function calTelaAno(tela, E){
   const minDia = {};
   doPer.forEach(s => { minDia[s.data] = (minDia[s.data] || 0) + n(s.min); });
   const eventos = [];
-  meses.forEach(m => eventos.push(...eventosDoMes(m).filter(e => dentro(String(e.data)))));
+  meses.forEach(m => eventos.push(...calFiltrar(eventosDoMes(m)).filter(e => dentro(String(e.data)))));
   const evDia = {};
   eventos.forEach(e => (evDia[e.data] = evDia[e.data] || []).push(e));
   const meta = Math.max(1, n(E.metas.dia));
@@ -24323,6 +24407,7 @@ function calTelaAno(tela, E){
   /* eventos do período, à esquerda */
   const lado = el("div","calEventos calAnoEv");
   lado.appendChild(el("div","tit", temPer ? "Eventos do período" : "Eventos do ano"));
+  if (DB.concursos.length) lado.appendChild(calSeletorFiltro());
   const bNovo = el("button","btn azulzinho","+ Novo evento");
   bNovo.onclick = () => janelaEvento({ data: temPer ? ini : calMes + "-01" });
   lado.appendChild(bNovo);
@@ -24332,7 +24417,8 @@ function calTelaAno(tela, E){
   bIcs.onclick = janelaExportarAgenda;
   lado.appendChild(bIcs);
   if (!eventos.length)
-    lado.appendChild(el("div","semEv", temPer ? "Nada marcado neste período." : "Nada marcado neste ano."));
+    lado.appendChild(el("div","semEv", calFiltro ? "Nenhum evento deste filtro " + (temPer ? "no período." : "no ano.")
+      : temPer ? "Nada marcado neste período." : "Nada marcado neste ano."));
   eventos.forEach(ev => lado.appendChild(calCartaoEvento(ev, true)));
   wrap.appendChild(lado);
 
@@ -30045,7 +30131,7 @@ function numerosDaCapa(){
       const hoje = hojeISO();
       const datas = [];
       DB.concursos.forEach(c => {
-        [c.dataObj, c.dataDis].forEach(d => {
+        [c.dataObj, escondeDatasDis(c) ? "" : c.dataDis].forEach(d => {
           if (String(d || "").length === 10 && d >= hoje) datas.push(d);
         });
       });
@@ -30068,7 +30154,7 @@ function montarCapa(){
   // ---- próximas provas ----
   const provas = [];
   DB.concursos.forEach(c => {
-    [["Objetiva", c.dataObj], ["Discursiva", c.dataDis]].forEach(([tipo, data]) => {
+    [["Objetiva", c.dataObj], ["Discursiva", escondeDatasDis(c) ? "" : c.dataDis]].forEach(([tipo, data]) => {
       const dias = diasAte(data);
       if (dias == null) return;
       provas.push({ nome:c.nome, tipo, data, dias });
