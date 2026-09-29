@@ -337,6 +337,32 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .jurImp td.jurImpQtd{color:#7a8595;text-align:right;white-space:nowrap}
 .jurImp table.jurImpTab select{width:100%;font-size:12px;padding:3px 4px}
 .infoJuris .jurRamoLinks a{color:#2F5597;text-decoration:underline}
+/* faixas das matérias com borda arredondada; cartões com recuo em relação à faixa */
+.faixaMat{border-radius:10px}
+#tela .cadCartoes{margin:10px 10px 16px 46px}
+@media (max-width:560px){ #tela .cadCartoes{margin-left:18px} }
+.cadJur.soTitulo .cadJurTit{border-radius:6px}
+.cadJur.soTitulo .cadJurBox{padding-top:6px;padding-bottom:6px}
+.cadJur.soTitulo .cadJurPe{margin-top:0;padding-top:0;border-top:0}
+.cadJur .btnVerJur{border:1px solid #d5c9b8;background:#faf7f2;color:#7a1f1f;border-radius:14px;
+  font:bold 11px Arial;padding:3px 10px;cursor:pointer}
+.cadJur .btnVerJur:hover{background:#7a1f1f;color:#fff}
+.barraImportar .flex{flex:1}
+.btnLimparCad{padding:6px 12px;border:1px solid #d9a8a3;border-radius:5px;background:#fff;color:#a12a20;
+  font-weight:bold;font-size:12px;cursor:pointer}
+.btnLimparCad:hover{background:#a12a20;color:#fff}
+.limparCad .limparAviso{background:#fdecea;border:1px solid #f2c4bf;border-left:4px solid #c0392b;border-radius:6px;
+  padding:10px 12px;font-size:12.5px;line-height:1.5;color:#5a1d17;margin:6px 0 10px}
+.limparCad input.limparConf{width:100%;box-sizing:border-box;font-size:15px;padding:7px 10px;border:1px solid #d9a8a3;
+  border-radius:6px;letter-spacing:2px;font-weight:bold;text-align:center}
+.limparCad button.perigo{background:#c0392b;color:#fff;border:1px solid #c0392b;border-radius:5px;padding:6px 14px;font-weight:bold;cursor:pointer}
+.limparCad button.perigo:disabled{background:#e6b8b3;border-color:#e6b8b3;cursor:default}
+.matVoltaTopo{position:fixed;right:22px;bottom:22px;z-index:60;width:42px;height:42px;border-radius:50%;
+  border:0;background:var(--azulEscuro);color:#fff;font:bold 20px Arial;cursor:pointer;
+  box-shadow:0 4px 14px rgba(15,30,51,.3);opacity:0;pointer-events:none;transition:opacity .2s}
+.matVoltaTopo.on{opacity:.9;pointer-events:auto}
+.matVoltaTopo:hover{opacity:1}
+@media print{ .matVoltaTopo{display:none} }
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -18821,6 +18847,8 @@ function importarDoTec(mod){
 /* ---------- memória de tela do caderno de erros ----------
    Não entra na cópia de segurança de propósito: é jeito de olhar, não é dado.
    Sobrevive ao render() porque mora fora da função.                        */
+// julgados abertos um a um quando o caderno está em "resumir" (só nesta página)
+const jurAbertos = new Set();
 const filtroMatCad = {};    // por caderno: "" = todas as matérias
 const alturaCad    = {};    // por caderno+fase: true = anotações abertas por inteiro
 
@@ -19418,9 +19446,11 @@ function faixaDeMateria(mat, quantos, rotulo, aoTirar, aoPor){
     menos.onclick = aoTirar;
     faixa.appendChild(menos);
   }
-  const mais = pilula("mais","+","Acrescentar uma linha nesta matéria");
-  mais.onclick = aoPor;
-  faixa.appendChild(mais);
+  if (aoPor){
+    const mais = pilula("mais","+","Acrescentar uma linha nesta matéria");
+    mais.onclick = aoPor;
+    faixa.appendChild(mais);
+  }
   return faixa;
 }
 
@@ -19732,6 +19762,144 @@ function jurLerColagem(texto, html){
   return jurDeBuscador(t, links);
 }
 
+/* ---------- PDF da Revisão (Dizer o Direito) ----------
+   O PDF é lido no próprio navegador pelo PDF.js (baixado só na hora, do
+   cdnjs). As partes saem pela fonte: matéria = negrito grande (14pt), tema =
+   negrito em maiúsculas, título do julgado = negrito itálico, texto = normal.
+   As linhas quebradas são juntadas de volta: parágrafo novo quando a linha
+   anterior terminou antes da margem direita (texto justificado), ou quando a
+   linha começa uma citação ("STJ. …") ou uma enumeração. A marca d'água da
+   lateral (Helvetica, à direita) e o cabeçalho/rodapé são descartados.     */
+const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+function carregarPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((ok, erro) => {
+    const sc = document.createElement("script");
+    sc.src = PDFJS_URL;
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; ok(window.pdfjsLib); };
+    sc.onerror = () => erro(new Error("Não consegui baixar o leitor de PDF. Confira a internet."));
+    document.head.appendChild(sc);
+  });
+}
+async function jurDePdf(buf, aoAndar){
+  const lib = await carregarPdfJs();
+  const doc = await lib.getDocument({ data: buf }).promise;
+  const linhas = [];
+  for (let p = 1; p <= doc.numPages; p++){
+    const pg = await doc.getPage(p);
+    await pg.getOperatorList();                  // carrega as fontes (nome = negrito/itálico)
+    const tc = await pg.getTextContent();
+    const nomeFonte = f => { try { return (pg.commonObjs.get(f) || {}).name || ""; } catch (e) { return ""; } };
+    const porY = [];
+    tc.items.forEach(it => {
+      if (!it.str || !it.str.trim() && !it.width) return;
+      const tr = it.transform, x = tr[4], y = tr[5], tam = Math.hypot(tr[0], tr[1]) || it.height || 11;
+      let L = porY.find(l => Math.abs(l.y - y) < 2.5);
+      if (!L) porY.push(L = { y, itens: [] });
+      L.itens.push({ x, fim: x + (it.width || 0), str: it.str, tam, fonte: nomeFonte(it.fontName) });
+    });
+    porY.sort((a,b) => b.y - a.y);
+    porY.forEach(L => {
+      const itens = L.itens.filter(i => i.x < 540 && !/Helvetica/i.test(i.fonte)).sort((a,b) => a.x - b.x);
+      if (!itens.length) return;
+      let txt = "", ant = null; const cont = {};
+      itens.forEach(i => {
+        if (ant && i.x - ant.fim > i.tam * 0.2 && !/\s$/.test(txt) && !/^\s/.test(i.str)) txt += " ";
+        txt += i.str; ant = i;
+        const k = /Bold.?Italic|BoldOblique|BoldIt/i.test(i.fonte) ? "bi" : /Bold/i.test(i.fonte) ? "b" : "n";
+        cont[k] = (cont[k] || 0) + i.str.replace(/\s/g,"").length;
+      });
+      txt = txt.replace(/\s+/g, " ").trim();
+      if (!txt) return;
+      linhas.push({ p, y: L.y, x: itens[0].x, fim: Math.max(...itens.map(i => i.fim)), txt,
+        estilo: Object.keys(cont).sort((a,b) => cont[b] - cont[a])[0],
+        tam: Math.max(...itens.map(i => i.tam)) });
+    });
+    if (aoAndar) aoAndar(p, doc.numPages);
+  }
+  return jurDeLinhasPdf(linhas);
+}
+function jurDeLinhasPdf(linhas){
+  const lixo = /^(Revis[ãa]o de v[ée]spera|P[áa]gina\s*\d+$|www\.dizerodireito|Concurso de Delegado)|\.{6,}\s*\d+\s*$|^Powered by/i;
+  const margem = Math.max(...linhas.filter(l => l.estilo === "n").map(l => l.fim), 0);
+  const titulo = t => t.toLowerCase().replace(/(^|[\s(—–-])(\S)/g, (m,a,b) => a + b.toUpperCase())
+    .replace(/ (De|Da|Do|Das|Dos|E|Em|No|Na)(?= )/g, w => w.toLowerCase());
+  const out = [];
+  let materia = "", divisor = "", cur = null, ant = null;
+  const fecha = () => { if (cur && cur.paras.length) out.push(cur); cur = null; ant = null; };
+  linhas.forEach(l => {
+    const t = l.txt;
+    if (lixo.test(t) || !/[A-Za-zÀ-ú0-9]/.test(t)) return;      // cabeçalho, rodapé, "–" solto
+    const maius = t === t.toUpperCase() && /[A-ZÀ-Ú]{3}/.test(t);
+    if (l.tam >= 13 && l.estilo !== "n" && maius){ fecha(); materia = titulo(t); divisor = ""; return; }
+    if (l.estilo === "b" && maius && t.length < 160){ fecha(); divisor = t; return; }
+    if (l.estilo === "bi"){
+      if (cur && cur.paras.length) fecha();
+      if (!cur) cur = { materia, divisor, tit: [], paras: [] };
+      cur.tit.push(t); return;
+    }
+    if (!cur) return;
+    const novo = !ant || !cur.paras.length || JUR_CITE.test(t) ||
+      /^(\d+[.)]|[a-z]\)|[ivx]+\)|[•➜☑☒]|\(i+\)|Art\.\s)/i.test(t) ||
+      (ant.fim < margem - 25);
+    if (novo) cur.paras.push(t);
+    else cur.paras[cur.paras.length-1] += " " + t;
+    ant = l;
+  });
+  fecha();
+  return out
+    .map(j => jurCompletar({ origem: j.materia, tema: j.tit.join(" ").replace(/\s+/g," ").trim(),
+      tese: j.paras.map(jurEsc).join("<br>"),
+      ramo: [j.materia, j.divisor].filter(Boolean).join(" > ") }))
+    // só o que é julgado ou súmula (as partes de Medicina Legal, Criminologia… ficam de fora)
+    .filter(d => d.tema && /\b(STF|STJ)\b|S[úu]mula|\(Info\s*\d/i.test(semTags(d.tese)));
+}
+
+/* apaga TODOS os julgados do Caderno de jurisprudências - Informativos.
+   Só depois de explicar o que acontece e de a pessoa digitar EXCLUIR. */
+function limparCadernoJuris(){
+  const n = (DB.juris || []).length;
+  const fundo = el("div","modalFundo");
+  const caixa = el("div","modalCaixa limparCad");
+  caixa.appendChild(el("h3", null, "Limpar o caderno de jurisprudências"));
+  if (!n){
+    caixa.appendChild(el("p","dica","O caderno já está vazio."));
+    const ok = el("button","principal","Fechar"); ok.onclick = () => fundo.remove();
+    const ac = el("div","modalAcoes"); ac.appendChild(ok); caixa.appendChild(ac);
+    fundo.appendChild(caixa); document.body.appendChild(fundo); return;
+  }
+  const aviso = el("div","limparAviso");
+  aviso.innerHTML = "Isto vai <b>apagar os " + n + " julgado(s)</b> do Caderno de jurisprudências – Informativos: " +
+    "pendentes, revisados e dominados, de todas as matérias, com o texto, as anotações e o status de cada um.<br><br>" +
+    "Os cadernos de Teses e de Súmulas <b>não</b> são apagados.<br>" +
+    "Faça antes uma cópia de segurança (Painel › Configuração) se quiser guardar.";
+  caixa.appendChild(aviso);
+  caixa.appendChild(el("p","dica","Para confirmar, digite EXCLUIR abaixo:"));
+  const inp = document.createElement("input");
+  inp.className = "limparConf"; inp.placeholder = "EXCLUIR"; inp.autocomplete = "off"; inp.spellcheck = false;
+  caixa.appendChild(inp);
+  const ac = el("div","modalAcoes");
+  const cancelar = el("button","secundario","Cancelar");
+  const apagar = el("button","perigo","Apagar tudo");
+  apagar.disabled = true;
+  ac.appendChild(cancelar); ac.appendChild(apagar);
+  caixa.appendChild(ac);
+  fundo.appendChild(caixa); document.body.appendChild(fundo);
+  inp.focus();
+  const sair = () => fundo.remove();
+  cancelar.onclick = sair;
+  fundo.addEventListener("click", ev => { if (ev.target === fundo) sair(); });
+  inp.addEventListener("input", () => { apagar.disabled = inp.value.trim() !== "EXCLUIR"; });
+  inp.addEventListener("keydown", ev => { if (ev.key === "Enter" && !apagar.disabled) apagar.click(); });
+  apagar.onclick = () => {
+    if (inp.value.trim() !== "EXCLUIR") return;
+    DB.juris.splice(0, DB.juris.length);
+    salvar(); sair(); render();
+    alert(n + " julgado(s) apagado(s). O caderno está vazio.");
+  };
+}
+
 function importarJuris(){
   const fundo = el("div","modalFundo");
   const caixa = el("div","modalCaixa jurImp");
@@ -19739,25 +19907,41 @@ function importarJuris(){
   caixa.appendChild(el("p","dica",
     "Cole abaixo vários julgados de uma vez: o texto copiado da lista do Buscador Dizer o Direito " +
     "(Ctrl+A e Ctrl+C na página), o conteúdo da Revisão de Jurisprudência ou o que a extensão copiou. " +
-    "Também dá para abrir o arquivo .html da Revisão. Julgados que já estão no caderno são ignorados."));
+    "Também dá para abrir o arquivo da Revisão (.html ou .pdf). Julgados que já estão no caderno são ignorados."));
   const ta = document.createElement("textarea");
   ta.className = "modalTexto";
   ta.placeholder = "Origem: STJ - Informativo: 898\nA injúria racial gera dano moral presumido; ...\nDireito Penal > Crimes contra a honra > Geral\nCaso hipotético: ...\nSTJ. 5ª Turma. REsp 2.251.248-MG, ... (Info 898).";
   caixa.appendChild(ta);
-  let htmlColado = "";
+  let htmlColado = "", pdfLidos = null;
   ta.addEventListener("paste", ev => {
+    pdfLidos = null;
     htmlColado = (ev.clipboardData && ev.clipboardData.getData("text/html")) || "";
     setTimeout(ler, 0);
   });
-  ta.addEventListener("input", () => { if (!ta.value.trim()) { htmlColado = ""; prev.innerHTML = ""; } });
+  ta.addEventListener("input", () => {
+    if (!ta.value.startsWith("[arquivo] ")) pdfLidos = null;
+    if (!ta.value.trim()) { htmlColado = ""; prev.innerHTML = ""; }
+  });
 
   const barraArq = el("div","jurImpArq");
   const inpArq = document.createElement("input");
-  inpArq.type = "file"; inpArq.accept = ".html,.htm,.txt,.json"; inpArq.style.display = "none";
-  const bArq = el("button","secundario","📄  Abrir arquivo .html");
+  inpArq.type = "file"; inpArq.accept = ".html,.htm,.txt,.json,.pdf"; inpArq.style.display = "none";
+  const bArq = el("button","secundario","📄  Abrir arquivo (.html ou .pdf)");
   bArq.onclick = () => inpArq.click();
   inpArq.onchange = () => {
     const f = inpArq.files[0]; if (!f) return;
+    if (/\.pdf$/i.test(f.name)){
+      htmlColado = ""; ta.value = "[arquivo] " + f.name;
+      prev.innerHTML = ""; prev.appendChild(el("div","jurImpSub","Lendo o PDF…"));
+      confirmar.disabled = true;
+      f.arrayBuffer().then(buf => jurDePdf(buf, (p, n) => {
+        prev.innerHTML = ""; prev.appendChild(el("div","jurImpSub","Lendo o PDF… página " + p + " de " + n));
+      })).then(lista => { pdfLidos = lista; ler(); })
+        .catch(e => { prev.innerHTML = ""; prev.appendChild(el("div","cronoAviso",
+          "Não consegui ler o PDF: " + (e && e.message || e))); });
+      return;
+    }
+    pdfLidos = null;
     const r = new FileReader();
     r.onload = () => {
       const conteudo = String(r.result || "");
@@ -19791,7 +19975,7 @@ function importarJuris(){
   function ler(){
     prev.innerHTML = "";
     const texto = ta.value.startsWith("[arquivo] ") ? "" : ta.value;
-    achados = jurLerColagem(texto, htmlColado);
+    achados = pdfLidos || jurLerColagem(texto, htmlColado);
     confirmar.disabled = !achados.length;
     if (!achados.length){
       if (ta.value.trim()) prev.appendChild(el("div","cronoAviso",
@@ -19815,6 +19999,8 @@ function importarJuris(){
       const sel = document.createElement("select");
       const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "— sem matéria (escolho depois) —";
       sel.appendChild(o0);
+      const oN = document.createElement("option"); oN.value = "__nao__"; oN.textContent = "— não importar este grupo —";
+      sel.appendChild(oN);
       matsVisiveis().forEach(m => { const o = document.createElement("option"); o.value = m; o.textContent = m; sel.appendChild(o); });
       if (!(k in escolha)) escolha[k] = normalizarMat(k) ||
         normalizarMat(k.replace(/\s*[(—–-].*$/, "")) || "";
@@ -19835,7 +20021,9 @@ function importarJuris(){
   confirmar.onclick = () => {
     if (!achados.length){ ler(); if (!achados.length) return; }
     garantirCadernos();
-    const dados = achados.map(d => Object.assign({}, d, { mat: escolha[d.origem || "(sem matéria)"] || "" }));
+    const dados = achados.filter(d => escolha[d.origem || "(sem matéria)"] !== "__nao__")
+      .map(d => Object.assign({}, d, { mat: escolha[d.origem || "(sem matéria)"] || "" }));
+    if (!dados.length){ alert("Nenhum grupo marcado para importar."); return; }
     const r = aplicarJuris(dados);
     sair();
     let aviso = r.novos + " julgado(s) importado(s).";
@@ -20011,6 +20199,11 @@ function telaJuris(){
     barra.appendChild(b);
     barra.appendChild(el("span","dicaImportar",
       "captura no Buscador com Alt+Shift+J e cola aqui"));
+    barra.appendChild(el("span","flex"));
+    const bL = el("button","btnLimparCad","🗑  Limpar caderno");
+    bL.title = "Apagar todos os julgados deste caderno";
+    bL.onclick = limparCadernoJuris;
+    barra.appendChild(bL);
     tela.appendChild(barra);
   }
   const lista = DB.juris;
@@ -20050,14 +20243,14 @@ function telaJuris(){
     barraF.appendChild(el("span","flex"));
     const cartoesJ = modoCad("JUR") === "cartoes";
     const bAlt = cartoesJ
-      ? el("button","btnAlturas naBarra", aberto ? "⇲ mostrar inteiro" : "⇱ resumir")
+      ? el("button","btnAlturas naBarra", aberto ? "⇲ mostrar tudo" : "⇱ resumir")
       : el("button","btnAlturas naBarra", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
     bAlt.title = cartoesJ
-      ? (aberto ? "Mostrar as teses inteiras" : "Mostrar só o começo de cada tese")
+      ? (aberto ? "Mostrar o texto de todos os julgados" : "Mostrar só o título de cada julgado")
       : aberto
       ? "Voltar cada tese para uma linha só"
       : "Mostrar as teses inteiras, sem cortar o texto";
-    bAlt.onclick = () => { alturaCad.JUR = !aberto; render(); };
+    bAlt.onclick = () => { alturaCad.JUR = !aberto; jurAbertos.clear(); render(); };
     barraF.appendChild(bAlt);
     barraF.appendChild(seletorModoCad("JUR"));
     tela.appendChild(barraF);
@@ -20118,13 +20311,15 @@ function telaJuris(){
     c.appendChild(tit);
 
     const box = el("div","cadJurBox");
+    // "resumir": só o título; o botão ▾ abre este julgado sem abrir os outros
+    const fechado = aberto && !jurAbertos.has(e);
+    if (fechado) c.classList.add("soTitulo");
     const partes = jurDividirTese(e.tese);
     const junta = () => partes.cite ? partes.corpo + "<br>" + partes.cite : partes.corpo;
     const tdC = tdTextoRico(partes.corpo, v => { partes.corpo = v; e.tese = junta(); });
     tdC.classList.add("cadCardCorpo");
-    if (aberto) tdC.classList.add("resumido");
-    box.appendChild(tdC);
-    if (partes.cite){
+    if (!fechado) box.appendChild(tdC);
+    if (partes.cite && !fechado){
       const tdCi = tdTextoRico(partes.cite, v => { partes.cite = v; e.tese = junta(); });
       tdCi.classList.add("cadJurCite");
       box.appendChild(tdCi);
@@ -20133,6 +20328,12 @@ function telaJuris(){
     st.classList.add("cadChipCel","cadStatus");
     pe.appendChild(st);
     pe.appendChild(el("span","flex"));
+    if (aberto){
+      const bVer = el("button","btnVerJur", fechado ? "▾ ver tudo" : "▴ recolher");
+      bVer.title = fechado ? "Mostrar o texto deste julgado" : "Voltar a mostrar só o título";
+      bVer.onclick = () => { if (fechado) jurAbertos.add(e); else jurAbertos.delete(e); render(); };
+      pe.appendChild(bVer);
+    }
     info.classList.add("cadPeCel"); x.classList.add("cadPeCel");
     pe.appendChild(info); pe.appendChild(x);
     box.appendChild(pe);
@@ -20149,38 +20350,60 @@ function telaJuris(){
     alert("Não há linha em branco para tirar nesta matéria.");
   };
 
-  const comItens = [], semItens = [];
-  matsJur().forEach(mat => {
-    const itens = lista.filter(e => e.mat === mat);
-    if (itens.length) comItens.push({ mat, itens }); else semItens.push(mat);
+  /* Três partes, como no Caderno de erros do TEC: pendentes, revisados e
+     dominados. Trocar o Status leva o julgado para a parte certa. */
+  const FASES_JUR = {
+    Pendente: { titulo:"CADERNO DE JURISPRUDÊNCIAS   -   JULGADOS PENDENTES DE REVISÃO", conta:"pendente(s)",
+      vazio:"Nenhum julgado pendente. Clique no + de uma matéria para abrir uma linha, ou importe julgados." },
+    Revisado: { titulo:"JULGADOS REVISADOS", conta:"revisado(s)",
+      vazio:"Nenhum julgado revisado ainda. Troque o Status para \"Revisado\" e ele desce para cá." },
+    Dominado: { titulo:"JULGADOS DOMINADOS", conta:"dominado(s)",
+      vazio:"Nenhum julgado dominado ainda. Troque o Status para \"Dominado\" e ele desce para cá." }
+  };
+  let semItensPend = [];
+  FASES.forEach(fase => {
+    const fj = FASES_JUR[fase.nome] || { titulo: fase.titulo, conta: fase.conta, vazio: fase.vazio };
+    const sec = el("div","secCaderno " + fase.cls);
+    sec.appendChild(el("span","tx", fj.titulo));
+    tela.appendChild(sec);
+
+    const comItens = [], semItens = [];
+    matsJur().forEach(mat => {
+      const itens = lista.filter(e => e.mat === mat && faseDe(e.status) === fase.nome);
+      if (itens.length) comItens.push({ mat, itens }); else semItens.push(mat);
+    });
+    if (fase.nome === "Pendente") semItensPend = semItens;
+    const total = comItens.reduce((a,x) => a + x.itens.length, 0);
+    if (total) tela.appendChild(el("div","resumoFase",
+      total + " julgado(s) em " + comItens.length + " matéria(s)." +
+      (filtro ? " Filtrado por " + filtro + "." : "")));
+
+    comItens.forEach(({ mat, itens }) => {
+      itens.sort((a,b) => String(b.data||"").localeCompare(String(a.data||"")));
+      const pend = fase.nome === "Pendente";
+      tela.appendChild(faixaDeMateria(mat, itens.length, fj.conta,
+        pend ? () => tirarBranco(mat) : null, pend ? () => novaLinha(mat) : null));
+      if (emCartoes){
+        const grade = el("div","cadCartoes");
+        itens.forEach((e,li) => grade.appendChild(montarCartaoJur(e, li)));
+        tela.appendChild(grade);
+        return;
+      }
+      const t = tabela(cab, larg);
+      t.classList.add("cadZeb");
+      if (aberto) t.classList.add("cheia");
+      t.style.margin = "0 10px";
+      t.style.width = "calc(100% - 20px)";
+      itens.forEach((e,li) => t.tbody.appendChild(montarLinhaJur(e, li)));
+      tela.appendChild(t);
+    });
+
+    if (!total) tela.appendChild(el("div","vazioAviso", fj.vazio));
+    // matérias sem nenhum julgado pendente: etiquetas com o +, logo abaixo dos pendentes
+    if (fase.nome === "Pendente")
+      chipsSemLinha(tela, semItensPend, novaLinha,
+        "Sem julgado pendente — clique no + para abrir uma linha:");
   });
-  const total = comItens.reduce((a,x) => a + x.itens.length, 0);
-  if (total) tela.appendChild(el("div","resumoFase",
-    total + " julgado(s) anotado(s) em " + comItens.length + " matéria(s)." +
-    (filtro ? " Filtrado por " + filtro + "." : "")));
-
-  comItens.forEach(({ mat, itens }) => {
-    itens.sort((a,b) => String(b.data||"").localeCompare(String(a.data||"")));
-    tela.appendChild(faixaDeMateria(mat, itens.length, "julgado(s)",
-      () => tirarBranco(mat), () => novaLinha(mat)));
-
-    if (emCartoes){
-      const grade = el("div","cadCartoes");
-      itens.forEach((e,li) => grade.appendChild(montarCartaoJur(e, li)));
-      tela.appendChild(grade);
-      return;
-    }
-    const t = tabela(cab, larg);
-    t.classList.add("cadZeb");
-    if (aberto) t.classList.add("cheia");
-    t.style.margin = "0 10px";
-    t.style.width = "calc(100% - 20px)";
-    itens.forEach((e,li) => t.tbody.appendChild(montarLinhaJur(e, li)));
-    tela.appendChild(t);
-  });
-
-  if (!total) tela.appendChild(el("div","vazioAviso",
-    "Nenhum julgado anotado ainda. Clique no + de uma matéria para abrir a primeira linha."));
 
   /* julgados que chegaram sem matéria reconhecida não podem sumir: ficam aqui,
      com um seletor na frente, até você dizer em que matéria eles entram */
@@ -20220,9 +20443,6 @@ function telaJuris(){
     tela.appendChild(t);
     }
   }
-
-  chipsSemLinha(tela, semItens, novaLinha,
-    "Sem julgado anotado — clique no + para abrir uma linha:");
 
   const leg = el("div","nota centro");
   leg.style.fontSize = "10px"; leg.style.color = "#8794a8";
@@ -29915,9 +30135,29 @@ document.addEventListener("click", () => {
 });
 
 /* id vazio abre a mat\u00e9ria inteira, uma se\u00e7\u00e3o atr\u00e1s da outra */
+/* botão "voltar ao início" do caderno de conteúdo: canto inferior direito,
+   aparece depois de rolar um pouco. Fica dentro da #tela, então some sozinho
+   quando você troca de tela. */
+function botaoVoltaTopo(tela){
+  const b = el("button","matVoltaTopo","↑");
+  b.title = "Voltar ao início";
+  b.setAttribute("aria-label","Voltar ao início");
+  b.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  tela.appendChild(b);
+  const ver = () => b.classList.toggle("on", window.scrollY > 300);
+  ver();
+  if (!window.__voltaTopoLigado){
+    window.__voltaTopoLigado = true;
+    window.addEventListener("scroll", () => {
+      const x = document.querySelector("#tela .matVoltaTopo");
+      if (x) x.classList.toggle("on", window.scrollY > 300);
+    }, { passive: true });
+  }
+}
 function telaMat(mat, id){
   const M = MATS[mat];
   const tela = document.getElementById("tela");
+  botaoVoltaTopo(tela);
   const todas = !id;
   const sec = todas ? null : secDe(mat, id);
 
@@ -32046,7 +32286,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <tr><td style="background:#dfe3e8;font-weight:700;text-align:center">Colaboração</td><td>- Espontânea</td></tr>
 <tr><td style="background:#dfe3e8;font-weight:700;text-align:center">Benefícios</td><td>- Redução da pena <span class="rd">(1/3 a 2/3)</span>;<br/>- Pena ser cumprida em regime aberto ou semiaberto;<br/>- Perdão judicial;<br/>- Substituição da PPL p/ PRD.</td></tr>
 </table>
-<div class="note">*Os requisitos são cumulativos.</div>
+<div class="note">*Os requisitos não são cumulativos.</div>
 <ul class="dash">
 <li>A colaboração pode ser firmada <b>em qualquer fase da persecução penal</b>, inclusive após a denúncia.</li>
 <li>Admite-se:<ul class="dash"><li>ação controlada;</li><li>infiltração de agentes.</li></ul></li>
@@ -32305,7 +32545,10 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <li>Não cabe HC para crime de consumo pessoal.</li>
 <li>Juiz pode, sucessivamente: Admoestação verbal e Multa (para fundo nacional antidrogas).</li>
 </ul>
-<div class="balloon b-verm"><div class="bt">Penas (prescrevem em 2 anos)</div><ul class="plain"><li>Advertência</li><li>Prestação de serviços à comunidade (máx 5 meses) → reincidência específica: prazo máximo 10 meses — NÃO FOI MANTIDA PELO STF EM CASO DE PORTE DE MACONHA.</li><li>Medida educativa ou curso educativo (máx 5 meses) → reincidência específica: prazo máximo 10 meses</li></ul></div>
+<div class="balloon b-verm"><div class="bt">Penas do art. 28 (prescrevem em 2 anos)</div><ul class="plain"><li>Advertência</li><li>PSC* (máx. 5 meses; reincidência específica: máx. 10 meses). <b>Afastada pelo STF no porte de maconha</b> (ilícito administrativo).</li><li>Medida educativa de comparecimento a programa ou curso educativo (máx. 5 meses; reincidência específica: máx. 10 meses)</li></ul></div>
+<div class="note">⚠️ <b>STF (Tema 506)</b> vale apenas para <b>maconha</b>. Para as demais drogas, o art. 28 continua sendo <b>crime</b>, com as três penas.</div>
+<div class="note">⚠️ <b>Presunção de usuário (maconha)</b>: até <b>40 g ou 6 plantas fêmeas</b>. É presunção <b>relativa</b>: pode configurar tráfico mesmo abaixo desse limite, se houver outros indícios (balança, embalagens, anotações etc.).</div>
+<div class="note">*PSC = Prestação de Serviços à Comunidade</div>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">2</div><h3>Causas de aumento e a Inexistência de Modalidade Qualificada</h3></div>
@@ -32330,7 +32573,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <li><b>Não existe modalidade qualificada</b> expressamente prevista na Lei de Drogas.</li>
 <li>A jurisprudência também não reconhece qualificadoras específicas para os crimes nela previstos.</li>
 </ul>
-<div class="note">Obs: <b>Tráfico intermunicipal</b> &gt; Não majora a pena; <b>Tráfico em transporte público</b> &gt; Precisa da efetiva venda. Sem isso, não majora; <b>Tráfico em frente à escola</b> em horário que não tem aula e não há pessoas pelo local = Não majora (Info 622).</div>
+<div class="note">Obs:<br/><b>Tráfico intermunicipal</b> &gt; Não majora a pena;<br/><b>Tráfico em transporte público</b> &gt; Precisa da efetiva venda. Sem isso, não majora;<br/><b>Tráfico em frente à escola</b> em horário que não tem aula e não há pessoas pelo local = Não majora (Info 622).</div>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">3</div><h3>Tráfico Privilegiado (art. 33, § 4º)</h3></div>
@@ -32371,13 +32614,14 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <div class="balloon b-azul"><div class="bt">Com preponderância sobre o art. 59 do CP, o juiz considerará</div><ul class="plain"><li>A <b>natureza</b> da substância ou produto;</li><li>A <b>quantidade</b> da droga;</li><li>A <b>personalidade</b> do agente;</li><li>A <b>conduta social</b> do agente.</li></ul></div>
 </section>
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">8</div><h3>Apreensão de bens e uso</h3></div>
+<div class="card-head"><div class="num">8</div><h3>Apreensão de bens e uso (arts. 61 e 62)</h3></div>
 <ul class="dash">
-<li>A apreensão deve ser comunicada imediatamente;</li>
-<li>Avaliação dos bens apreendidos</li>
-<li>10 dias para <b>FUNAD</b> avaliar o interesse público para as forças de segurança fazerem uso dos bens apreendidos</li>
-<li>5 dias para <b>FUNAD</b> e <b>MP</b> se manifestarem sobre a avaliação dos bens apreendidos</li>
+<li>Apreensão comunicada <b>imediatamente</b> pela polícia judiciária ao juiz → juiz tem <b>30 dias</b> para determinar a <b>alienação</b> (exceto armas)</li>
+<li>Avaliação: <b>5 dias</b> (oficial de justiça) ou <b>até 10 dias</b> (avaliador especializado)</li>
+<li><b>5 dias</b> para órgão gestor do <b>Funad</b>, <b>MP</b> e interessado se manifestarem sobre a avaliação → juiz homologa → leilão (<b>mín. 50%</b> da avaliação)</li>
+<li>Uso pelas forças de segurança: órgão gestor do <b>Funad</b> tem <b>10 dias</b> para avaliar o interesse público e indicar o órgão → prioridade para quem participou da investigação/repressão → exige <b>autorização judicial</b>, <b>oitiva do MP</b> e <b>prévia avaliação</b></li>
 </ul>
+<div class="note">⚠️ <b>Dois prazos de 10 dias</b>: avaliação por avaliador especializado × Funad decidir o interesse público. Não confundir!</div>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">9</div><h3>Destruição de drogas</h3></div>
