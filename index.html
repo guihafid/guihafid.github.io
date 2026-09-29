@@ -301,6 +301,42 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cronoColaOk{font-size:11px;color:#1b5e20;background:#EAF7EC;border:1px solid #B6DEB9;
   border-radius:5px;padding:5px 8px;margin:0 0 7px;line-height:15px}
 .cronoCorpo table.g td.cronoRecem{background:#EAF7EC !important}
+/* ===== cartão de jurisprudência no padrão da Revisão (prefixo cadJur) ===== */
+.cadCard.cadJur{padding:0;border:0;box-shadow:none;background:transparent;border-radius:0}
+.cadJur .cadJurMat{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#7a5a12;font-weight:bold;
+  background:#FFF4CC;border-radius:6px;padding:3px 8px;margin:0 0 6px;width:fit-content}
+.cadJur .cadJurTit{display:block;font-weight:700;font-style:italic;color:#2b2b2b;background:#faf7f2;
+  border:2px solid #7a1f1f;padding:8px 12px;border-radius:6px;line-height:1.4;margin-bottom:-1px;
+  position:relative;z-index:1;font-size:15px;text-decoration:none}
+.cadJur a.cadJurTit:hover{text-decoration:underline;color:#7a1f1f}
+.cadJur .cadJurTit.vazio{font-weight:normal;color:#9aa5b6}
+.cadJur .cadJurBox{border:2px dotted #8a8a8a;border-top:none;border-radius:0 0 6px 6px;
+  padding:12px 16px 8px;background:#fff}
+.cadJur td.cadCardCorpo .cxRico{font-size:14.5px;line-height:1.6;color:#222;padding:2px}
+.cadJur td.cadJurCite{display:block;border:0 !important;padding:0 !important;background:transparent !important}
+.cadJur td.cadJurCite .cxRico{height:auto !important;min-height:20px;overflow:visible;margin-top:9px;
+  font-size:13px;line-height:1.5;color:#555;background:#f4f1ec;border-radius:5px;padding:7px 10px;
+  font-weight:600;border-left:3px solid #7a1f1f;text-align:left;white-space:normal}
+.cadJur .cadJurPe{display:flex;align-items:center;gap:10px;margin-top:9px;padding-top:7px;border-top:1px dashed #e3ddd3}
+.cadJur .cadJurPe .flex{flex:1}
+.cadJur .cadJurPe td{display:inline-block}
+.cadJur .cadJurPe td.cadStatus select{border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:2px 8px;
+  font:bold 11.5px Arial;height:24px;cursor:pointer}
+.cadJur .cadJurPe td.cadStatus.stPend select{background:#FCE4D6;color:#833C00}
+.cadJur .cadJurPe td.cadStatus.stRev select{background:#C6EFCE;color:#006100}
+.cadJur .cadJurPe td.cadStatus.stDom select{background:#FFE699;color:#7F4E00}
+.cadJur .cadJurMat td select{border:0;background:transparent;font:bold 11.5px Arial;color:#7a5a12}
+@media (max-width:560px){ .cadJur .cadJurBox{padding:10px 10px 6px} .cadJur .cadJurTit{font-size:14px} }
+/* importar julgados */
+.jurImp .jurImpArq{margin:6px 0 2px}
+.jurImp .jurImpSub{font-size:12px;font-weight:bold;color:#1F3864;margin:10px 0 5px}
+.jurImp .jurImpRolo{max-height:30vh;overflow:auto;border:1px solid #dbe3ee;border-radius:5px}
+.jurImp table.jurImpTab{width:100%;border-collapse:collapse;margin:0}
+.jurImp table.jurImpTab td{padding:5px 8px;border:0;border-bottom:1px solid #eef1f6;font-size:12px;vertical-align:middle}
+.jurImp td.jurImpOrig{font-weight:bold;color:#333}
+.jurImp td.jurImpQtd{color:#7a8595;text-align:right;white-space:nowrap}
+.jurImp table.jurImpTab select{width:100%;font-size:12px;padding:3px 4px}
+.jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
 .cadModoSeg button{border:0;background:#fff;color:#5a6a80;font:bold 11px Arial;padding:5px 10px;cursor:pointer}
@@ -18633,7 +18669,13 @@ function aplicarJuris(dados){
   dados.forEach(d => {
     const chave = String(d.temaUrl || d.tema || "").trim();
     vistos.push(chave);
-    if (chave && lista.some(e => String(e.temaUrl || e.tema || "").trim() === chave)){
+    // repetido = mesmo link, OU mesmo título com o mesmo texto (um veio com link
+    // e o outro sem). Mesmo título com texto diferente (ex.: STJ e STF) não é repetido.
+    const url = String(d.temaUrl || "").trim(), tit = jurNorm(d.tema);
+    const corpo = x => jurNorm(semTags(String(x || "").replace(/<br\s*\/?>/gi," "))).slice(0, 300);
+    const tx = corpo(d.tese);
+    if (chave && lista.some(e => (url && String(e.temaUrl || "").trim() === url) ||
+                                  (tit && jurNorm(e.tema) === tit && corpo(e.tese) === tx))){
       repetidos++; return;
     }
     const mat = normalizarMat(d.mat);
@@ -18651,6 +18693,7 @@ function aplicarJuris(dados){
       status: "Pendente",
       dataRev: ""
     });
+    if (d.ramo) lista[lista.length-1].ramo = String(d.ramo);
     novos++;
   });
 
@@ -18891,6 +18934,22 @@ function seletorModoCad(qual){
 /* monta um cartão com as células que a tabela usaria.
    o = { fase, tit, titVazio, titUrl, chips:[[rótulo, td|texto|null]], corpo:td,
          obs:html, rodape:[td...], resumido:bool, antesCorpo:elemento } */
+/* separa a citação (as últimas linhas que começam com "STJ." / "STF. Plenário"...)
+   do resto do texto, só para mostrar em caixinha própria. Se não achar
+   citação no fim, devolve o texto intacto. */
+const JUR_CITE = /^\s*(STF|STJ|TSE|TST|STM|TNU|CNJ|TRF\s*-?\s*\d|TJ[A-Z]{2,4})\s*[\.\-–,]/;
+function jurDividirTese(html){
+  const orig = String(html || "");
+  const h = orig.replace(/<\/(p|div)>\s*/gi, "<br>").replace(/<(p|div)(\s[^>]*)?>/gi, "");
+  const linhas = h.split(/<br\s*\/?>/i);
+  while (linhas.length && !semTags(linhas[linhas.length-1]).trim()) linhas.pop();
+  let k = linhas.length;
+  while (k > 0 && JUR_CITE.test(semTags(linhas[k-1]).replace(/\u00a0/g," "))) k--;
+  if (k === linhas.length || k === 0) return { corpo: orig, cite: "" };
+  let corpo = linhas.slice(0, k);
+  while (corpo.length && !semTags(corpo[corpo.length-1]).trim()) corpo.pop();
+  return { corpo: corpo.join("<br>"), cite: linhas.slice(k).join("<br>") };
+}
 function cadCartao(o){
   const c = el("div","cadCard " + (o.fase ? o.fase.st : ""));
   const topo = el("div","cadCardTopo");
@@ -19489,22 +19548,142 @@ function telaCadConteudo(){
 }
 
 /* ---------- caderno de jurisprudências ---------- */
+/* ---------- ler julgados colados ou de um arquivo ----------
+   Três formatos:
+   1) o que a extensão copia (lista em JSON) — como sempre;
+   2) a página da Revisão de Jurisprudência (arquivo .html ou copiado dela):
+      cada <article class="julgado"> vira um julgado, e o título da área
+      ("Direito Penal"...) diz a matéria;
+   3) o texto copiado da lista do Buscador Dizer o Direito: cada bloco começa
+      com "Origem: STJ - Informativo: 898", depois o título, a linha de assunto
+      ("Direito Penal > Crimes contra a honra > Geral") e o texto.         */
+const jurEsc = t => String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const jurNorm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+// tribunal, informativo e data a partir do próprio texto
+function jurCompletar(o){
+  const txt = semTags(String(o.tese || "").replace(/<br\s*\/?>/gi, "\n"));
+  let trib = o.trib || "";
+  if (!trib){
+    const m = txt.match(/(?:^|\n)\s*(STF|STJ|TSE|TST)\s*\./) || txt.match(/\b(STF|STJ)\.\s/) ||
+              txt.match(/-(STF|STJ)\b/);
+    trib = m ? m[1] : (/s[uú]mula vinculante/i.test(txt) ? "STF" : "");
+  }
+  let info = o.info || "";
+  if (!info){ const ms = [...txt.matchAll(/\(Info\s*(\d+)/gi)]; if (ms.length) info = ms[ms.length-1][1]; }
+  let data = o.data || "";
+  if (!data){
+    const m = txt.match(/julgad[oa]s?\s+(?:dia\s+)?em\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{4})/i);
+    if (m) data = m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
+  }
+  return Object.assign({}, o, { trib, info: String(info), data });
+}
+function jurDeRevisao(doc){
+  const out = [];
+  const areas = doc.querySelectorAll("section.area");
+  (areas.length ? [...areas] : [doc.body]).forEach(area => {
+    const h2 = area.querySelector(".area-head h2");
+    const origem = h2 ? h2.textContent.trim() : "";
+    let divisor = "";
+    area.querySelectorAll(".divisor, article.julgado").forEach(n => {
+      if (n.classList.contains("divisor")){ divisor = n.textContent.trim(); return; }
+      const jt = n.querySelector(".jt"), jb = n.querySelector(".jbox");
+      if (!jb) return;
+      // julgado sem título próprio: o tema acima dele vira o título
+      const pedacos = [...jb.children].map(ch =>
+        ch.tagName === "P" ? ch.innerHTML.trim() : ch.outerHTML).filter(Boolean);
+      out.push(jurCompletar({ origem, tema: (jt ? jt.textContent : divisor).replace(/\s+/g," ").trim(),
+        tese: pedacos.join("<br>"), ramo: [origem, divisor].filter(Boolean).join(" > ") }));
+    });
+  });
+  return out;
+}
+function jurDeBuscador(texto, links){
+  const t = String(texto || "").replace(/\r/g, "");
+  const RX = /Origem:\s*([A-Za-z]{2,5})\s*-\s*Informativo:\s*(\d+)/g;
+  const marcas = [...t.matchAll(RX)];
+  const lixo = /^(Ver Julgado|Marcar como lido|Julgado lido|Favoritar|Desfavoritar|Adicionar aos cadernos|Remover dos cadernos)$/i;
+  const out = [];
+  marcas.forEach((m, i) => {
+    const fim = i + 1 < marcas.length ? marcas[i+1].index : t.length;
+    const linhas = t.slice(m.index + m[0].length, fim).split("\n")
+      .map(l => l.replace(/\u00a0/g," ").trim()).filter(l => l && !lixo.test(l));
+    if (!linhas.length) return;
+    let ib = linhas.findIndex(l => /\s>\s/.test(l) && l.length < 200);
+    let tema, ramo = "", resto;
+    if (ib >= 1){ tema = linhas.slice(0, ib).join(" "); ramo = linhas[ib]; resto = linhas.slice(ib + 1); }
+    else { tema = linhas[0]; resto = linhas.slice(1); }
+    const url = (links || []).find(a => jurNorm(a.texto) === jurNorm(tema));
+    out.push(jurCompletar({ origem: ramo.split(">")[0].trim(), tema, ramo,
+      trib: m[1].toUpperCase(), info: m[2], temaUrl: url ? url.href : "",
+      tese: resto.map(jurEsc).join("<br>") }));
+  });
+  return out;
+}
+// o que veio (texto e, se houver, o HTML da área de transferência) -> julgados
+function jurLerColagem(texto, html){
+  const t = String(texto || "").trim();
+  if (/^[\[{]/.test(t)){
+    try {
+      const d = JSON.parse(t);
+      return (Array.isArray(d) ? d : [d]).map(x => Object.assign({ origem: x.mat || "" }, x));
+    } catch (e) {}
+  }
+  let links = [];
+  if (html){
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    if (doc.querySelector("article.julgado .jt")) return jurDeRevisao(doc);
+    links = [...doc.querySelectorAll("a[href]")].map(a => ({ href: a.href, texto: a.textContent }))
+      .filter(a => /^https?:/.test(a.href) && a.texto.trim().length > 15);
+  }
+  return jurDeBuscador(t, links);
+}
+
 function importarJuris(){
   const fundo = el("div","modalFundo");
-  const caixa = el("div","modalCaixa");
+  const caixa = el("div","modalCaixa jurImp");
   caixa.appendChild(el("h3", null, "Importar julgados"));
   caixa.appendChild(el("p","dica",
-    "Cole abaixo o que a extensão copiou no Buscador Dizer o Direito. Cada julgado " +
-    "vira uma linha com Status \"Pendente\" e Anotações em branco. Julgados que " +
-    "já estão no caderno são ignorados."));
+    "Cole abaixo vários julgados de uma vez: o texto copiado da lista do Buscador Dizer o Direito " +
+    "(Ctrl+A e Ctrl+C na página), o conteúdo da Revisão de Jurisprudência ou o que a extensão copiou. " +
+    "Também dá para abrir o arquivo .html da Revisão. Julgados que já estão no caderno são ignorados."));
   const ta = document.createElement("textarea");
   ta.className = "modalTexto";
-  ta.placeholder = '[{"tema":"…","trib":"STJ","info":"878", …}]';
+  ta.placeholder = "Origem: STJ - Informativo: 898\nA injúria racial gera dano moral presumido; ...\nDireito Penal > Crimes contra a honra > Geral\nCaso hipotético: ...\nSTJ. 5ª Turma. REsp 2.251.248-MG, ... (Info 898).";
   caixa.appendChild(ta);
+  let htmlColado = "";
+  ta.addEventListener("paste", ev => {
+    htmlColado = (ev.clipboardData && ev.clipboardData.getData("text/html")) || "";
+    setTimeout(ler, 0);
+  });
+  ta.addEventListener("input", () => { if (!ta.value.trim()) { htmlColado = ""; prev.innerHTML = ""; } });
+
+  const barraArq = el("div","jurImpArq");
+  const inpArq = document.createElement("input");
+  inpArq.type = "file"; inpArq.accept = ".html,.htm,.txt,.json"; inpArq.style.display = "none";
+  const bArq = el("button","secundario","📄  Abrir arquivo .html");
+  bArq.onclick = () => inpArq.click();
+  inpArq.onchange = () => {
+    const f = inpArq.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const conteudo = String(r.result || "");
+      if (/\.(html?)$/i.test(f.name)){ htmlColado = conteudo; ta.value = "[arquivo] " + f.name; }
+      else { htmlColado = ""; ta.value = conteudo; }
+      ler();
+    };
+    r.readAsText(f, "utf-8");
+  };
+  barraArq.appendChild(bArq); barraArq.appendChild(inpArq);
+  caixa.appendChild(barraArq);
+
+  const prev = el("div","jurImpPrev");
+  caixa.appendChild(prev);
 
   const acoes = el("div","modalAcoes");
   const cancelar = el("button","secundario","Cancelar");
   const confirmar = el("button","principal","Importar");
+  confirmar.disabled = true;
   acoes.appendChild(cancelar); acoes.appendChild(confirmar);
   caixa.appendChild(acoes);
   fundo.appendChild(caixa);
@@ -19515,16 +19694,60 @@ function importarJuris(){
   cancelar.onclick = sair;
   fundo.addEventListener("click", ev => { if (ev.target === fundo) sair(); });
 
+  let achados = [], escolha = {};
+  function ler(){
+    prev.innerHTML = "";
+    const texto = ta.value.startsWith("[arquivo] ") ? "" : ta.value;
+    achados = jurLerColagem(texto, htmlColado);
+    confirmar.disabled = !achados.length;
+    if (!achados.length){
+      if (ta.value.trim()) prev.appendChild(el("div","cronoAviso",
+        "Não reconheci nenhum julgado. Copie a lista do Buscador (a partir do “Origem: …”) " +
+        "ou use o botão para abrir o arquivo .html da Revisão."));
+      return;
+    }
+    confirmar.textContent = "Importar " + achados.length + (achados.length === 1 ? " julgado" : " julgados");
+    // uma linha por matéria de origem, com a matéria do app para onde vai
+    const grupos = {};
+    achados.forEach(d => { const k = d.origem || "(sem matéria)"; (grupos[k] = grupos[k] || []).push(d); });
+    prev.appendChild(el("div","jurImpSub",
+      "Encontrei " + achados.length + (achados.length === 1 ? " julgado" : " julgados") +
+      ". Confira para qual matéria do seu caderno vai cada grupo:"));
+    const t = el("table","jurImpTab");
+    Object.keys(grupos).forEach(k => {
+      const tr = el("tr");
+      tr.appendChild(el("td","jurImpOrig", k));
+      tr.appendChild(el("td","jurImpQtd", grupos[k].length + ""));
+      const td = el("td");
+      const sel = document.createElement("select");
+      const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "— sem matéria (escolho depois) —";
+      sel.appendChild(o0);
+      matsVisiveis().forEach(m => { const o = document.createElement("option"); o.value = m; o.textContent = m; sel.appendChild(o); });
+      if (!(k in escolha)) escolha[k] = normalizarMat(k) ||
+        normalizarMat(k.replace(/\s*[(—–-].*$/, "")) || "";
+      sel.value = escolha[k];
+      sel.onchange = () => { escolha[k] = sel.value; };
+      td.appendChild(sel); tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    const rolo = el("div","jurImpRolo"); rolo.appendChild(t);
+    prev.appendChild(rolo);
+    const ex = achados[0];
+    prev.appendChild(el("div","jurImpEx", "Primeiro da lista: " + (ex.tema || "(sem título)") +
+      (ex.trib ? " · " + ex.trib : "") + (ex.info ? " · Info " + ex.info : "")));
+  }
+  ta.addEventListener("keyup", ev => { if (ev.key === "Enter" && ev.ctrlKey) ler(); });
+  ta.addEventListener("change", ler);
+
   confirmar.onclick = () => {
-    let dados;
-    try{ dados = JSON.parse(ta.value.trim()); }
-    catch(e){ alert("Não consegui ler o texto colado. Copie de novo pela extensão."); return; }
+    if (!achados.length){ ler(); if (!achados.length) return; }
     garantirCadernos();
+    const dados = achados.map(d => Object.assign({}, d, { mat: escolha[d.origem || "(sem matéria)"] || "" }));
     const r = aplicarJuris(dados);
     sair();
     let aviso = r.novos + " julgado(s) importado(s).";
     if (r.repetidos) aviso += "\n" + r.repetidos + " já estava(m) no caderno.";
-    if (r.semMat) aviso += "\n" + r.semMat + " sem matéria reconhecida — escolha na coluna Matéria.";
+    if (r.semMat) aviso += "\n" + r.semMat + " sem matéria — escolha no quadro amarelo \"Sem matéria\".";
     alert(aviso);
   };
 }
@@ -19570,11 +19793,24 @@ function janelaInfoJuris(e){
   inpData.addEventListener("change", () => inpData.value = dataBR(paraISO(inpData.value)));
   campo("Data", inpData);
 
+  const selTrib = document.createElement("select");
+  selTrib.className = "areaInfo umaLinha";
+  ["", ...DB.tribunais].forEach(t => { const o = document.createElement("option");
+    o.value = t; o.textContent = t || "—"; selTrib.appendChild(o); });
+  selTrib.value = DB.tribunais.includes(e.trib) ? e.trib : "";
+  campo("Tribunal", selTrib);
+
   const taTema = document.createElement("textarea");
   taTema.className = "areaInfo baixa";
   taTema.value = e.tema || ""; taTema.spellcheck = false;
   taTema.placeholder = "Ex.: Busca domiciliar — consentimento do morador";
-  campo("Conteúdo", taTema);
+  campo("Conteúdo (título)", taTema);
+
+  const inpRamo = document.createElement("input");
+  inpRamo.className = "areaInfo umaLinha";
+  inpRamo.value = e.ramo || ""; inpRamo.spellcheck = false;
+  inpRamo.placeholder = "Ex.: Direito Penal > Crimes contra a honra > Geral";
+  campo("Assunto", inpRamo);
 
   const inpInfo = document.createElement("input");
   inpInfo.className = "areaInfo umaLinha";
@@ -19613,7 +19849,9 @@ function janelaInfoJuris(e){
 
   gravar.onclick = () => {
     e.data = paraISO(inpData.value);
+    e.trib = selTrib.value;
     e.tema = taTema.value;
+    if (inpRamo.value.trim()) e.ramo = inpRamo.value.trim(); else delete e.ramo;
     e.info = inpInfo.value;
     e.obs  = cxObs.innerHTML;
     salvar(); sair(); render();
@@ -19638,7 +19876,9 @@ function celulaInfoJuris(e){
     balao.appendChild(d);
   };
   linha("Data", dataBR(e.data));
+  linha("Tribunal", e.trib);
   linha("Conteúdo", e.tema);
+  linha("Assunto", e.ramo);
   linha("N° Informativo", e.info);
   linha("Anotações", semTags(e.obs || ""));
   balao.appendChild(el("div","pe","clique para preencher ou corrigir"));
@@ -19752,30 +19992,51 @@ function telaJuris(){
     salvar(); render();
   };
   const emCartoes = modoCad("JUR") === "cartoes";
+  /* cartão no padrão da Revisão de Jurisprudência: título em cima (clicável,
+     abre o julgado no Buscador), o texto no meio e a citação numa caixinha
+     embaixo. Tribunal, informativo, data, assunto e anotações ficam no ⓘ. */
   const montarCartaoJur = (e, li, tdMat) => {
-    const [tese, trib, st, info, x] = [...montarLinhaJur(e, li).children];
-    let chInfo = null;
-    if (String(e.info || "").trim()){
-      if (e.infoUrl){
-        chInfo = document.createElement("a");
-        chInfo.href = e.infoUrl; chInfo.target = "_blank"; chInfo.rel = "noopener";
-        chInfo.className = "cadChipLink"; chInfo.title = "Abrir o informativo comentado";
-        chInfo.textContent = String(e.info).trim();
-      } else chInfo = String(e.info).trim();
+    const [, , st, info, x] = [...montarLinhaJur(e, li).children];
+    const fase = FASES.find(f => f.nome === faseDe(e.status));
+    const c = el("div","cadCard cadJur " + fase.st);
+    if (tdMat){
+      const ch = el("div","cadJurMat");
+      ch.appendChild(el("span",null,"Matéria:"));
+      tdMat.classList.add("cadChipCel"); ch.appendChild(tdMat);
+      c.appendChild(ch);
     }
-    return cadCartao({
-      fase: FASES.find(f => f.nome === faseDe(e.status)),
-      resumido: aberto,
-      status: st,
-      chips: [ tdMat ? ["Matéria", tdMat] : null, ["", trib],
-               chInfo ? ["Informativo", chInfo] : null,
-               e.data ? ["", dataBR(e.data)] : null ].filter(Boolean),
-      tit: String(e.tema || "").trim(),
-      titVazio: "Sem título — clique em ⓘ e escreva o conteúdo",
-      titUrl: e.temaUrl || "", titUrlDica: "Abrir só este julgado no Buscador",
-      corpo: tese, obs: e.obs,
-      rodape: [ el("span","flex"), info, x ]
-    });
+    const tema = String(e.tema || "").trim();
+    let tit;
+    if (e.temaUrl && tema){
+      tit = document.createElement("a");
+      tit.href = e.temaUrl; tit.target = "_blank"; tit.rel = "noopener";
+      tit.title = "Abrir este julgado no Buscador Dizer o Direito";
+      tit.textContent = tema;
+    } else tit = el("div", null, tema || "Sem título — clique em ⓘ e escreva o conteúdo");
+    tit.className = "cadJurTit" + (tema ? "" : " vazio");
+    c.appendChild(tit);
+
+    const box = el("div","cadJurBox");
+    const partes = jurDividirTese(e.tese);
+    const junta = () => partes.cite ? partes.corpo + "<br>" + partes.cite : partes.corpo;
+    const tdC = tdTextoRico(partes.corpo, v => { partes.corpo = v; e.tese = junta(); });
+    tdC.classList.add("cadCardCorpo");
+    if (aberto) tdC.classList.add("resumido");
+    box.appendChild(tdC);
+    if (partes.cite){
+      const tdCi = tdTextoRico(partes.cite, v => { partes.cite = v; e.tese = junta(); });
+      tdCi.classList.add("cadJurCite");
+      box.appendChild(tdCi);
+    }
+    const pe = el("div","cadJurPe");
+    st.classList.add("cadChipCel","cadStatus");
+    pe.appendChild(st);
+    pe.appendChild(el("span","flex"));
+    info.classList.add("cadPeCel"); x.classList.add("cadPeCel");
+    pe.appendChild(info); pe.appendChild(x);
+    box.appendChild(pe);
+    c.appendChild(box);
+    return c;
   };
   const tirarBranco = mat => {
     for (let i = lista.length-1; i >= 0; i--){
@@ -19865,7 +20126,7 @@ function telaJuris(){
   const leg = el("div","nota centro");
   leg.style.fontSize = "10px"; leg.style.color = "#8794a8";
   leg.style.margin = "14px 10px 4px";
-  leg.textContent = "ⓘ = Data, Conteúdo, N° Informativo e Anotações";
+  leg.textContent = "ⓘ = Data, Tribunal, Conteúdo, Assunto, N° Informativo e Anotações";
   tela.appendChild(leg);
 }
 
