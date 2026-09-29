@@ -271,6 +271,41 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
   border:1px solid #c9d4e3;border-radius:4px;background:#fff;color:#1F3864}
 .cronoEdital input:focus{outline:none;border-color:#2F5597;background:#FFFDF3}
 .cronoEdital .dica{font-size:10.5px;color:#8794a8;font-style:italic;margin-top:5px}
+/* colar o cronograma do edital (prefixo cronoCola) */
+.cronoEscolha .btn.cronoColaBt{margin-left:auto;font-size:11.5px;padding:4px 10px}
+.cronoCola{margin:0 12px 8px;padding:9px 11px;background:#F5FAF5;border:1px solid #cfe3cf;
+  border-left:4px solid #2E7D32;border-radius:6px}
+.cronoCola .cronoColaRot{font-size:11px;font-weight:bold;color:#2E7D32;text-transform:uppercase;letter-spacing:.4px}
+.cronoCola .cronoColaDica{font-size:10.5px;color:#6b7788;line-height:14px;margin:3px 0 6px}
+.cronoCola textarea.cronoColaTxt{width:100%;box-sizing:border-box;font-size:11.5px;line-height:15px;
+  padding:6px 8px;border:1px solid #c9d4e3;border-radius:4px;resize:vertical;font-family:inherit}
+.cronoCola .cronoColaBts{display:flex;gap:6px;margin:6px 0 0;flex-wrap:wrap}
+.cronoCola .cronoColaSub{font-size:11px;font-weight:bold;color:#1F3864;margin:9px 0 4px}
+.cronoCola .cronoColaRolo{max-height:34vh;overflow:auto;border:1px solid #dbe3ee;border-radius:4px;background:#fff}
+.cronoCola table.cronoColaTab{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
+.cronoCola table.cronoColaTab th{background:#eef2f8;color:#5a6a80;font-size:10px;font-weight:bold;
+  padding:3px 5px;text-align:left;border:0;border-bottom:1px solid #dbe3ee}
+.cronoCola table.cronoColaTab th:nth-child(1){width:22px}
+.cronoCola table.cronoColaTab th:nth-child(2){width:36%}
+.cronoCola table.cronoColaTab th:nth-child(3){width:20%}
+.cronoCola table.cronoColaTab td{font-size:11px;line-height:14px;padding:4px 5px;border:0;
+  border-bottom:1px solid #eef1f6;vertical-align:top;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.cronoCola td.cronoColaEt{font-weight:bold;color:#1F3864}
+.cronoCola td.cronoColaDt{font-weight:bold;color:#2E7D32}
+.cronoCola .cronoColaTroca{font-weight:normal;color:#b86a00;font-size:10px}
+.cronoCola .cronoColaObs{font-weight:normal;color:#8794a8;font-size:10px}
+.cronoCola td.cronoColaOrig{color:#7a8595;font-size:10.5px}
+.cronoCola details.cronoColaFora{margin-top:7px;font-size:10.5px;color:#7a8595}
+.cronoCola details.cronoColaFora summary{cursor:pointer;color:#5a6a80}
+.cronoCola details.cronoColaFora div{padding:2px 0 2px 12px;line-height:14px}
+.cronoColaOk{font-size:11px;color:#1b5e20;background:#EAF7EC;border:1px solid #B6DEB9;
+  border-radius:5px;padding:5px 8px;margin:0 0 7px;line-height:15px}
+.cronoCorpo table.g td.cronoRecem{background:#EAF7EC !important}
+@media (max-width:560px){
+  .cronoCola table.cronoColaTab th:nth-child(4),.cronoCola table.cronoColaTab td:nth-child(4){display:none}
+  .cronoCola table.cronoColaTab th:nth-child(2){width:auto}
+  .cronoCola table.cronoColaTab th:nth-child(3){width:38%}
+}
 /* o emoji não se alinha sozinho no botão: flex centraliza nos dois eixos */
 button.mini{display:inline-flex;align-items:center;justify-content:center;padding:0;
   vertical-align:middle;font-size:11px}
@@ -20000,6 +20035,94 @@ function abrirEdital(num){
   window.open(url, "_blank", "noopener");
 }
 
+/* ---------- colar o cronograma do edital ----------
+   Você cola a tabela do edital (do PDF ou do site, em uma linha ou em
+   várias) e o app acha as datas sozinho. Cada data leva consigo o texto que
+   vem antes dela: é por esse texto que se descobre a etapa. Etapa do edital
+   que não existe aqui (recurso da isenção, foto, pessoa com deficiência...)
+   é deixada de lado.                                                        */
+const cronoSemAcento = s => String(s || "").normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+// o texto colado -> [{ ativ, ini, fim, bruto }] na ordem em que aparecem
+function cronoLerEdital(txt){
+  let t = String(txt || "").replace(/\s+/g, " ");
+  // o que acompanha as datas e não é atividade
+  t = t.replace(/\(\s*hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*\/?\s*DF\s*\)/gi, " ")
+       .replace(/\bDas?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+primeiro\s+dia\s+[àa]s?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+[uú]ltimo\s+dia\b/gi, " ")
+       .replace(/\bAtividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ");
+  const ano = a => a.length === 2 ? "20" + a : a;
+  const iso = (a, m, d) => {
+    const x = a + "-" + String(m).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    return isoDeData(dataDeISO(x)) === x ? x : "";
+  };
+  // "20/7 a 13/8/2026" · "24 a 26/8/2026" · "14 e 15/8/2026" · "2/9/2026" · "1º/11/2026"
+  const RX = /(\d{1,2})[º°]?(?:\/(\d{1,2}))?(?:\/(\d{2,4}))?\s+(?:a|e|até)\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)|(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)/g;
+  const linhas = [];
+  let ult = 0, m;
+  while ((m = RX.exec(t))){
+    const ativ = t.slice(ult, m.index).trim();
+    ult = RX.lastIndex;
+    let ini, fim;
+    if (m[4] != null){
+      const Y = ano(m[6]), M = Number(m[5]);
+      fim = iso(Y, M, m[4]);
+      const Mi = m[2] ? Number(m[2]) : M;
+      const Yi = m[3] ? ano(m[3]) : String(Mi > M ? Number(Y) - 1 : Number(Y));
+      ini = iso(Yi, Mi, m[1]);
+    } else {
+      ini = fim = iso(ano(m[9]), Number(m[8]), m[7]);
+    }
+    if (!ini || !fim || !ativ) continue;
+    linhas.push({ ativ, ini, fim, bruto: m[0].trim() });
+  }
+  return linhas;
+}
+
+// que etapa(s) do cronograma o texto de uma atividade do edital descreve
+function cronoEtapasDoTexto(txt, jaTem){
+  const a = cronoSemAcento(txt);
+  const tem = re => re.test(a);
+  const r = [];
+  const recurso = tem(/recurso/);
+  if (!recurso && !tem(/consulta|situacao|relacao|deferid|resultado|foto|link|convocacao/)){
+    if (tem(/solicitacao de inscric|periodo de inscric|periodo das inscric|inscricoes|realizacao das inscric/)) r.push("inscricao");
+    if (tem(/isencao/) && tem(/solicitacao|pedido|periodo|requerimento/)) r.push("isencao");
+    if (tem(/pagamento/)) r.push("pagamento");
+  }
+  if (!recurso && tem(/\blocais\b|\blocal\b/) && tem(/prova/)){
+    const obj = tem(/objetiva/), dis = tem(/discursiva/);
+    if (obj || !dis) r.push("localObj");
+    if (dis) r.push("localDis");
+  }
+  if (!recurso && tem(/aplicacao/) && tem(/prova/) && !tem(/\blocais\b|\blocal\b/)){
+    if (tem(/objetiva/)) r.push("provaObj");
+    if (tem(/discursiva/)) r.push("provaDis");
+  }
+  if (!recurso && tem(/gabarito/)){
+    if (tem(/definitiv/)) r.push("gabDefO");
+    else if (tem(/consulta/)) r.push("gabPrelimO");
+    else if (tem(/preliminar/)) r.push(jaTem.has("gabPrelimO") ? "gabDefO" : "gabPrelimO");
+  }
+  if (recurso){
+    if (tem(/padrao|discursiva/) && !tem(/objetiva|gabarito/)) r.push("recursoDis");
+    else if (tem(/gabarito|questoes|objetiva/)) r.push("recursoObj");
+  }
+  if (!recurso && tem(/padrao/) && tem(/preliminar|resposta/)) r.push("padraoPrel");
+  if (!recurso && tem(/resultado provisorio/) && tem(/discursiva/)) r.push("resultProv");
+  return r;
+}
+
+// junta as duas coisas: [{ ativ, ini, fim, bruto, etapas:[ids] }]
+function cronoMapearEdital(txt){
+  const jaTem = new Set();
+  return cronoLerEdital(txt).map(l => {
+    const etapas = cronoEtapasDoTexto(l.ativ, jaTem).filter(id => !jaTem.has(id));
+    etapas.forEach(id => jaTem.add(id));
+    return Object.assign(l, { etapas });
+  });
+}
+
 /* janela para preencher / ver / alterar o cronograma de um concurso */
 function janelaCronograma(numInicial){
   if (!DB.concursos.length){
@@ -20030,12 +20153,144 @@ function janelaCronograma(numInicial){
   topo.appendChild(sel);
   const selo = el("span","cronoSelo","");
   topo.appendChild(selo);
+  const bCola = el("button","btn azulzinho cronoColaBt","📋  Colar do edital");
+  bCola.title = "Cole a tabela de datas do edital e o app preenche as etapas sozinho";
+  topo.appendChild(bCola);
   cx.appendChild(topo);
+
+  // painel de colar a tabela do edital (fica entre a escolha e as etapas)
+  const cola = el("div","cronoCola");
+  cola.style.display = "none";
+  cx.appendChild(cola);
+  let recem = new Set();          // etapas preenchidas agora pela colagem (ficam em verde)
 
   const corpo = el("div","cronoCorpo");
   cx.appendChild(corpo);
 
   function concurso(){ return DB.concursos.find(c => c.num === num) || {}; }
+
+  /* ---- colar do edital ---- */
+  const brCurto = iso => iso ? dataBR(iso) : "";
+  function valorAtual(p){
+    const c = concurso(), reg = cronogramaDe(num)[p.id] || {};
+    if (p.tipo === "prova") return c[p.campoData] ? brCurto(c[p.campoData]) : "";
+    if (p.tipo === "periodo") return reg.ini ? brCurto(reg.ini) + (reg.fim && reg.fim !== reg.ini ? " a " + brCurto(reg.fim) : "") : "";
+    return reg.ini ? brCurto(reg.ini) : "";
+  }
+  function valorNovo(p, l){
+    if (p.tipo === "periodo") return brCurto(l.ini) + (l.fim !== l.ini ? " a " + brCurto(l.fim) : "");
+    return brCurto(l.ini);
+  }
+  function fecharCola(){ cola.style.display = "none"; cola.innerHTML = ""; }
+  function abrirCola(){
+    cola.innerHTML = ""; cola.style.display = "";
+    cola.appendChild(el("div","cronoColaRot","Colar o cronograma do edital"));
+    cola.appendChild(el("div","cronoColaDica",
+      "Copie a tabela de datas do edital (do PDF ou do site) e cole abaixo. O app acha as etapas " +
+      "que existem neste cronograma; as outras ficam de fora, e o que faltar você preenche à mão."));
+    const ta = document.createElement("textarea");
+    ta.className = "cronoColaTxt"; ta.rows = 5;
+    ta.placeholder = "Ex.: Período de solicitação de inscrição 20/7 a 13/8/2026 ... Aplicação da prova objetiva 1º/11/2026 ...";
+    cola.appendChild(ta);
+    const res = el("div","cronoColaRes");
+    const bts = el("div","cronoColaBts");
+    const bLer = el("button","btn azulzinho","🔎  Ler as datas");
+    bLer.onclick = () => mostrarCola(ta.value, res);
+    const bNao = el("button","btn","Cancelar");
+    bNao.onclick = fecharCola;
+    bts.appendChild(bLer); bts.appendChild(bNao);
+    cola.appendChild(bts);
+    cola.appendChild(res);
+    // colou? já lê sozinho
+    ta.addEventListener("paste", () => setTimeout(() => mostrarCola(ta.value, res), 0));
+    ta.focus();
+  }
+  function mostrarCola(txt, res){
+    res.innerHTML = "";
+    const c = concurso();
+    const validas = new Set(etapasDe(c).map(p => p.id));
+    const linhas = cronoMapearEdital(txt);
+    if (!linhas.length){
+      res.appendChild(el("div","cronoAviso",
+        "Não achei nenhuma data no texto colado. As datas precisam estar como no edital: " +
+        "20/7/2026, 24 a 26/8/2026 ou 20/7 a 13/8/2026."));
+      return;
+    }
+    const achados = [], fora = [];
+    linhas.forEach(l => {
+      const ids = l.etapas.filter(id => validas.has(id));
+      ids.forEach(id => achados.push({ p: CRONO_PROVA.find(x => x.id === id), l }));
+      if (!ids.length) fora.push({ l, motivo: l.etapas.length
+        ? "este concurso não tem essa prova" : "não existe no cronograma do app" });
+    });
+    achados.sort((a, b) => CRONO_PROVA.indexOf(a.p) - CRONO_PROVA.indexOf(b.p));
+
+    if (!achados.length){
+      res.appendChild(el("div","cronoAviso",
+        "Achei " + linhas.length + " datas, mas nenhuma corresponde às etapas deste cronograma."));
+    } else {
+      res.appendChild(el("div","cronoColaSub",
+        "Encontrei " + achados.length + (achados.length === 1 ? " etapa" : " etapas") +
+        ". Desmarque o que não quiser trazer:"));
+      const t = el("table","cronoColaTab");
+      const cab = el("tr");
+      ["", "Etapa do app", "Data", "No edital"].forEach(h => cab.appendChild(el("th", null, h)));
+      t.appendChild(cab);
+      const marcas = [];
+      achados.forEach(a => {
+        const tr = el("tr");
+        const tdC = el("td");
+        const ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = true;
+        tdC.appendChild(ck); tr.appendChild(tdC);
+        marcas.push({ ck, a });
+        tr.appendChild(el("td","cronoColaEt", a.p.rot));
+        const tdD = el("td","cronoColaDt");
+        tdD.appendChild(el("div", null, valorNovo(a.p, a.l)));
+        const atual = valorAtual(a.p);
+        if (atual && atual !== valorNovo(a.p, a.l))
+          tdD.appendChild(el("div","cronoColaTroca","substitui " + atual));
+        if (a.p.tipo !== "periodo" && a.l.fim !== a.l.ini)
+          tdD.appendChild(el("div","cronoColaObs","1º dia de " + a.l.bruto));
+        tr.appendChild(tdD);
+        const tdE = el("td","cronoColaOrig", a.l.ativ.length > 110 ? a.l.ativ.slice(0,110) + "…" : a.l.ativ);
+        tdE.title = a.l.ativ + " — " + a.l.bruto;
+        tr.appendChild(tdE);
+        tr.onclick = ev => { if (ev.target !== ck) ck.checked = !ck.checked; };
+        t.appendChild(tr);
+      });
+      const cxT = el("div","cronoColaRolo"); cxT.appendChild(t);
+      res.appendChild(cxT);
+
+      const bFaz = el("button","btn verdinho","✓  Preencher as etapas marcadas");
+      bFaz.onclick = () => {
+        const escolhidos = marcas.filter(m => m.ck.checked).map(m => m.a);
+        if (!escolhidos.length){ alert("Nenhuma etapa marcada."); return; }
+        const c = concurso(), dados = cronogramaDe(num);
+        escolhidos.forEach(({ p, l }) => {
+          if (p.tipo === "prova") c[p.campoData] = l.ini;
+          else {
+            const reg = dados[p.id] || (dados[p.id] = { ini:"", fim:"" });
+            reg.ini = l.ini;
+            reg.fim = p.tipo === "periodo" ? l.fim : "";
+          }
+        });
+        recem = new Set(escolhidos.map(a => a.p.id));
+        salvar(); fecharCola(); montar();
+      };
+      const linhaB = el("div","cronoColaBts"); linhaB.appendChild(bFaz);
+      res.appendChild(linhaB);
+    }
+    if (fora.length){
+      const d = document.createElement("details");
+      d.className = "cronoColaFora";
+      d.appendChild(el("summary", null, fora.length + (fora.length === 1
+        ? " data do edital ficou de fora" : " datas do edital ficaram de fora") + " (clique para ver)"));
+      fora.forEach(f => d.appendChild(el("div", null,
+        f.l.bruto + " — " + (f.l.ativ.length > 90 ? f.l.ativ.slice(0,90) + "…" : f.l.ativ) + " (" + f.motivo + ")")));
+      res.appendChild(d);
+    }
+  }
+  bCola.onclick = () => { if (cola.style.display === "none") abrirCola(); else fecharCola(); };
 
   function montar(){
     corpo.innerHTML = "";
@@ -20046,6 +20301,10 @@ function janelaCronograma(numInicial){
     selo.textContent = feitos
       ? feitos + " de " + etapas.length + " etapas preenchidas"
       : "nenhuma etapa preenchida ainda";
+    if (recem.size)
+      corpo.appendChild(el("div","cronoColaOk", "✓ " + recem.size +
+        (recem.size === 1 ? " etapa preenchida" : " etapas preenchidas") +
+        " a partir do edital (em verde). Confira e complete à mão o que faltou."));
     if (!temObjetiva(c) || !temDiscursiva(c))
       corpo.appendChild(el("div","cronoAviso", !temObjetiva(c) && !temDiscursiva(c)
         ? "Este concurso está sem prova objetiva e sem discursiva no cadastro."
@@ -20060,7 +20319,7 @@ function janelaCronograma(numInicial){
       const tdR = el("td","esq" + (p.forte ? " cronoForte" : ""), p.rot);
       tr.appendChild(tdR);
 
-      const tdD = el("td","esq");
+      const tdD = el("td","esq" + (recem.has(p.id) ? " cronoRecem" : ""));
       if (p.tipo === "prova"){
         // a data e o período da prova são digitados aqui: é daqui que saem o
         // calendário, a contagem regressiva e as telas de lançamento
@@ -20153,7 +20412,7 @@ function janelaCronograma(numInicial){
       "direto, sem precisar entrar aqui."));
     corpo.appendChild(cxEd);
   }
-  sel.onchange = () => { num = n(sel.value); montar(); };
+  sel.onchange = () => { num = n(sel.value); recem = new Set(); fecharCola(); montar(); };
   montar();
 
   const rodape = el("div","modalRodape");
@@ -33657,22 +33916,41 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 </table>
 </section>
 
-<section class="lepcard bordered">
-<div class="card-head"><div class="num">26</div><h3>O que já caiu</h3></div>
-<table class="t" style="table-layout:fixed;">
-<tr><th>ASSERTIVA</th><th style="width:12%">GAB.</th><th style="width:30%">POR QUÊ</th></tr>
-<tr><td>O Conselho Superior é composto exclusivamente por delegados da classe mais elevada <i>(CEBRASPE — Del Pol PC DF 2026)</i></td><td style="text-align:center"><b>E</b></td><td>Todos os cargos efetivos (art. 9º)</td></tr>
-<tr><td>A LONPC regulamenta competência exclusiva da União <i>(FUNDATEC — Del Pol PC RS 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Competência concorrente (CF, art. 24, XVI)</td></tr>
-<tr><td>Antes da LONPC, os Estados exerciam competência legislativa plena sobre a matéria <i>(FUNDATEC 2025)</i></td><td style="text-align:center"><b>C</b></td><td>CF, art. 24, § 3º</td></tr>
-<tr><td>Lei federal superveniente suspende a lei estadual em tudo o que lhe for contrário <i>(FUNDATEC 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Só lei de normas gerais e só no que contrariar essas normas</td></tr>
-<tr><td>É constitucional exigir lista tríplice para o Delegado-Geral <i>(tese cobrada — FUNDATEC 2025)</i></td><td style="text-align:center"><b>E</b></td><td>CF, art. 144, § 6º</td></tr>
-<tr><td>"Base de dados unificada por UF" é diretriz da polícia civil <i>(AVALIA — PC MS 2025)</i></td><td style="text-align:center"><b>E</b></td><td>Inciso vetado; vale o art. 5º, VIII</td></tr>
-<tr><td>A exoneração só é admitida após 3 anos de exercício <i>(tese cobrada — FGV, Del Pol PC PI 2026)</i></td><td style="text-align:center"><b>E</b></td><td>Livre; só há ressarcimento proporcional</td></tr>
-<tr><td>O Instituto de Identificação é unidade de execução <i>(tema cobrado — UECE, PC CE 2025)</i></td><td style="text-align:center"><b>E</b></td><td>É técnico-científico (art. 15, III); o DIC é de execução</td></tr>
-<tr><td>Idade mínima de 21 anos para ingresso <i>(inédita — Gran)</i></td><td style="text-align:center"><b>E</b></td><td>18 anos (art. 20, II)</td></tr>
-<tr><td>Prioridade em transporte e comunicação em qualquer deslocamento <i>(inédita — Gran)</i></td><td style="text-align:center"><b>E</b></td><td>Só em missão emergencial (art. 30, VI)</td></tr>
-</table>
-</section>
+<style>
+/* questões de fixação da LONPC: classes próprias (lonpcQf), para não colidir com as do app */
+.lonpcQf{border:2px solid #1F3864;border-radius:14px;padding:16px 20px 18px;margin:18px 0 8px;background:#fff}
+.lonpcQf .lonpcQfTit{font-size:15px;font-weight:800;color:#1F3864;margin:0 0 12px;display:flex;align-items:baseline;gap:6px}
+.lonpcQf .lonpcQfTit small{font-size:12px;font-weight:400;color:#6b7788}
+.lonpcQf details.lonpcQfItem{border:1px solid #d5dde8;border-left:4px solid #1F3864;border-radius:6px;background:#fff;
+  margin:0 0 9px;box-shadow:0 1px 2px rgba(15,30,51,.06)}
+.lonpcQf details.lonpcQfItem[open]{background:#f5f8fc}
+.lonpcQf details.lonpcQfItem>summary{list-style:none;cursor:pointer;padding:10px 14px;font-size:13.5px;line-height:1.55;
+  font-weight:700 !important;color:#1F3864;text-align:justify}
+.lonpcQf details.lonpcQfItem>summary::-webkit-details-marker{display:none}
+.lonpcQf details.lonpcQfItem>summary::before{content:"\25B6";font-size:10px;margin-right:8px;color:#1F3864;
+  display:inline-block;vertical-align:1px}
+.lonpcQf details.lonpcQfItem[open]>summary::before{content:"\25BC"}
+.lonpcQf details.lonpcQfItem>p{margin:0;padding:10px 14px 12px;border-top:1px solid #dfe6f0;font-size:13.5px;line-height:1.7;
+  color:#2b3440;text-align:justify}
+.lonpcQf details.lonpcQfItem>p b{font-weight:700 !important;color:#1c2430}
+.lonpcQf .lonpcQfE{color:#C0392B;font-weight:700 !important}
+.lonpcQf .lonpcQfC{color:#2E7D32;font-weight:700 !important}
+</style>
+<div class="lonpcQf">
+<div class="lonpcQfTit">📝 Questões de fixação <small>(clique para conferir)</small></div>
+<details class="lonpcQfItem"><summary>1. O Conselho Superior de Polícia Civil, presidido pelo Delegado-Geral, é composto exclusivamente por delegados em atividade da classe mais elevada. (CEBRASPE — Del Pol PC DF 2026)</summary><p><span class="lonpcQfE">Errado.</span> O art. 9º prevê representantes de <b>todos os cargos efetivos</b> da corporação, com possibilidade de eleição e <b>participação paritária</b>. Só a presidência é do Delegado-Geral.</p></details>
+<details class="lonpcQfItem"><summary>2. A Lei 14.735/2023 regulamenta matéria de competência legislativa exclusiva da União. (FUNDATEC — Del Pol PC RS 2025)</summary><p><span class="lonpcQfE">Errado.</span> A matéria é de competência <b>concorrente</b> (CF, art. 24, XVI). A União edita <b>normas gerais</b>, e os entes legislam de forma suplementar e têm competência plena sobre o que não foi disciplinado (art. 3º, parágrafo único).</p></details>
+<details class="lonpcQfItem"><summary>3. Antes da LONPC, os Estados exerciam competência legislativa plena sobre organização, garantias, direitos e deveres das polícias civis.</summary><p><span class="lonpcQfC">Certo.</span> Na falta de lei federal de normas gerais, os Estados exercem competência <b>plena</b> (CF, art. 24, § 3º). A superveniência da LONPC <b>suspende a eficácia</b> da lei estadual no que for contrário (art. 24, § 4º; art. 49 da LONPC).</p></details>
+<details class="lonpcQfItem"><summary>4. A superveniência de lei federal suspende a eficácia da lei estadual em tudo o que lhe for contrário.</summary><p><span class="lonpcQfE">Errado.</span> O § 4º do art. 24 exige lei federal sobre <b>normas gerais</b>, e a suspensão alcança apenas o que contrariar essas normas gerais. A lei estadual não é revogada.</p></details>
+<details class="lonpcQfItem"><summary>5. É constitucional lei estadual que exija lista tríplice para a escolha do Delegado-Geral.</summary><p><span class="lonpcQfE">Errado.</span> O STF considera a exigência incompatível com a Constituição, porque as polícias civis são <b>subordinadas aos governadores</b> (CF, art. 144, § 6º). O art. 8º restringe o universo (delegado em atividade, classe mais elevada) sem retirar a escolha do governador.</p></details>
+<details class="lonpcQfItem"><summary>6. A "constituição de base de dados unificada por unidade da federação" é diretriz expressa da polícia civil. (AVALIA — PC MS 2025)</summary><p><span class="lonpcQfE">Errado.</span> Esse era o inciso IX do art. 5º, que foi <b>vetado</b> (e o veto não foi derrubado). A diretriz que vale é a do inciso VIII: <b>gestão da proteção e compartilhamento</b> dos seus bancos de dados.</p></details>
+<details class="lonpcQfItem"><summary>7. O policial civil só pode pedir exoneração depois de completar três anos de exercício.</summary><p><span class="lonpcQfE">Errado.</span> A exoneração é <b>livre</b>. Quem a pede antes de 3 anos de exercício apenas <b>ressarce os gastos com a formação</b>, proporcionalmente ao tempo de serviço (art. 24, § 1º).</p></details>
+<details class="lonpcQfItem"><summary>8. O Instituto de Identificação é unidade de execução da polícia civil.</summary><p><span class="lonpcQfE">Errado.</span> O Instituto de Identificação é unidade <b>técnico-científica</b> (art. 15, III). Unidade de execução é o <b>Departamento de Identificação Civil</b> (art. 12, IV).</p></details>
+<details class="lonpcQfItem"><summary>9. Para ingresso nos cargos efetivos das polícias civis, exige-se idade mínima de 21 anos.</summary><p><span class="lonpcQfE">Errado.</span> A idade mínima é de <b>18 anos</b> (art. 20, II).</p></details>
+<details class="lonpcQfItem"><summary>10. Os policiais civis em atividade têm prioridade nos serviços de transporte e comunicação em qualquer deslocamento.</summary><p><span class="lonpcQfE">Errado.</span> A prioridade nos serviços de transporte e comunicação, públicos e privados, vale só <b>em cumprimento de missão de caráter emergencial</b> (art. 30, VI).</p></details>
+<details class="lonpcQfItem"><summary>11. No concurso para delegado, o tempo de atividade policial civil vale 30% da pontuação máxima da prova de títulos.</summary><p><span class="lonpcQfC">Certo.</span> É o art. 21, <i>caput</i>: <b>30% da pontuação máxima</b> da prova de títulos, na proporção de <b>0,5 a 2 pontos percentuais por ano</b> de serviço, escalonados ou não, conforme o edital.</p></details>
+<details class="lonpcQfItem"><summary>12. É vedada a custódia de preso em unidades da polícia civil, sem exceções.</summary><p><span class="lonpcQfE">Errado.</span> O art. 40 veda a custódia de preso e de adolescente infrator, ainda que provisória, em unidades da polícia civil, <b>salvo interesse fundamentado na investigação policial</b>.</p></details>
+</div>
 
 </div>
 </script>
