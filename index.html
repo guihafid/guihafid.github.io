@@ -339,8 +339,8 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .infoJuris .jurRamoLinks a{color:#2F5597;text-decoration:underline}
 /* faixas das matérias com borda arredondada; cartões com recuo em relação à faixa */
 .faixaMat{border-radius:10px}
-#tela .cadCartoes{margin:10px 10px 16px 46px}
-@media (max-width:560px){ #tela .cadCartoes{margin-left:18px} }
+#tela .cadCartoes{margin:10px 46px 16px 46px}
+@media (max-width:560px){ #tela .cadCartoes{margin-left:18px;margin-right:18px} }
 .cadJur.soTitulo .cadJurTit{border-radius:6px}
 .cadJur.soTitulo .cadJurBox{padding-top:6px;padding-bottom:6px}
 .cadJur.soTitulo .cadJurPe{margin-top:0;padding-top:0;border-top:0}
@@ -19110,6 +19110,20 @@ function telaCaderno(mod){
     barra.appendChild(b);
     barra.appendChild(el("span","dicaImportar",
       "captura no TEC com Alt+E e cola a fila aqui"));
+    barra.appendChild(el("span","flex"));
+    barra.appendChild(botaoLimparCaderno({ nome: "Caderno de erros do TEC",
+      lista: () => DB.caderno.T || (DB.caderno.T = []), itens: "questão(ões)",
+      naoApaga: "Os cadernos de erros dos simulados <b>não</b> são apagados." }));
+    tela.appendChild(barra);
+  } else {
+    // simulados (objetiva / discursiva): só o botão de limpar, à direita
+    const barra = el("div","barraImportar");
+    barra.appendChild(el("span","flex"));
+    const qual = mod === "D" ? "discursiva" : "objetiva";
+    barra.appendChild(botaoLimparCaderno({ nome: "Caderno de erros dos simulados (" + qual + ")",
+      lista: () => DB.caderno[mod] || (DB.caderno[mod] = []), itens: "questão(ões)",
+      naoApaga: "Os <b>lançamentos dos simulados</b> (notas, acertos, tempos) <b>não</b> são apagados, " +
+        "nem o caderno da " + (mod === "D" ? "objetiva" : "discursiva") + " e o do TEC." }));
     tela.appendChild(barra);
   }
   const lista = DB.caderno[mod] || (DB.caderno[mod] = []);
@@ -19856,13 +19870,15 @@ function jurDeLinhasPdf(linhas){
     .filter(d => d.tema && /\b(STF|STJ)\b|S[úu]mula|\(Info\s*\d/i.test(semTags(d.tese)));
 }
 
-/* apaga TODOS os julgados do Caderno de jurisprudências - Informativos.
-   Só depois de explicar o que acontece e de a pessoa digitar EXCLUIR. */
-function limparCadernoJuris(){
-  const n = (DB.juris || []).length;
+/* "Limpar caderno": apaga TODAS as linhas de um caderno (pendentes,
+   revisadas e dominadas, de todas as matérias). Só depois de explicar o que
+   acontece e de a pessoa digitar EXCLUIR. Serve para todos os cadernos. */
+function limparCaderno(o){
+  // o = { nome, lista: () => array, itens: "julgado(s)", naoApaga: "texto" }
+  const n = (o.lista() || []).length;
   const fundo = el("div","modalFundo");
   const caixa = el("div","modalCaixa limparCad");
-  caixa.appendChild(el("h3", null, "Limpar o caderno de jurisprudências"));
+  caixa.appendChild(el("h3", null, "Limpar o " + o.nome));
   if (!n){
     caixa.appendChild(el("p","dica","O caderno já está vazio."));
     const ok = el("button","principal","Fechar"); ok.onclick = () => fundo.remove();
@@ -19870,9 +19886,10 @@ function limparCadernoJuris(){
     fundo.appendChild(caixa); document.body.appendChild(fundo); return;
   }
   const aviso = el("div","limparAviso");
-  aviso.innerHTML = "Isto vai <b>apagar os " + n + " julgado(s)</b> do Caderno de jurisprudências – Informativos: " +
-    "pendentes, revisados e dominados, de todas as matérias, com o texto, as anotações e o status de cada um.<br><br>" +
-    "Os cadernos de Teses e de Súmulas <b>não</b> são apagados.<br>" +
+  aviso.innerHTML = "Isto vai <b>apagar " + (n === 1 ? "a única linha" : "as " + n + " linhas") +
+    " (" + n + " " + o.itens + ")</b> do " + jurEsc(o.nome) + ": pendentes, revisadas e dominadas, " +
+    "de todas as matérias, com o texto, as anotações e o status de cada uma.<br><br>" +
+    (o.naoApaga ? o.naoApaga + "<br>" : "") +
     "Faça antes uma cópia de segurança (Painel › Configuração) se quiser guardar.";
   caixa.appendChild(aviso);
   caixa.appendChild(el("p","dica","Para confirmar, digite EXCLUIR abaixo:"));
@@ -19894,10 +19911,22 @@ function limparCadernoJuris(){
   inp.addEventListener("keydown", ev => { if (ev.key === "Enter" && !apagar.disabled) apagar.click(); });
   apagar.onclick = () => {
     if (inp.value.trim() !== "EXCLUIR") return;
-    DB.juris.splice(0, DB.juris.length);
+    const L = o.lista();
+    L.splice(0, L.length);                 // esvazia a mesma lista (não troca a referência)
     salvar(); sair(); render();
-    alert(n + " julgado(s) apagado(s). O caderno está vazio.");
+    alert(n + " " + o.itens + " apagado(s). O caderno está vazio.");
   };
+}
+// o botão, para pôr na barra de cima de cada caderno
+function botaoLimparCaderno(o){
+  const bL = el("button","btnLimparCad","🗑  Limpar caderno");
+  bL.title = "Apagar todas as linhas deste caderno";
+  bL.onclick = () => limparCaderno(o);
+  return bL;
+}
+function limparCadernoJuris(){
+  limparCaderno({ nome: "Caderno de jurisprudências – Informativos", lista: () => DB.juris,
+    itens: "julgado(s)", naoApaga: "Os cadernos de Teses e de Súmulas <b>não</b> são apagados." });
 }
 
 function importarJuris(){
@@ -20540,6 +20569,10 @@ function telaTeses(){
     barra.appendChild(b);
     barra.appendChild(el("span","dicaImportar",
       "captura na edição com Alt+Shift+J e cola aqui"));
+    barra.appendChild(el("span","flex"));
+    barra.appendChild(botaoLimparCaderno({ nome: "Caderno de jurisprudências – Teses",
+      lista: () => DB.teses, itens: "tese(s)",
+      naoApaga: "Os cadernos de Informativos e de Súmulas <b>não</b> são apagados." }));
     tela.appendChild(barra);
   }
   const lista = DB.teses;
@@ -20743,6 +20776,10 @@ function telaSumulas(){
     barra.appendChild(b);
     barra.appendChild(el("span","dicaImportar",
       "captura na súmula com Alt+Shift+J e cola aqui"));
+    barra.appendChild(el("span","flex"));
+    barra.appendChild(botaoLimparCaderno({ nome: "Caderno de jurisprudências – Súmulas",
+      lista: () => DB.sumulas, itens: "súmula(s)",
+      naoApaga: "Os cadernos de Informativos e de Teses <b>não</b> são apagados." }));
     tela.appendChild(barra);
   }
   const lista = DB.sumulas;
