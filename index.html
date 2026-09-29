@@ -301,6 +301,59 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cronoColaOk{font-size:11px;color:#1b5e20;background:#EAF7EC;border:1px solid #B6DEB9;
   border-radius:5px;padding:5px 8px;margin:0 0 7px;line-height:15px}
 .cronoCorpo table.g td.cronoRecem{background:#EAF7EC !important}
+/* ===== modo cartões dos cadernos (prefixo cad*) ===== */
+.cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
+.cadModoSeg button{border:0;background:#fff;color:#5a6a80;font:bold 11px Arial;padding:5px 10px;cursor:pointer}
+.cadModoSeg button + button{border-left:1px solid #b6c2d2}
+.cadModoSeg button.on{background:var(--azulEscuro);color:#fff}
+.cadCartoes{display:flex;flex-direction:column;gap:12px;margin:8px 10px 14px}
+.cadCard{background:#fff;border:1px solid #e1e5ec;border-left:4px solid #ED7D31;border-radius:10px;
+  padding:14px 18px 10px;box-shadow:0 1px 3px rgba(15,30,51,.06)}
+.cadCard.stRev{border-left-color:#2E7D32}
+.cadCard.stDom{border-left-color:#C8960C}
+.cadCardTopo{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
+.cadCardTopo .flex{flex:1}
+.cadChip{display:inline-flex;align-items:center;gap:4px;background:#FDECEB;color:#7a1f1f;
+  border-radius:6px;padding:2px 8px;font-size:11.5px;line-height:18px}
+.cadChip .cadChipRot{color:#9b5a55}
+.cadChip .cadChipVal{font-weight:bold}
+.cadChip a.cadChipLink{font-weight:bold;color:#b3261e;text-decoration:underline}
+/* células da tabela dentro dos cartões: viram peças soltas */
+.cadCard td{display:block;border:0 !important;padding:0 !important;background:transparent !important}
+.cadChip td.cadChipCel input,.cadChip td.cadChipCel select{border:0;background:transparent;font:bold 11.5px Arial;
+  color:#7a1f1f;padding:0;width:auto;min-width:22px;max-width:120px;height:18px}
+.cadChip td.cadChipCel input{width:9ch;text-align:left}
+.cadChip td.cadChipCel a.linkCel{display:none}
+.cadCardTopo td.cadStatus{display:inline-block}
+.cadCardTopo td.cadStatus select{border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:2px 8px;
+  font:bold 11.5px Arial;height:24px;cursor:pointer}
+.cadCardTopo td.cadStatus.stPend select{background:#FCE4D6;color:#833C00}
+.cadCardTopo td.cadStatus.stRev select{background:#C6EFCE;color:#006100}
+.cadCardTopo td.cadStatus.stDom select{background:#FFE699;color:#7F4E00}
+.cadCardTit{font-size:16.5px;font-weight:700;color:#23272e;line-height:1.35;margin:2px 0 8px}
+.cadCardTit.vazio{font-size:13px;font-weight:normal;font-style:italic;color:#9aa5b6}
+.cadCardTit a.cadCardLink{margin-left:8px;font-size:13px;color:#2F5597;text-decoration:none;font-weight:bold}
+.cadCard td.cadCardCorpo .cxRico{height:auto !important;min-height:24px;overflow:visible;
+  font-size:14px;line-height:1.6;color:#333;text-align:justify;background:transparent;
+  padding:4px 2px;border-radius:4px;white-space:normal}
+.cadCard td.cadCardCorpo .cxRico:hover{background:#fafbfd}
+.cadCard td.cadCardCorpo .cxRico:focus{background:#FFFBEA;outline:1px solid #f0d98c}
+.cadCard td.cadCardCorpo.resumido .cxRico{max-height:4.8em;overflow:hidden;
+  -webkit-mask-image:linear-gradient(#000 60%,transparent)}
+.cadCard td.cadCardCorpo.resumido .cxRico:focus{max-height:none;-webkit-mask-image:none}
+.cadCardObs{margin:8px 0 2px;padding:7px 10px;background:#f6f7f9;border-radius:6px;font-size:12.5px;color:#4a5566;line-height:1.5}
+.cadCardObs .cadCardObsRot{display:block;font-size:10.5px;font-weight:bold;color:#7a8595;margin-bottom:2px}
+.cadCardPe{display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5}
+.cadCardPe .flex{flex:1}
+.cadCardPe td{display:inline-block}
+.cadCardPe .cadRev{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#5a6a80}
+.cadCardPe .cadRev td input{border:1px solid #d5dde8;border-radius:5px;padding:2px 6px;font-size:11.5px;width:84px}
+@media (max-width:560px){
+  .cadCard{padding:12px 12px 8px}
+  .cadCardTit{font-size:15px}
+  .cadCard td.cadCardCorpo .cxRico{font-size:13.5px;text-align:left}
+}
+
 .cronoCorpo table.g tr.cronoForaCal td{opacity:.5}
 .cronoReprov{margin:10px 0 0;padding:9px 12px;background:#FBF7EE;border:1px solid #eadfc4;
   border-left:4px solid #B7791F;border-radius:6px}
@@ -18802,6 +18855,87 @@ function esticarTextos(t){
   });
 }
 
+
+/* ===================== modo "cartões" dos cadernos =====================
+   Os três cadernos (erros do TEC, erros de simulados e jurisprudências) podem
+   ser vistos como TABELA (o jeito de sempre) ou como CARTÕES, feitos para ler:
+   título em destaque, texto largo e as informações em etiquetas no alto.
+   Os cartões usam AS MESMAS células da tabela (texto editável, status, ⓘ,
+   link, apagar): só mudam de lugar. Editar, salvar e filtrar é igual.
+   A escolha fica neste aparelho (é jeito de ver, não é dado).             */
+const MODO_CAD_CHAVE = "hafid-modoCad-v1";
+function modoCad(qual){
+  try { return (JSON.parse(localStorage.getItem(MODO_CAD_CHAVE) || "{}")[qual]) || "cartoes"; }
+  catch (e) { return "cartoes"; }
+}
+function mudarModoCad(qual, modo){
+  try {
+    const m = JSON.parse(localStorage.getItem(MODO_CAD_CHAVE) || "{}");
+    m[qual] = modo; localStorage.setItem(MODO_CAD_CHAVE, JSON.stringify(m));
+  } catch (e) {}
+  render();
+}
+// botões "▤ Tabela | ▦ Cartões" para a barra do filtro
+function seletorModoCad(qual){
+  const atual = modoCad(qual);
+  const cx = el("span","cadModoSeg");
+  [["tabela","▤ Tabela","Ver como planilha, uma linha por item"],
+   ["cartoes","▦ Cartões","Ver como cartões, para ler com calma"]].forEach(([v, rot, dica]) => {
+    const b = el("button", v === atual ? "on" : null, rot);
+    b.title = dica;
+    b.onclick = () => { if (v !== atual) mudarModoCad(qual, v); };
+    cx.appendChild(b);
+  });
+  return cx;
+}
+/* monta um cartão com as células que a tabela usaria.
+   o = { fase, tit, titVazio, titUrl, chips:[[rótulo, td|texto|null]], corpo:td,
+         obs:html, rodape:[td...], resumido:bool, antesCorpo:elemento } */
+function cadCartao(o){
+  const c = el("div","cadCard " + (o.fase ? o.fase.st : ""));
+  const topo = el("div","cadCardTopo");
+  (o.chips || []).forEach(([rot, v]) => {
+    if (v == null || v === "") return;
+    const ch = el("span","cadChip");
+    if (rot) ch.appendChild(el("span","cadChipRot", rot));
+    if (typeof v === "string") ch.appendChild(el("span","cadChipVal", v));
+    else { v.classList.add("cadChipCel"); ch.appendChild(v); }
+    topo.appendChild(ch);
+  });
+  topo.appendChild(el("span","flex"));
+  if (o.status){ o.status.classList.add("cadChipCel","cadStatus"); topo.appendChild(o.status); }
+  c.appendChild(topo);
+
+  const tit = el("div","cadCardTit" + (o.tit ? "" : " vazio"), o.tit || o.titVazio || "");
+  if (o.titUrl){
+    const a = document.createElement("a");
+    a.href = o.titUrl; a.target = "_blank"; a.rel = "noopener";
+    a.className = "cadCardLink"; a.textContent = "↗"; a.title = o.titUrlDica || "Abrir";
+    tit.appendChild(a);
+  }
+  c.appendChild(tit);
+  if (o.antesCorpo) c.appendChild(o.antesCorpo);
+
+  if (o.corpo){
+    o.corpo.classList.add("cadCardCorpo");
+    if (o.resumido) o.corpo.classList.add("resumido");
+    // o link ↗ da célula já foi para o título
+    o.corpo.querySelectorAll("a.linkCel").forEach(a => a.remove());
+    c.appendChild(o.corpo);
+  }
+  if (o.obs && semTags(o.obs).trim()){
+    const ob = el("div","cadCardObs");
+    ob.appendChild(el("span","cadCardObsRot","📝 Anotações"));
+    const t = el("div"); t.innerHTML = o.obs;
+    ob.appendChild(t);
+    c.appendChild(ob);
+  }
+  const pe = el("div","cadCardPe");
+  (o.rodape || []).forEach(x => { if (x) { x.classList && x.classList.add("cadPeCel"); pe.appendChild(x); } });
+  c.appendChild(pe);
+  return c;
+}
+
 function telaCaderno(mod){
   const op = CADERNOS_ERRO[mod] || CADERNOS_ERRO.O;
   const tela = document.getElementById("tela");
@@ -18853,6 +18987,8 @@ function telaCaderno(mod){
       barraF.appendChild(el("span","notaFiltro",
         "escolha uma matéria para ver só o caderno dela"));
     }
+    barraF.appendChild(el("span","flex"));
+    barraF.appendChild(seletorModoCad(mod));
     tela.appendChild(barraF);
   }
 
@@ -18884,6 +19020,35 @@ function telaCaderno(mod){
     lista.push({ sim:"", conc:"", data:"", mat, q:"", assunto:"", motivo:"", aprendi:"",
       status:"Pendente", dataRev:"" });
     salvar(); render();
+  };
+  const emCartoes = modoCad(mod) === "cartoes";
+
+  /* o mesmo item, em cartão: as células de montarLinha trocam de lugar */
+  const montarCartao = (e, li, fase, resumido, tdMat) => {
+    const tds = [...montarLinha(e, li).children];
+    let sim, conc, q, apr, st, rev, info, x;
+    if (semRev) [sim, q, apr, st, info, x] = tds;
+    else [sim, conc, q, apr, st, rev, info, x] = tds;
+    const data = op.semSim ? dataBR(e.data) : dataDoSim(n(e.sim), e.conc);
+    return cadCartao({
+      fase, resumido,
+      status: st,
+      chips: [
+        tdMat ? ["Matéria", tdMat] : null,
+        [op.semSim ? "Caderno" : "Simulado", sim],
+        op.semSim ? null : ["Concurso", conc],
+        ["Questão", q],
+        data ? ["", data] : null,
+        e.motivo ? ["", e.motivo] : null
+      ].filter(Boolean),
+      tit: String(e.assunto || "").trim(),
+      titVazio: "Sem " + (semRev ? "conteúdo" : "assunto") + " — clique em ⓘ para escrever",
+      titUrl: e.assuntoUrl || e.qUrl || "",
+      titUrlDica: semRev ? "Abrir a questão no TEC" : "Abrir",
+      corpo: apr,
+      rodape: [ rev ? (() => { const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev); return w; })() : null,
+                el("span","flex"), info, x ]
+    });
   };
 
   /* monta a linha de uma questão — igual na tabela normal e na dos órfãos */
@@ -18923,8 +19088,13 @@ function telaCaderno(mod){
     const aberto = !!alturaCad[chaveAlt];
     const sec = el("div","secCaderno " + fase.cls);
     sec.appendChild(el("span","tx", fase.titulo));
-    const bAlt = el("button","btnAlturas", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
-    bAlt.title = aberto
+    // nos cartões o texto vem inteiro; o botão serve para resumir
+    const bAlt = emCartoes
+      ? el("button","btnAlturas", aberto ? "⇲ mostrar inteiro" : "⇱ resumir")
+      : el("button","btnAlturas", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
+    bAlt.title = emCartoes
+      ? (aberto ? "Mostrar as anotações inteiras" : "Mostrar só o começo de cada anotação")
+      : aberto
       ? "Voltar cada anotação para uma linha só"
       : "Mostrar as anotações inteiras, sem cortar o texto";
     bAlt.onclick = () => { alturaCad[chaveAlt] = !aberto; render(); };
@@ -18976,6 +19146,12 @@ function telaCaderno(mod){
       }
       tela.appendChild(faixa);
 
+      if (emCartoes){
+        const grade = el("div","cadCartoes");
+        itens.forEach((e,li) => grade.appendChild(montarCartao(e, li, fase, aberto)));
+        tela.appendChild(grade);
+        return;
+      }
       const t = tabela(cab, larg);
       t.classList.add("cadZeb");
       if (aberto) t.classList.add("cheia");
@@ -19026,6 +19202,13 @@ function telaCaderno(mod){
       "Chegaram sem casar com a sua lista de matérias. Escolha a matéria na " +
       "primeira coluna (ou no botão ⓘ) e elas vão para o bloco certo."));
 
+    if (emCartoes){
+      const grade = el("div","cadCartoes");
+      orfaos.forEach((e,li) => grade.appendChild(montarCartao(e, li,
+        FASES.find(f => f.nome === faseDe(e.status)), false,
+        tdSelect(e.mat, conhecidas, v => e.mat = v, render))));
+      tela.appendChild(grade);
+    } else {
     const t = tabela(["Matéria"].concat(cab), [150].concat(larg));
     t.classList.add("cadZeb");
     t.style.margin = "0 10px";
@@ -19037,6 +19220,7 @@ function telaCaderno(mod){
       t.tbody.appendChild(tr);
     });
     tela.appendChild(t);
+    }
   }
 
   // legenda das abreviações, no fim de tudo
@@ -19523,12 +19707,18 @@ function telaJuris(){
         "escolha uma matéria para ver só os julgados dela"));
     }
     barraF.appendChild(el("span","flex"));
-    const bAlt = el("button","btnAlturas naBarra", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
-    bAlt.title = aberto
+    const cartoesJ = modoCad("JUR") === "cartoes";
+    const bAlt = cartoesJ
+      ? el("button","btnAlturas naBarra", aberto ? "⇲ mostrar inteiro" : "⇱ resumir")
+      : el("button","btnAlturas naBarra", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
+    bAlt.title = cartoesJ
+      ? (aberto ? "Mostrar as teses inteiras" : "Mostrar só o começo de cada tese")
+      : aberto
       ? "Voltar cada tese para uma linha só"
       : "Mostrar as teses inteiras, sem cortar o texto";
     bAlt.onclick = () => { alturaCad.JUR = !aberto; render(); };
     barraF.appendChild(bAlt);
+    barraF.appendChild(seletorModoCad("JUR"));
     tela.appendChild(barraF);
   }
 
@@ -19561,6 +19751,32 @@ function telaJuris(){
       status:"Pendente", dataRev:"" });
     salvar(); render();
   };
+  const emCartoes = modoCad("JUR") === "cartoes";
+  const montarCartaoJur = (e, li, tdMat) => {
+    const [tese, trib, st, info, x] = [...montarLinhaJur(e, li).children];
+    let chInfo = null;
+    if (String(e.info || "").trim()){
+      if (e.infoUrl){
+        chInfo = document.createElement("a");
+        chInfo.href = e.infoUrl; chInfo.target = "_blank"; chInfo.rel = "noopener";
+        chInfo.className = "cadChipLink"; chInfo.title = "Abrir o informativo comentado";
+        chInfo.textContent = String(e.info).trim();
+      } else chInfo = String(e.info).trim();
+    }
+    return cadCartao({
+      fase: FASES.find(f => f.nome === faseDe(e.status)),
+      resumido: aberto,
+      status: st,
+      chips: [ tdMat ? ["Matéria", tdMat] : null, ["", trib],
+               chInfo ? ["Informativo", chInfo] : null,
+               e.data ? ["", dataBR(e.data)] : null ].filter(Boolean),
+      tit: String(e.tema || "").trim(),
+      titVazio: "Sem título — clique em ⓘ e escreva o conteúdo",
+      titUrl: e.temaUrl || "", titUrlDica: "Abrir só este julgado no Buscador",
+      corpo: tese, obs: e.obs,
+      rodape: [ el("span","flex"), info, x ]
+    });
+  };
   const tirarBranco = mat => {
     for (let i = lista.length-1; i >= 0; i--){
       const e = lista[i];
@@ -19586,6 +19802,12 @@ function telaJuris(){
     tela.appendChild(faixaDeMateria(mat, itens.length, "julgado(s)",
       () => tirarBranco(mat), () => novaLinha(mat)));
 
+    if (emCartoes){
+      const grade = el("div","cadCartoes");
+      itens.forEach((e,li) => grade.appendChild(montarCartaoJur(e, li)));
+      tela.appendChild(grade);
+      return;
+    }
     const t = tabela(cab, larg);
     t.classList.add("cadZeb");
     if (aberto) t.classList.add("cheia");
@@ -19617,6 +19839,12 @@ function telaJuris(){
       "Vieram da extensão sem casar com a sua lista de matérias. Escolha a matéria " +
       "na primeira coluna e eles vão para o bloco certo."));
 
+    if (emCartoes){
+      const grade = el("div","cadCartoes");
+      orfaos.forEach((e,li) => grade.appendChild(montarCartaoJur(e, li,
+        tdSelect(e.mat, conhecidas, v => e.mat = v, render))));
+      tela.appendChild(grade);
+    } else {
     const t = tabela(["Matéria"].concat(cab), [150].concat(larg));
     t.classList.add("cadZeb");
     if (aberto) t.classList.add("cheia");
@@ -19628,6 +19856,7 @@ function telaJuris(){
       t.tbody.appendChild(tr);
     });
     tela.appendChild(t);
+    }
   }
 
   chipsSemLinha(tela, semItens, novaLinha,
@@ -31004,6 +31233,18 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <tr><th>CPP (persecução penal)</th><th>LEP (execução)</th></tr>
 <tr><td><ul style="margin:2px 0;padding-left:18px"><li>Maior de <b>80 anos</b>;</li><li>Extremamente debilitado por doença grave;</li><li>Imprescindível a menor de 6 anos ou deficiente;</li><li>Gestante;</li><li>Mulher com filho até 12 anos incompletos;</li><li>Homem único responsável por filho até 12 anos incompletos.</li></ul></td><td><ul style="margin:2px 0;padding-left:18px"><li>Maior de <b>70 anos</b>;</li><li>Acometido de doença grave (não exige debilidade);</li><li>Filho menor ou deficiente físico/mental;</li><li>Condenada gestante.</li></ul></td></tr>
 </table>
+<div class="jur">Em regra, deve ser concedida <b>prisão domiciliar</b> para todas as mulheres presas que sejam:
+<ul class="dash">
+<li><b>gestantes</b>;</li>
+<li><b>puérperas</b> (que deram à luz há pouco tempo);</li>
+<li><b>mães de crianças</b> (isto é, mães de menores até <b>12 anos incompletos</b>); ou</li>
+<li><b>mães de pessoas com deficiência</b>.</li>
+</ul>
+<b>EXCEÇÕES:</b> Não deve ser autorizada a prisão domiciliar se:<br/>
+1) a mulher tiver praticado crime mediante <b>violência ou grave ameaça</b>;<br/>
+2) a mulher tiver praticado crime <b>contra seus descendentes</b> (filhos e/ou netos);<br/>
+3) em outras <b>situações excepcionalíssimas</b>, as quais deverão ser devidamente fundamentadas pelos juízes que denegarem o benefício.<br/>
+<i>(STF. 2ª Turma. HC 143641/SP. Rel. Min. Ricardo Lewandowski, julgado em 20/2/2018 (Info 891).)</i></div>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">15</div><h3>Medidas de segurança (arts. 171 a 179) e sistema vicariante</h3></div>
