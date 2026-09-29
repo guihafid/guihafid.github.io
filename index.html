@@ -373,6 +373,10 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cadJur .cadCardCorpo .cxLeitura{font-size:14.5px;line-height:1.6;color:#222;padding:2px;text-align:justify}
 .cadJur .cadJurCite .cxLeitura{margin-top:9px;font-size:13px;line-height:1.5;color:#555;background:#f4f1ec;
   border-radius:5px;padding:7px 10px;font-weight:600;border-left:3px solid #7a1f1f;text-align:left}
+.cadJur .cadCardCorpo .cxLeitura.vazio{color:#9aa5b6;font-style:italic}
+.cadJur .cadJurPe .cadRev{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#5a6a80}
+.cadJur .cadJurPe .cadRev td{display:inline-block;border:0 !important;padding:0 !important;background:transparent !important}
+.cadJur .cadJurPe .cadRev td input{border:1px solid #d5dde8;border-radius:5px;padding:2px 6px;font-size:11.5px;width:84px}
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -18884,11 +18888,11 @@ const alturaCad    = {};    // por caderno+fase: true = anotações abertas por 
 function janelaInfoCaderno(e, ctx, aoSalvar){
   ctx = ctx || {};
   const fundo = el("div","modalFundo");
-  const caixa = el("div","modalCaixa infoCad");
+  const caixa = el("div","modalCaixa infoCad infoJuris");
   caixa.appendChild(el("h3", null, "Informações da questão"));
   caixa.appendChild(el("p","dica",
-    "Estes campos saíram da tabela para a coluna da anotação ficar larga; o " +
-    "botão ⓘ da linha mostra todos eles quando você passa o mouse."));
+    "Tudo o que se altera nesta questão fica aqui. O botão ⓘ mostra estes campos " +
+    "quando você passa o mouse."));
 
   const campo = (rot, ctrl) => {
     const d = el("div","campoInfo");
@@ -18908,10 +18912,32 @@ function janelaInfoCaderno(e, ctx, aoSalvar){
     inpData.addEventListener("change", () => inpData.value = dataBR(paraISO(inpData.value)));
     campo("Data", inpData);
   } else {
-    const fixa = el("div","valorFixo", ctx.data || "— preencha o Nº S e o Nº C —");
+    const fixa = el("div","valorFixo", ctx.data || "— preencha o Nº do simulado e o Nº do concurso —");
     campo("Data", fixa);
     caixa.lastChild.appendChild(el("span","pistaCampo",
-      "a data vem sozinha do simulado; para mudá-la, corrija o Nº S ou o Nº C na linha"));
+      "a data vem sozinha do simulado; para mudá-la, corrija o Nº do simulado ou do concurso abaixo"));
+  }
+
+  // números: caderno/simulado, concurso (só simulados) e questão (+ link, no TEC)
+  const umaLinha = (valor, ph) => { const i = document.createElement("input");
+    i.className = "areaInfo umaLinha"; i.value = valor || ""; i.spellcheck = false;
+    if (ph) i.placeholder = ph; return i; };
+  const inpSim  = umaLinha(e.sim, "Ex.: 04");
+  campo(ctx.editaData ? "Nº do caderno" : "Nº do simulado", inpSim);
+  const inpConc = ctx.editaData ? null : umaLinha(e.conc, "Ex.: 1");
+  if (inpConc) campo("Nº do concurso", inpConc);
+  const inpQ = umaLinha(e.q, "Ex.: 3120456");
+  campo("Nº da questão", inpQ);
+  const inpQUrl = ctx.editaData ? umaLinha(e.qUrl, "https://www.tecconcursos.com.br/questoes/…") : null;
+  if (inpQUrl){
+    inpQUrl.classList.add("largo");
+    campo("Link da questão", inpQUrl);
+    if (e.qUrl){
+      const a = document.createElement("a");
+      a.href = e.qUrl; a.target = "_blank"; a.rel = "noopener";
+      a.className = "pistaCampo linkCampo"; a.textContent = "↗ abrir esta questão no TEC";
+      caixa.lastChild.appendChild(a);
+    }
   }
 
   // Matéria
@@ -18936,7 +18962,7 @@ function janelaInfoCaderno(e, ctx, aoSalvar){
   if (ctx.assuntoUrl){
     const a = document.createElement("a");
     a.href = ctx.assuntoUrl; a.target = "_blank"; a.rel = "noopener";
-    a.className = "pistaCampo linkCampo"; a.textContent = "↗ abrir esta questão no TEC";
+    a.className = "pistaCampo linkCampo"; a.textContent = "↗ abrir o conteúdo no TEC";
     caixa.lastChild.appendChild(a);
   }
 
@@ -18950,6 +18976,16 @@ function janelaInfoCaderno(e, ctx, aoSalvar){
   selMot.value = e.motivo || "";
   campo("Motivo do Erro", selMot);
 
+  // o texto da anotação, com a barra de formatação fixa (a mesma do botão direito)
+  const cxApr = campoRicoModal(e.aprendi, "ricoResumo");
+  const cxBarra = el("div","campoInfo barraInfoJur");
+  cxBarra.appendChild(el("label", null, "Formatação"));
+  cxBarra.appendChild(barraRicoFixa([cxApr]));
+  caixa.appendChild(cxBarra);
+  campo(ctx.editaData ? "Anotação (o que eu aprendi)" : "O que eu aprendi", cxApr);
+  caixa.lastChild.appendChild(el("span","pistaCampo",
+    "Ctrl+B negrito · Tab recua a lista · o botão direito também abre a barra"));
+
   const acoes = el("div","modalAcoes");
   const cancelar = el("button","secundario","Cancelar");
   const gravar   = el("button","principal","Salvar");
@@ -18959,16 +18995,21 @@ function janelaInfoCaderno(e, ctx, aoSalvar){
   document.body.appendChild(fundo);
   taAss.focus();
 
-  const sair = () => fundo.remove();
+  const sair = () => { fecharMenuRico(); alvoRico = null; fundo.remove(); };
   cancelar.onclick = sair;
   fundo.addEventListener("click", ev => { if (ev.target === fundo) sair(); });
   caixa.addEventListener("keydown", ev => {
     if (ev.key === "Escape"){ ev.preventDefault(); sair(); }
-    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)){ ev.preventDefault(); gravar.click(); }
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ev.target !== cxApr){ ev.preventDefault(); gravar.click(); }
   });
 
   gravar.onclick = () => {
     if (inpData) e.data = paraISO(inpData.value);
+    e.sim = inpSim.value.trim();
+    if (inpConc) e.conc = inpConc.value.trim();
+    e.q = inpQ.value.trim();
+    if (inpQUrl) e.qUrl = inpQUrl.value.trim();
+    e.aprendi = cxApr.innerHTML;
     e.mat     = selMat.value;
     e.assunto = taAss.value;
     e.motivo  = selMot.value;
@@ -19224,36 +19265,77 @@ function telaCaderno(mod){
   };
   const emCartoes = modoCad(mod) === "cartoes";
 
-  /* o mesmo item, em cartão: as células de montarLinha trocam de lugar */
+  /* o mesmo item em cartão, no padrão do caderno de jurisprudências: título
+     (o conteúdo/assunto, que abre a questão) em cima, o texto no meio (só
+     leitura: altera-se no ⓘ) e status, ⓘ e apagar embaixo. Em "resumir" fica
+     só o título, com o ▾ ver tudo. */
   const montarCartao = (e, li, fase, resumido, tdMat) => {
     const tds = [...montarLinha(e, li).children];
-    let sim, conc, q, apr, st, rev, info, x;
-    if (semRev) [sim, q, apr, st, info, x] = tds;
-    else [sim, conc, q, apr, st, rev, info, x] = tds;
-    const data = op.semSim ? dataBR(e.data) : dataDoSim(n(e.sim), e.conc);
-    return cadCartao({
-      fase, resumido,
-      status: st,
-      chips: [
-        tdMat ? ["Matéria", tdMat] : null,
-        [op.semSim ? "Caderno" : "Simulado", sim],
-        op.semSim ? null : ["Concurso", conc],
-        ["Questão", q],
-        data ? ["", data] : null,
-        e.motivo ? ["", e.motivo] : null
-      ].filter(Boolean),
-      tit: String(e.assunto || "").trim(),
-      titVazio: "Sem " + (semRev ? "conteúdo" : "assunto") + " — clique em ⓘ para escrever",
-      // o ↗ do título abre a QUESTÃO (o link do conteúdo só entra se não houver o da questão)
-      titUrl: e.qUrl || e.assuntoUrl || "",
-      titUrlDica: e.qUrl ? "Abrir a questão no TEC" : "Abrir o conteúdo no TEC",
-      corpo: apr,
-      rodape: [ rev ? (() => { const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev); return w; })() : null,
-                el("span","flex"), info, x ]
-    });
+    let st, rev, info, x;
+    if (semRev) [, , , st, info, x] = tds;
+    else [, , , , st, rev, info, x] = tds;
+    const c = el("div","cadCard cadJur cadErro " + fase.st);
+    if (tdMat){
+      const ch = el("div","cadJurMat");
+      ch.appendChild(el("span",null,"Matéria:"));
+      tdMat.classList.add("cadChipCel"); ch.appendChild(tdMat);
+      c.appendChild(ch);
+    }
+    const assunto = String(e.assunto || "").trim();
+    const nq = String(e.q || "").trim();
+    const txtTit = assunto || (nq ? "Questão " + nq : "");
+    const url = e.qUrl || e.assuntoUrl || "";
+    let tit;
+    if (url && txtTit){
+      tit = document.createElement("a");
+      tit.href = url; tit.target = "_blank"; tit.rel = "noopener";
+      tit.title = e.qUrl ? "Abrir a questão no TEC" : "Abrir o conteúdo no TEC";
+      tit.textContent = txtTit;
+    } else tit = el("div", null, txtTit || "Sem " + (semRev ? "conteúdo" : "assunto") + " — clique em ⓘ e escreva");
+    tit.className = "cadJurTit" + (txtTit ? "" : " vazio");
+    c.appendChild(tit);
+
+    const box = el("div","cadJurBox");
+    const fechado = resumido && !jurAbertos.has(e);
+    if (fechado) c.classList.add("soTitulo");
+    if (!fechado){
+      const d = el("div","cadCardCorpo"); const cx = el("div","cxRico cxLeitura");
+      cx.innerHTML = e.aprendi || "";
+      if (!semTags(e.aprendi || "").trim()){ cx.textContent = "(sem anotação — clique em ⓘ para escrever)"; cx.classList.add("vazio"); }
+      d.appendChild(cx);
+      d.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
+      d.addEventListener("dblclick", () => janelaInfoCaderno(e, ctxInfo(e)));
+      box.appendChild(d);
+    }
+    const pe = el("div","cadJurPe");
+    st.classList.add("cadChipCel","cadStatus");
+    pe.appendChild(st);
+    if (rev){
+      const w = el("span","cadRev"); w.appendChild(el("span",null,"Revisar em")); w.appendChild(rev);
+      pe.appendChild(w);
+    }
+    pe.appendChild(el("span","flex"));
+    if (resumido){
+      const bVer = el("button","btnVerJur", fechado ? "▾ ver tudo" : "▴ recolher");
+      bVer.title = fechado ? "Mostrar o texto desta questão" : "Voltar a mostrar só o título";
+      bVer.onclick = () => { if (fechado) jurAbertos.add(e); else jurAbertos.delete(e); render(); };
+      pe.appendChild(bVer);
+    }
+    info.classList.add("cadPeCel"); x.classList.add("cadPeCel");
+    pe.appendChild(info); pe.appendChild(x);
+    box.appendChild(pe);
+    c.appendChild(box);
+    return c;
   };
 
+
   /* monta a linha de uma questão — igual na tabela normal e na dos órfãos */
+  const ctxInfo = e => ({
+    rotAssunto: semRev ? "Conteúdo" : "Assunto / Tema específico",
+    data      : op.semSim ? dataBR(e.data) : dataDoSim(n(e.sim), e.conc),
+    editaData : !!op.semSim,
+    assuntoUrl: e.assuntoUrl || ""
+  });
   const montarLinha = (e, li) => {
     const tr = el("tr", li % 2 === 0 ? "zebC" : "zebW");
     tr.appendChild(tdEdit(e.sim, v => e.sim = v, render));
@@ -19265,17 +19347,16 @@ function telaCaderno(mod){
                           : tdEdit(e.q, v => e.q = v));
     const tdAprendi = tdTextoRico(e.aprendi, v => e.aprendi = v);
     tdAprendi.classList.add("justif");        // texto distribuído entre as margens
+    // o texto só se altera no ⓘ (dois cliques também abrem), como na jurisprudência
+    const cxA = tdAprendi.querySelector(".cxRico");
+    if (cxA){ cxA.contentEditable = "false"; cxA.title = "Para alterar, use o ⓘ (ou dê dois cliques)";
+      cxA.addEventListener("dblclick", () => janelaInfoCaderno(e, ctxInfo(e))); }
     tr.appendChild(tdAprendi);
     const tdS = tdSelect(e.status, DB.status, v => e.status = v, render);
     tdS.classList.add(FASES.find(f => f.nome === faseDe(e.status)).st);
     tr.appendChild(tdS);
     if (!semRev) tr.appendChild(tdData(e.dataRev, v => e.dataRev = v));
-    tr.appendChild(celulaInfoCaderno(e, {
-      rotAssunto: semRev ? "Conteúdo" : "Assunto / Tema específico",
-      data      : op.semSim ? dataBR(e.data) : dataDoSim(n(e.sim), e.conc),
-      editaData : !!op.semSim,
-      assuntoUrl: e.assuntoUrl || e.qUrl || ""
-    }));
+    tr.appendChild(celulaInfoCaderno(e, ctxInfo(e)));
     const tdX = el("td");
     const x = el("button","mini","×"); x.title = "Apagar esta linha";
     x.onclick = () => { if (confirm("Apagar esta anotação?")){
@@ -19292,14 +19373,14 @@ function telaCaderno(mod){
     sec.appendChild(el("span","tx", fase.titulo));
     // nos cartões o texto vem inteiro; o botão serve para resumir
     const bAlt = emCartoes
-      ? el("button","btnAlturas", aberto ? "⇲ mostrar inteiro" : "⇱ resumir")
+      ? el("button","btnAlturas", aberto ? "⇲ mostrar tudo" : "⇱ resumir")
       : el("button","btnAlturas", aberto ? "⇱ uma linha só" : "⇲ abrir tudo");
     bAlt.title = emCartoes
-      ? (aberto ? "Mostrar as anotações inteiras" : "Mostrar só o começo de cada anotação")
+      ? (aberto ? "Mostrar o texto de todas as questões" : "Mostrar só o título de cada questão")
       : aberto
       ? "Voltar cada anotação para uma linha só"
       : "Mostrar as anotações inteiras, sem cortar o texto";
-    bAlt.onclick = () => { alturaCad[chaveAlt] = !aberto; render(); };
+    bAlt.onclick = () => { alturaCad[chaveAlt] = !aberto; jurAbertos.clear(); render(); };
     sec.appendChild(bAlt);
     tela.appendChild(sec);
 
