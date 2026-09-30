@@ -16485,6 +16485,8 @@ async function carregar(){
       delete pacote._v;
       pacote.crimEdit = {};
       (a.data || []).forEach(r => {
+        // linha de posição de leitura ("_leit:<seção>"): não é anotação
+        if (String(r.secao).indexOf(LEIT_PREFIXO) === 0){ leitDaNuvem(r); return; }
         pacote.crimEdit[r.secao] = { html: r.html, data: (r.atualizado_em||"").slice(0,10), ts: Date.parse(r.atualizado_em)||Date.now() };
         anotAntes[r.secao] = r.html;
       });
@@ -16845,15 +16847,6 @@ function juntarDados(velho, novo){
     R.estudo.coresCont[mat] =
       Object.assign({}, (VE.coresCont||{})[mat] || {}, R.estudo.coresCont[mat] || {});
   });
-
-  // posição de leitura (caderno de conteúdo): por seção, vale a mais recente
-  if (V.leitura || R.leitura){
-    const Lr = Object.assign({}, V.leitura || {});
-    Object.entries(R.leitura || {}).forEach(([k, a]) => {
-      if (!Lr[k] || ((a && a.t) || 0) >= ((Lr[k] && Lr[k].t) || 0)) Lr[k] = a;
-    });
-    R.leitura = Lr;
-  }
 
   ULT_CONTA = conta;
   return R;
@@ -31185,14 +31178,40 @@ function render(){
    Guarda, por seção, o TRECHO onde você parou (qual parágrafo/item/quadro
    está no alto da tela e quanto dele já passou) — e não os pixels, porque o
    mesmo texto tem alturas diferentes no celular e no computador. Fica na
-   CONTA (DB.leitura, junta pela data entre aparelhos) e neste aparelho
-   (localStorage, na hora). Para não gastar a cota da nuvem, sobe no máximo
-   uma vez por minuto enquanto você lê, e também ao sair da seção ou do app.
+   CONTA — uma linha minúscula por seção na tabela anotacoes ("_leit:<seção>"),
+   fora do pacote geral, para não fazer o outro aparelho baixar tudo — e neste
+   aparelho (localStorage, na hora). Sobe no máximo uma vez por minuto enquanto
+   você lê, e ao trocar de tela ou sair do app; vale a posição mais recente.
    Ao ENTRAR na seção (mesmo em outro aparelho), volta ao trecho. */
 const LEIT_CHAVE = "hafid-leitura-v2";
+const LEIT_PREFIXO = "_leit:";         // linha própria por seção na tabela anotacoes
 const LEIT_TOPO = 90;                 // altura aproximada da barra fixa do topo
 let leitAba = null, leitEntrou = 0, leitMexeu = 0, leitPend = false, leitSubiu = 0;
-const lerLeituraLocal = () => { try { return JSON.parse(localStorage.getItem(LEIT_CHAVE) || "{}"); } catch (e) { return {}; } };
+let leitMapa = null;                  // {aba: {i, f, t}} — deste aparelho + o que veio da conta
+const lerLeituraLocal = () => {
+  if (leitMapa) return leitMapa;
+  try { leitMapa = JSON.parse(localStorage.getItem(LEIT_CHAVE) || "{}") || {}; } catch (e) { leitMapa = {}; }
+  return leitMapa;
+};
+const gravarLeituraLocal = () => { try { localStorage.setItem(LEIT_CHAVE, JSON.stringify(lerLeituraLocal())); } catch (e) {} };
+// junta uma posição (fica a mais recente)
+function juntarPosLeitura(aba, a){
+  if (!a || typeof a !== "object") return false;
+  const m = lerLeituraLocal();
+  if (m[aba] && (m[aba].t || 0) >= (a.t || 0)) return false;
+  m[aba] = a; gravarLeituraLocal(); return true;
+}
+const leitNaNuvem = {};              // até que data (t) cada seção já está na nuvem
+// linha "_leit:<seção>" lida da nuvem
+function leitDaNuvem(r){
+  try {
+    const aba = String(r.secao).slice(LEIT_PREFIXO.length), a = JSON.parse(r.html || "null");
+    if (a && a.t) leitNaNuvem[aba] = Math.max(leitNaNuvem[aba] || 0, a.t);
+    juntarPosLeitura(aba, a);
+  } catch (e) {}
+}
+const podeNuvemLeitura = () =>
+  typeof USUARIO !== "undefined" && USUARIO && sessaoOnline && ONDE === "nuvem" && navigator.onLine !== false;
 function blocosLeitura(){
   const raiz = document.querySelector("#tela .crimMat") || document.getElementById("tela");
   return raiz ? [...raiz.querySelectorAll("section,h1,h2,h3,h4,p,li,tr,figure,table,blockquote,details,dt,dd,.balloon,.note,.jur,.card-head")] : [];
@@ -31222,38 +31241,70 @@ function guardarLeitura(){
   if (!leitAba || leitAba !== abaAtual) return;
   const a = window.scrollY < 80 ? { i: -1, f: 0, t: Date.now() } : ancoraLeitura();
   if (!a) return;
-  try { const m = lerLeituraLocal(); m[leitAba] = a; localStorage.setItem(LEIT_CHAVE, JSON.stringify(m)); } catch (e) {}
-  if (!DB) return;
-  DB.leitura = DB.leitura || {};
-  DB.leitura[leitAba] = a;
+  lerLeituraLocal()[leitAba] = a; gravarLeituraLocal();
   leitPend = true;
   if (Date.now() - leitSubiu > 60000) subirLeitura();
 }
+/* sobe SÓ as linhas de posição (uns 60 bytes cada) que estão mais novas aqui
+   do que na nuvem: não reescreve o pacote dos seus dados e não faz o outro
+   aparelho baixar nada. Sem rede ou se falhar, sobe na próxima vez. */
+let leitSubindo = false;
 function subirLeitura(){
-  if (!leitPend) return;
+  if (leitSubindo || !podeNuvemLeitura()) return;
+  const m = lerLeituraLocal();
+  const linhas = Object.keys(m).filter(k => m[k] && (m[k].t || 0) > (leitNaNuvem[k] || 0))
+    .map(k => ({ usuario: USUARIO.id, secao: LEIT_PREFIXO + k, html: JSON.stringify(m[k]),
+                 atualizado_em: new Date(m[k].t).toISOString() }));
   leitPend = false; leitSubiu = Date.now();
-  salvar();
+  if (!linhas.length) return;
+  leitSubindo = true;
+  sb.from("anotacoes").upsert(linhas)
+    .then(({ error }) => {
+      if (error) leitPend = true;
+      else linhas.forEach(l => { const k = l.secao.slice(LEIT_PREFIXO.length); leitNaNuvem[k] = JSON.parse(l.html).t; });
+    })
+    .catch(() => { leitPend = true; })
+    .finally(() => { leitSubindo = false; });
+}
+// ao entrar numa seção, busca só a linha dela (o outro aparelho pode ter lido depois)
+function buscarLeituraDaSecao(aba){
+  if (!podeNuvemLeitura()) return Promise.resolve(false);
+  return sb.from("anotacoes").select("secao,html").eq("usuario", USUARIO.id)
+    .eq("secao", LEIT_PREFIXO + aba).maybeSingle()
+    .then(({ data }) => {
+      if (!data) return false;
+      const antes = (lerLeituraLocal()[aba] || {}).t || 0;
+      leitDaNuvem(data);
+      return ((lerLeituraLocal()[aba] || {}).t || 0) > antes;
+    }).catch(() => false);
 }
 function restaurarLeitura(){
   const naSecao = modulo === "cCont" && String(abaAtual).indexOf("mat_") === 0;
-  if (leitAba && leitAba !== abaAtual) subirLeitura();        // saiu da seção: sobe o que ficou
+  if (leitAba !== abaAtual) subirLeitura();                    // trocou de tela: sobe o que ficou
   if (!naSecao){ leitAba = null; return; }
   if (leitAba === abaAtual) return;                          // redesenho da mesma seção: não mexe
   leitAba = abaAtual; leitEntrou = Date.now();
-  // o mais recente entre o da conta e o deste aparelho
-  const daConta = (DB && DB.leitura || {})[abaAtual], daqui = lerLeituraLocal()[abaAtual];
-  const a = [daConta, daqui].filter(x => x && typeof x === "object")
-    .sort((x, y) => (y.t || 0) - (x.t || 0))[0];
-  if (!a || a.i < 0) return;
+  // versão anterior guardava no pacote: passa para cá e sai de lá
+  if (DB && DB.leitura){
+    Object.entries(DB.leitura).forEach(([k, a]) => juntarPosLeitura(k, a));
+    delete DB.leitura;
+  }
   const aba = abaAtual, ini = leitEntrou;
   // as imagens carregam depois e mudam a altura: reposiciona algumas vezes,
   // enquanto você não mexer
-  const ir = () => {
-    if (abaAtual !== aba || leitMexeu > ini) return;
-    const y = yDaAncora(a);
-    if (y != null) window.scrollTo(0, y);
+  const posicionar = () => {
+    const a = lerLeituraLocal()[aba];
+    if (!a || a.i < 0) return;
+    const ir = () => {
+      if (abaAtual !== aba || leitMexeu > ini) return;
+      const y = yDaAncora(a);
+      if (y != null) window.scrollTo(0, y);
+    };
+    [0, 150, 450, 1000, 1700].forEach(t => setTimeout(ir, t));
   };
-  [0, 150, 450, 1000, 1700].forEach(t => setTimeout(ir, t));
+  posicionar();
+  // se o outro aparelho leu esta seção depois, a posição dele vale
+  buscarLeituraDaSecao(aba).then(novo => { if (novo && abaAtual === aba && leitMexeu <= ini) posicionar(); });
 }
 (function(){
   const mexeu = () => { leitMexeu = Date.now(); };
