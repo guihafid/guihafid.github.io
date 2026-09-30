@@ -16846,6 +16846,15 @@ function juntarDados(velho, novo){
       Object.assign({}, (VE.coresCont||{})[mat] || {}, R.estudo.coresCont[mat] || {});
   });
 
+  // posição de leitura (caderno de conteúdo): por seção, vale a mais recente
+  if (V.leitura || R.leitura){
+    const Lr = Object.assign({}, V.leitura || {});
+    Object.entries(R.leitura || {}).forEach(([k, a]) => {
+      if (!Lr[k] || ((a && a.t) || 0) >= ((Lr[k] && Lr[k].t) || 0)) Lr[k] = a;
+    });
+    R.leitura = Lr;
+  }
+
   ULT_CONTA = conta;
   return R;
 }
@@ -30372,6 +30381,7 @@ function botaoVoltaTopo(tela){
   b.onclick = ev => {
     if (ev.detail === 0) return;          // clique vindo do teclado: ignora
     b.blur();
+    window.__voltaTopoPedido = Date.now();  // este salto para o topo foi você que pediu
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   tela.appendChild(b);
@@ -31151,6 +31161,11 @@ function render(){
   // módulos de uma aba só não precisam da régua de guias
   guias.style.display = guias.children.length ? "" : "none";
   const tela = document.getElementById("tela");
+  // redesenho da MESMA tela (salvar, sincronizar, cronômetro…): guarda a
+  // posição da página, senão ela voltava sozinha para o início
+  const mesmaTela = render.__aba === abaAtual && render.__modulo === modulo;
+  const yAntes = window.scrollY;
+  render.__aba = abaAtual; render.__modulo = modulo;
   tela.innerHTML = "";
   let aba = ABAS.find(a => a.id === abaAtual);
   if (!aba){                                   // aba de outro módulo: volta ao início dele
@@ -31162,7 +31177,116 @@ function render(){
     tela.appendChild(el("div","vazioAviso","Esta tela não pôde ser montada: " + err.message));
     console.error(err);
   }
+  if (mesmaTela && yAntes > 0 && Math.abs(window.scrollY - yAntes) > 2) window.scrollTo(0, yAntes);
+  restaurarLeitura();
 }
+
+/* ---------- posição de leitura no caderno de conteúdo ----------
+   Guarda, por seção, o TRECHO onde você parou (qual parágrafo/item/quadro
+   está no alto da tela e quanto dele já passou) — e não os pixels, porque o
+   mesmo texto tem alturas diferentes no celular e no computador. Fica na
+   CONTA (DB.leitura, junta pela data entre aparelhos) e neste aparelho
+   (localStorage, na hora). Para não gastar a cota da nuvem, sobe no máximo
+   uma vez por minuto enquanto você lê, e também ao sair da seção ou do app.
+   Ao ENTRAR na seção (mesmo em outro aparelho), volta ao trecho. */
+const LEIT_CHAVE = "hafid-leitura-v2";
+const LEIT_TOPO = 90;                 // altura aproximada da barra fixa do topo
+let leitAba = null, leitEntrou = 0, leitMexeu = 0, leitPend = false, leitSubiu = 0;
+const lerLeituraLocal = () => { try { return JSON.parse(localStorage.getItem(LEIT_CHAVE) || "{}"); } catch (e) { return {}; } };
+function blocosLeitura(){
+  const raiz = document.querySelector("#tela .crimMat") || document.getElementById("tela");
+  return raiz ? [...raiz.querySelectorAll("section,h1,h2,h3,h4,p,li,tr,figure,table,blockquote,details,dt,dd,.balloon,.note,.jur,.card-head")] : [];
+}
+function ancoraLeitura(){
+  const alvo = window.scrollY + LEIT_TOPO, L = blocosLeitura();
+  // o elemento mais interno que CONTÉM o ponto; se nenhum contém, o último acima dele
+  let i = -1, top = 0, alt = 1, dentro = false;
+  L.forEach((e, k) => {
+    const r = e.getBoundingClientRect();
+    if (!(r.height > 0)) return;
+    const t = r.top + window.scrollY, contem = t <= alvo && alvo < t + r.height;
+    if (contem){ i = k; top = t; alt = r.height; dentro = true; }
+    else if (!dentro && t <= alvo){ i = k; top = t; alt = Math.max(1, r.height); }
+  });
+  if (i < 0) return null;
+  return { i, f: Math.max(0, Math.min(1, (alvo - top) / alt)), t: Date.now() };
+}
+function yDaAncora(a){
+  if (!a || typeof a !== "object") return null;
+  const e = blocosLeitura()[a.i];
+  if (!e) return null;
+  const r = e.getBoundingClientRect();
+  return Math.max(0, r.top + window.scrollY + (a.f || 0) * r.height - LEIT_TOPO);
+}
+function guardarLeitura(){
+  if (!leitAba || leitAba !== abaAtual) return;
+  const a = window.scrollY < 80 ? { i: -1, f: 0, t: Date.now() } : ancoraLeitura();
+  if (!a) return;
+  try { const m = lerLeituraLocal(); m[leitAba] = a; localStorage.setItem(LEIT_CHAVE, JSON.stringify(m)); } catch (e) {}
+  if (!DB) return;
+  DB.leitura = DB.leitura || {};
+  DB.leitura[leitAba] = a;
+  leitPend = true;
+  if (Date.now() - leitSubiu > 60000) subirLeitura();
+}
+function subirLeitura(){
+  if (!leitPend) return;
+  leitPend = false; leitSubiu = Date.now();
+  salvar();
+}
+function restaurarLeitura(){
+  const naSecao = modulo === "cCont" && String(abaAtual).indexOf("mat_") === 0;
+  if (leitAba && leitAba !== abaAtual) subirLeitura();        // saiu da seção: sobe o que ficou
+  if (!naSecao){ leitAba = null; return; }
+  if (leitAba === abaAtual) return;                          // redesenho da mesma seção: não mexe
+  leitAba = abaAtual; leitEntrou = Date.now();
+  // o mais recente entre o da conta e o deste aparelho
+  const daConta = (DB && DB.leitura || {})[abaAtual], daqui = lerLeituraLocal()[abaAtual];
+  const a = [daConta, daqui].filter(x => x && typeof x === "object")
+    .sort((x, y) => (y.t || 0) - (x.t || 0))[0];
+  if (!a || a.i < 0) return;
+  const aba = abaAtual, ini = leitEntrou;
+  // as imagens carregam depois e mudam a altura: reposiciona algumas vezes,
+  // enquanto você não mexer
+  const ir = () => {
+    if (abaAtual !== aba || leitMexeu > ini) return;
+    const y = yDaAncora(a);
+    if (y != null) window.scrollTo(0, y);
+  };
+  [0, 150, 450, 1000, 1700].forEach(t => setTimeout(ir, t));
+}
+(function(){
+  const mexeu = () => { leitMexeu = Date.now(); };
+  ["wheel","touchstart","keydown","mousedown"].forEach(t =>
+    window.addEventListener(t, mexeu, { passive: true, capture: true }));
+  let espera = null;
+  window.addEventListener("scroll", () => {
+    if (!leitAba || leitAba !== abaAtual || leitMexeu <= leitEntrou) return;   // só a rolagem feita por você
+    clearTimeout(espera);
+    espera = setTimeout(guardarLeitura, 400);
+  }, { passive: true });
+  document.addEventListener("visibilitychange", () => { if (document.hidden){ guardarLeitura(); subirLeitura(); } });
+  window.addEventListener("pagehide", () => { guardarLeitura(); subirLeitura(); });
+
+  /* Proteção: numa seção de conteúdo, se a página SALTAR para o topo sem você
+     ter rolado (roda, toque, teclado) nem clicado no ↑, o salto é desfeito.
+     Vale para qualquer causa (redesenho, foco da janela, barra do Ctrl+F…). */
+  let segAba = null, segY = 0, segAcao = 0;
+  ["wheel","touchmove","keydown"].forEach(t =>
+    window.addEventListener(t, () => { segAcao = Date.now(); }, { passive: true, capture: true }));
+  window.addEventListener("scroll", () => {
+    const na = modulo === "cCont" && String(abaAtual).indexOf("mat_") === 0;
+    if (!na){ segAba = null; return; }
+    if (segAba !== abaAtual){ segAba = abaAtual; segY = window.scrollY; return; }
+    const y = window.scrollY;
+    const pediuTopo = Date.now() - (window.__voltaTopoPedido || 0) < 2500;
+    if (y < 60 && segY > 400 && Date.now() - segAcao > 900 && !pediuTopo){
+      window.scrollTo(0, segY);          // salto sozinho para o topo: desfaz
+      return;
+    }
+    segY = y;
+  }, { passive: true });
+})();
 
 /* ===================== capa de abertura =====================
    Primeira coisa que aparece ao abrir: o que vem por aí, como você
@@ -44841,6 +44965,7 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 </table>
 
 <figure class="imgwrap"><img src="img/7a42fc3414d447df.webp"></figure>
+<p style="margin:2px 0 14px;text-align:center"><a href="https://youtu.be/NpZ3QuAptqA?is=Al7vZccZpzW0btfG" target="_blank" rel="noopener" title="https://youtu.be/NpZ3QuAptqA" style="display:inline-flex;align-items:center;gap:6px;color:#c4302b;font-weight:bold;text-decoration:none;border:1px solid #f0c4c1;background:#fff6f5;border-radius:16px;padding:4px 12px;font-size:13px">&#9654; Assistir ao vídeo no YouTube</a></p>
 
 <div class="balloon flat noline b-azul"><div class="bt">Desarquivamento × Provas novas (art. 18 e Súmula 524/STF)</div>
 <p><b>Art. 18.</b> Depois de ordenado o arquivamento do inquérito pela autoridade judiciária, por falta de base para a denúncia, a autoridade policial poderá proceder a novas pesquisas, se de outras provas tiver notícia.</p>
@@ -50927,7 +51052,6 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <div class="cell cell-cinza"><div class="ch">ii) Estrutura social</div><p>São as oportunidades reais conferidas aos membros da sociedade para alcançar as metas almejadas.</p></div>
 </div>
 <ul class="plain" style="margin-top:6px"><li>Para Merton, há que se falar em anomia justamente quando se nota <b>forte dissociação</b> entre os objetivos culturais e a estrutura social. Ex.: a sociedade atual é consumista. Boa parte da população não tem possibilidade de acesso a produtos/serviços. O crime seria uma forma de o indivíduo conseguir alcançar os tais objetivos culturais.</li></ul>
-</div>
 
 <div class="sub2">Robert King Merton elenca 5 tipos de comportamento:</div>
 <ul class="dash">
@@ -50947,6 +51071,7 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <tr style="background:#f1f3f5"><td style="background:#f1f3f5"><b>Apatia / Retraimento</b></td><td style="background:#f1f3f5;text-align:center"><span class="minus">−</span></td><td style="background:#f1f3f5;text-align:center"><span class="minus">−</span></td></tr>
 <tr style="background:#f3ecfa"><td style="background:#f3ecfa"><b>Rebelião</b></td><td style="background:#f3ecfa;text-align:center"><span class="pm">±</span></td><td style="background:#f3ecfa;text-align:center"><span class="pm">±</span></td></tr>
 </table>
+</div>
 
 <div class="cgrid">
 <div class="cell cell-verm"><div class="ch">MERTON</div><p>→ o "tadinho" não consegue bater as metas estipuladas pela sociedade e vira criminoso.</p></div>
@@ -50999,6 +51124,16 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <li>Teoria da <b>neutralização</b>.</li>
 </ul>
 </div>
+
+<div class="sub2">Teorias da Aprendizagem Social — quadro-resumo</div>
+<table class="t">
+<tr><th>Teoria</th><th>Autor(es)</th><th>Ideia-chave</th></tr>
+<tr style="background:#f7f3fc"><td style="background:#f7f3fc;width:28%;vertical-align:middle;text-align:left !important"><b style="color:#3b2552">Associação diferencial</b></td><td style="background:#f7f3fc;width:24%;vertical-align:middle;text-align:left !important">Sutherland <span style="display:inline-block;font-size:11px;font-weight:bold;color:#5b3f86;background:#ece4f7;border-radius:10px;padding:1px 7px;margin-left:2px;white-space:nowrap">1939/1947</span></td><td style="background:#f7f3fc;vertical-align:middle;text-align:left !important">Aprende-se o crime na convivência; <b>excesso de definições favoráveis</b> à violação da lei</td></tr>
+<tr style="background:#ffffff"><td style="background:#ffffff;width:28%;vertical-align:middle;text-align:left !important"><b style="color:#3b2552">Identificação diferencial</b></td><td style="background:#ffffff;width:24%;vertical-align:middle;text-align:left !important">Glaser <span style="display:inline-block;font-size:11px;font-weight:bold;color:#5b3f86;background:#ece4f7;border-radius:10px;padding:1px 7px;margin-left:2px;white-space:nowrap">1956</span></td><td style="background:#ffffff;vertical-align:middle;text-align:left !important">Aprende-se com <b>quem nos identificamos</b>, mesmo sem contato direto</td></tr>
+<tr style="background:#f7f3fc"><td style="background:#f7f3fc;width:28%;vertical-align:middle;text-align:left !important"><b style="color:#3b2552">Neutralização</b></td><td style="background:#f7f3fc;width:24%;vertical-align:middle;text-align:left !important">Sykes e Matza <span style="display:inline-block;font-size:11px;font-weight:bold;color:#5b3f86;background:#ece4f7;border-radius:10px;padding:1px 7px;margin-left:2px;white-space:nowrap">1957</span></td><td style="background:#f7f3fc;vertical-align:middle;text-align:left !important"><b>Justificativas</b> que suspendem a culpa</td></tr>
+<tr style="background:#ffffff"><td style="background:#ffffff;width:28%;vertical-align:middle;text-align:left !important"><b style="color:#3b2552">Reforço diferencial</b></td><td style="background:#ffffff;width:24%;vertical-align:middle;text-align:left !important">Jeffery <span style="display:inline-block;font-size:11px;font-weight:bold;color:#5b3f86;background:#ece4f7;border-radius:10px;padding:1px 7px;margin-left:2px;white-space:nowrap">1965</span></td><td style="background:#ffffff;vertical-align:middle;text-align:left !important"><b>Condicionamento operante</b> aplicado ao crime; depois, fatores biológicos</td></tr>
+<tr style="background:#f7f3fc"><td style="background:#f7f3fc;width:28%;vertical-align:middle;text-align:left !important"><b style="color:#3b2552">Associação diferencial-reforço</b></td><td style="background:#f7f3fc;width:24%;vertical-align:middle;text-align:left !important">Burgess e Akers <span style="display:inline-block;font-size:11px;font-weight:bold;color:#5b3f86;background:#ece4f7;border-radius:10px;padding:1px 7px;margin-left:2px;white-space:nowrap">1966</span></td><td style="background:#f7f3fc;vertical-align:middle;text-align:left !important">Sutherland reescrito em linguagem <b>behaviorista</b> (recompensas e punições)</td></tr>
+</table>
 
 <div class="tcards">
 <div class="tcard">
