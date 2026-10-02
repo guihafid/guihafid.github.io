@@ -20576,6 +20576,21 @@ function telaJuris(){
       vazio:"Nenhum julgado dominado ainda. Troque o Status para \"Dominado\" e ele desce para cá." }
   };
   let semItensPend = [];
+  // resumo geral (fica no lugar da linha dos pendentes): total e cada parte
+  const jurResumo = { total: 0, mats: new Set(), fases: {} };
+  FASES.forEach(f => {
+    const ms = new Set(); let q = 0;
+    matsJur().forEach(mat => {
+      const k = lista.filter(e => e.mat === mat && faseDe(e.status) === f.nome).length;
+      if (k){ q += k; ms.add(mat); jurResumo.mats.add(mat); }
+    });
+    jurResumo.fases[f.nome] = { q: q, m: ms.size };
+    jurResumo.total += q;
+  });
+  const jurParte = (rot, nome) => {
+    const p = jurResumo.fases[nome] || { q: 0, m: 0 };
+    return rot + ": " + p.q + (p.q ? " em " + p.m + " matéria(s)" : "");
+  };
   FASES.forEach(fase => {
     const fj = FASES_JUR[fase.nome] || { titulo: fase.titulo, conta: fase.conta, vazio: fase.vazio };
     const sec = el("div","secCaderno " + fase.cls);
@@ -20589,7 +20604,12 @@ function telaJuris(){
     });
     if (fase.nome === "Pendente") semItensPend = semItens;
     const total = comItens.reduce((a,x) => a + x.itens.length, 0);
-    if (total) tela.appendChild(el("div","resumoFase",
+    if (fase.nome === "Pendente" && jurResumo.total) tela.appendChild(el("div","resumoFase",
+      "Total: " + jurResumo.total + " julgado(s) em " + jurResumo.mats.size + " matéria(s)  —  " +
+      [jurParte("Pendentes", "Pendente"), jurParte("Revisados", "Revisado"),
+       jurParte("Dominados", "Dominado")].join("  ·  ") + "." +
+      (filtro ? " Filtrado por " + filtro + "." : "")));
+    else if (total) tela.appendChild(el("div","resumoFase",
       total + " julgado(s) em " + comItens.length + " matéria(s)." +
       (filtro ? " Filtrado por " + filtro + "." : "")));
 
@@ -33325,17 +33345,20 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <p style="font-size:13px;margin:2px 0">São 4 causas de aumento:</p>
 <div class="alinea az"><div class="ab">1/3</div><div class="atxt">Recusar, negar ou impedir ingresso/inscrição de aluno em estabelecimento de ensino, se praticado <b>contra menor de 18 anos</b> (art. 6º).</div></div>
 <div class="alinea az"><div class="ab">1/2</div><div class="atxt">Crime cometido mediante <b>concurso de duas ou mais pessoas</b> (art. 2º-A, parágrafo único).</div></div>
-<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Crimes praticados em contexto do intuito de <b>descontração, diversão ou recreação</b> (art. 20-A).</div></div>
-<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Injúria, prática, induzimento ou incitação à discriminação cometida por <b>funcionário público</b>, no exercício da função ou a pretexto de exercê-la (art. 20-B).</div></div>
-<div class="balloon b-roxo"><div class="bt">Forma qualificada (art. 20-A)</div>
-<p style="font-size:13px;margin:2px 0 8px">Quando o crime (art. 20-A) ocorre em contexto de <b>descontração, diversão ou recreação</b>, configura-se a FORMA QUALIFICADA. Esses locais incluem:</p>
+<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Qualquer crime desta Lei, quando ocorrer em contexto ou com intuito de <b>descontração, diversão ou recreação</b> — racismo recreativo (art. 20-A).</div></div>
+<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Injúria racial (art. 2º-A) e prática, induzimento ou incitação à discriminação (art. 20) cometidas por <b>funcionário público</b>, no exercício da função ou a pretexto de exercê-la (art. 20-B).</div></div>
+<div class="balloon b-roxo"><div class="bt">Formas qualificadas do art. 20</div>
+<p style="font-size:13px;margin:2px 0 8px"><b>§ 2º — Meios de comunicação e internet:</b> quando o crime do art. 20 é cometido por intermédio dos <b>meios de comunicação social</b>, de <b>publicação em redes sociais</b>, da <b>rede mundial de computadores</b> ou de <b>publicação de qualquer natureza</b>.</p>
+<div class="note">Pena: <span class="mark">2 a 5 anos</span> e multa.</div>
+<p style="font-size:13px;margin:10px 0 8px"><b>§ 2º-A — Atividades destinadas ao público:</b> quando o crime do art. 20 é cometido no contexto de <b>atividades destinadas ao público</b>, configura-se a FORMA QUALIFICADA. Esses contextos são:</p>
 <ul class="dash">
-<li>⚽ Eventos Esportivos</li>
-<li>🙏 Reuniões Religiosas</li>
-<li>🎭 Expressões Artísticas</li>
-<li>🎉 Celebrações Culturais</li>
+<li>⚽ Atividades Esportivas</li>
+<li>🙏 Atividades Religiosas</li>
+<li>🎭 Atividades Artísticas</li>
+<li>🎉 Atividades Culturais</li>
 </ul>
-<div class="note">Consequência: além da pena de <span class="mark">2 a 5 anos</span>, há proibição de frequência, por 3 (três) anos, a esses locais.</div>
+<div class="note">Consequência: pena de <span class="mark">2 a 5 anos</span> e proibição de frequência, por 3 (três) anos, a locais destinados a práticas <b>esportivas, artísticas ou culturais</b> destinadas ao público, conforme o caso. <b>Atenção:</b> o contexto religioso qualifica o crime, mas <u>não</u> está na lista dos locais proibidos.</div>
+<div class="note">Não confundir: o <b>art. 20-A</b> (descontração, diversão ou recreação) é <b>causa de aumento</b>, não forma qualificada.</div>
 </div>
 </section>
 <section class="lepcard bordered">
@@ -33738,6 +33761,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <li>A <b>multa</b> é considerada <b>dívida de valor</b>, aplicando-se as normas relativas à dívida ativa da Fazenda Pública.</li>
 <li>A multa <span class="cp-r">não pode, de forma alguma, ser convertida em prisão</span>, como antes previa o art. 9º da LCP.</li>
 <li>A <b>transação penal</b> não admite o confisco dos bens de uma contravenção penal, pois a sentença tem <b>natureza homologatória</b>, sem qualquer juízo sobre a responsabilidade criminal do aceitante.</li>
+<li>O <b>porte de arma branca</b> é conduta que <span class="cp-r">permanece típica</span> na Lei das Contravenções Penais (art. 19) (Info 668 - STJ e Info 1153 - STF).</li>
 </ul>
 </div>
 <div class="cp-foot"><span class="l">@estudaguilherme</span><span><b>DL nº 3.688/1941</b> (Lei das Contravenções Penais) | <b>DL nº 6.259/1944</b></span></div>
@@ -38577,7 +38601,6 @@ b) <b>Instrução do 2º grau ou superior</b></li>
     </ul>
   
 
-<div class="mnemo"><span class="ico">🐸</span><span>Saponificação (adipocera) — Sapo vive em lago (úmido e argiloso)</span></div>
 <h4 class="subsub">Saponificação (adipocera)</h4>
   
   
@@ -38589,9 +38612,9 @@ b) <b>Instrução do 2º grau ou superior</b></li>
       <li>Preserva achados médico-legais.</li>
       <li>Favorecida em obesos, locais quentes, úmidos, argiloso e pouco ventilados.</li>
     </ul>
+<div class="mnemo"><span class="ico">🐸</span><span>Saponificação (adipocera) — Sapo vive em lago (úmido e argiloso)</span></div>
   
 
-<div class="mnemo"><span class="ico">🏜️</span><span>Mumificação — Múmia vive em deserto (seco e desidratante)</span></div>
 <h4 class="subsub">Mumificação</h4>
   
   
@@ -38602,6 +38625,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
       <li>Pele seca, dura e enegrecida.</li>
       <li>Peso reduzido.</li>
     </ul>
+<div class="mnemo"><span class="ico">🏜️</span><span>Mumificação — Múmia vive em deserto (seco e desidratante)</span></div>
   
 
 <h4 class="subsub">Corificação</h4>
@@ -49141,6 +49165,50 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <li><b>Rol taxativo.</b></li>
 <li><b>Discricionário do administrador:</b> a licitação é viável, haja vista a possibilidade de competição, mas é afastada, a critério do administrador, para atender o interesse público de forma mais célere e eficiente.</li>
 </ul>
+<p><b>Hipóteses de licitação dispensável (art. 75 da Lei 14.133/2021):</b></p>
+<ul class="plain">
+<li class="sem-bolinha">I – <b>obras e serviços de engenharia</b> ou <b>serviços de manutenção de veículos automotores</b> de valor inferior a <b><span class="mark">R$ 100 mil</span></b> (R$ 130.984,20 em 2026);</li>
+<li class="sem-bolinha">II – <b>outros serviços e compras</b> de valor inferior a <b><span class="mark">R$ 50 mil</span></b> (R$ 65.492,11 em 2026);</li>
+<li class="sem-bolinha">III – licitação realizada há <b>menos de 1 ano</b>, mantidas todas as condições do edital, quando nela: a) não surgiram licitantes interessados ou não houve propostas válidas (<b>deserta ou fracassada</b>); ou b) as propostas tinham preços manifestamente superiores aos de mercado ou incompatíveis com os fixados pelos órgãos oficiais;</li>
+<li class="sem-bolinha">IV – em razão do <b>objeto</b>:
+    <ul class="dash">
+<li class="sem-bolinha">a) bens, componentes ou peças para manutenção de equipamentos, comprados do <b>fornecedor original durante a garantia técnica</b>, quando a exclusividade for indispensável para manter a garantia;</li>
+<li class="sem-bolinha">b) bens, serviços, alienações ou obras nos termos de <b>acordo internacional</b> aprovado pelo Congresso, quando manifestamente vantajosos;</li>
+<li class="sem-bolinha">c) <b>produtos para pesquisa e desenvolvimento</b> (em obras e serviços de engenharia, limitados a R$ 300 mil, valor atualizado por decreto);</li>
+<li class="sem-bolinha">d) transferência de tecnologia ou licenciamento de criação protegida, contratados por <b>ICT pública ou agência de fomento</b>, demonstrada a vantagem;</li>
+<li class="sem-bolinha">e) <b>hortifrutigranjeiros, pães e outros gêneros perecíveis</b>, no tempo necessário para fazer a licitação, pelo <b>preço do dia</b>;</li>
+<li class="sem-bolinha">f) bens ou serviços produzidos ou prestados no País que envolvam, <b>cumulativamente</b>, alta complexidade tecnológica e defesa nacional;</li>
+<li class="sem-bolinha">g) materiais de uso das <b>Forças Armadas</b> (exceto de uso pessoal e administrativo), para manter a padronização logística, com autorização do comandante da força;</li>
+<li class="sem-bolinha">h) bens e serviços para contingentes militares em <b>operações de paz no exterior</b>, com justificativa de preço e de fornecedor e ratificação do comandante;</li>
+<li class="sem-bolinha">i) abastecimento de efetivos militares em <b>estada eventual de curta duração</b> em portos, aeroportos ou localidades fora da sede;</li>
+<li class="sem-bolinha">j) coleta, processamento e comercialização de <b>resíduos sólidos recicláveis</b> por associações ou cooperativas de <b>catadores</b> de baixa renda;</li>
+<li class="sem-bolinha">k) aquisição ou restauração de <b>obras de arte e objetos históricos</b> de autenticidade certificada, compatíveis com as finalidades do órgão;</li>
+<li class="sem-bolinha">l) serviços especializados e equipamentos para <b>captação ambiental e interceptação</b> (art. 3º, II e V, da Lei 12.850/2013), quando houver necessidade justificada de <b>sigilo</b> da investigação;</li>
+<li class="sem-bolinha">m) <b>medicamentos para doenças raras</b> definidas pelo Ministério da Saúde;</li>
+</ul>
+</li>
+<li class="sem-bolinha">V – cumprimento dos arts. 3º, 3º-A, 4º, 5º e 20 da <b>Lei de Inovação</b> (Lei 10.973/2004);</li>
+<li class="sem-bolinha">VI – risco de comprometer a <b>segurança nacional</b>, nos casos definidos pelo Ministro da Defesa, a pedido dos comandos das Forças Armadas ou dos demais ministérios;</li>
+<li class="sem-bolinha">VII – <b>guerra, estado de defesa, estado de sítio, intervenção federal</b> ou grave perturbação da ordem;</li>
+<li class="sem-bolinha">VIII – <b>emergência ou calamidade pública</b>, só para os bens necessários e para as parcelas de obras e serviços que possam ser concluídas em no máximo <b><span class="mark">1 ano</span></b> da ocorrência, <b>vedadas a prorrogação</b> do contrato e a <b>recontratação</b> da mesma empresa com base neste inciso;</li>
+<li class="sem-bolinha">IX – aquisição, por pessoa jurídica de direito público interno, de bens ou serviços de <b>órgão ou entidade da Administração criados para esse fim específico</b>, a preço de mercado;</li>
+<li class="sem-bolinha">X – quando a <b>União</b> tiver que <b>intervir no domínio econômico</b> para regular preços ou normalizar o abastecimento;</li>
+<li class="sem-bolinha">XI – <b>contrato de programa</b> com ente federativo ou entidade de sua Administração indireta, para prestação associada de serviços públicos (consórcio público ou convênio de cooperação);</li>
+<li class="sem-bolinha">XII – <b>transferência de tecnologia de produtos estratégicos para o SUS</b>, inclusive a aquisição desses produtos durante a absorção tecnológica;</li>
+<li class="sem-bolinha">XIII – <b>profissional de notória especialização</b> para compor a <b>comissão de avaliação de critérios de técnica</b>;</li>
+<li class="sem-bolinha">XIV – <b>associação de pessoas com deficiência</b>, sem fins lucrativos e idônea, para serviços prestados exclusivamente por pessoas com deficiência, a preço de mercado;</li>
+<li class="sem-bolinha">XV – instituição brasileira sem fins lucrativos, de inquestionável reputação, que apoie <b>ensino, pesquisa, extensão, desenvolvimento institucional, científico e tecnológico e inovação</b>, ou dedicada à <b>recuperação social da pessoa presa</b>;</li>
+<li class="sem-bolinha">XVI – aquisição, por pessoa jurídica de direito público interno, de <b>produtos estratégicos para a saúde</b> fornecidos por produtores públicos por meio de <b>fundação de apoio</b> criada para esse fim antes da Lei, a preço de mercado (redação da Lei 15.471/2026);</li>
+<li class="sem-bolinha">XVII – entidade privada sem fins lucrativos para implantar <b>cisternas</b> ou outras tecnologias sociais de acesso à água, para famílias rurais de baixa renda atingidas pela seca;</li>
+<li class="sem-bolinha">XVIII – entidade privada sem fins lucrativos para o <b>Programa Cozinha Solidária</b> (alimentação gratuita à população vulnerável, inclusive em situação de rua).</li>
+</ul>
+<p><b>Regras da dispensa por valor (incisos I e II):</b></p>
+<ul class="dash">
+<li>O limite é aferido pelo <b>somatório do exercício financeiro</b> na unidade gestora, com objetos de <b>mesma natureza</b> (mesmo ramo de atividade) — § 1º.</li>
+<li>Valores <b><span class="mark">duplicados</span></b> para <b>consórcio público</b> e para <b>autarquia ou fundação qualificadas como agência executiva</b> — § 2º.</li>
+<li>Manutenção de veículos do próprio órgão até R$ 8 mil (R$ 10.478,74 em 2026), com peças, fica fora do somatório — § 7º.</li>
+<li>Preferencialmente com aviso em sítio oficial por <b>3 dias úteis</b> (§ 3º) e pagamento por <b>cartão de pagamento</b> (§ 4º).</li>
+</ul>
 </div><div class="balao verde">
 <p class="titulo">Dispensada (Vinculada) — Alienação</p>
 <p><b>Requisitos Comuns (para bens móveis e imóveis):</b></p>
@@ -58153,6 +58221,38 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
       <span class="mnem">Bizu: só cabe retratação <b>na CAMA</b> — <b>CA</b>lúnia e difa<b>MA</b>ção.</span>
     </div>
 
+    <h4>9.3 Excludentes especiais</h4>
+    <div class="tbl-wrap">
+    <table class="t122">
+      <thead>
+        <tr>
+          <th class="th-roxo" style="width:130px;">CRIME</th>
+          <th class="th-roxo" style="width:110px;">CABE?</th>
+          <th class="th-roxo">FUNDAMENTO</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="l-verm">
+          <td class="rot">Calúnia</td>
+          <td class="rot">NÃO</td>
+          <td>O art. 142 só fala em <strong>injúria ou difamação</strong>. A imunidade da ofensa em juízo <u>não</u> alcança a calúnia (STF).</td>
+        </tr>
+        <tr class="l-azul">
+          <td class="rot">Difamação</td>
+          <td class="rot">SIM</td>
+          <td>Art. 142 — não há difamação punível:<br>I – na <strong>ofensa irrogada em juízo</strong>, na discussão da causa, pela parte ou por seu procurador;<br>II – na <strong>opinião desfavorável da crítica</strong> literária, artística ou científica, salvo intenção inequívoca de difamar;<br>III – no <strong>conceito desfavorável de funcionário público</strong>, em apreciação ou informação no cumprimento de dever do ofício.</td>
+        </tr>
+        <tr class="l-verde">
+          <td class="rot">Injúria</td>
+          <td class="rot">SIM</td>
+          <td>As <strong>mesmas três hipóteses</strong> do art. 142 (ofensa em juízo, crítica e conceito de funcionário público).</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p><strong>Atenção:</strong> nos casos dos incisos <strong>I e III</strong>, responde pela injúria ou difamação <strong>quem lhe dá publicidade</strong> (art. 142, parágrafo único).</p>
+
+
     <div class="box box-verde">
       <span class="lab">Fechando o capítulo</span>
       <ul class="plain">
@@ -65680,6 +65780,7 @@ No caso de S.A., quando houver requerimento de acionistas que representem pelo m
 <p>Nas <b>ADI 4277 e ADPF 132</b>, de 2011, o STF reconheceu a <b>união estável homoafetiva</b> como entidade familiar, mediante interpretação conforme do art. 1.723 do Código Civil. Em 2013, a <b>Resolução 175 do CNJ</b> vedou às autoridades competentes a recusa de habilitação e celebração de <b>casamento civil</b> entre pessoas do mesmo sexo.</p>
 <p>Na <b>ADI 4275</b>, de 2018, firmou-se o direito à <b>alteração de prenome e gênero no registro civil</b> de pessoas transgênero <b>independentemente de cirurgia, laudo, tratamento hormonal ou autorização judicial</b>, bastando a autodeclaração perante o cartório.</p>
 <p>Na <b>ADO 26</b> e no <b>MI 4733</b>, de 2019, o STF reconheceu a mora inconstitucional do Congresso e determinou o enquadramento da <b>homofobia e da transfobia</b> na <b>Lei 7.716/89</b>, até que sobrevenha legislação específica.</p>
+<p>No <b>MI 7452</b>, de 2025, o STF, por unanimidade, reconheceu nova omissão do Congresso — a simples tramitação de projetos de lei não a afasta — e estendeu a <b>Lei Maria da Penha</b> (Lei 11.340/2006), até que sobrevenha lei específica, às relações domésticas e familiares de <b>casais homoafetivos do sexo masculino</b>, quando fatores do contexto colocarem o homem vítima em <b>posição de subalternidade</b> na relação, e às <b>travestis e mulheres transexuais</b> com identidade social feminina. Os ministros Zanin, Mendonça e Fachin acompanharam com ressalva: para os homens, aplicam-se as <b>medidas protetivas de urgência</b>, mas não os tipos penais que pressupõem vítima mulher.</p>
 <p>Na <b>ADPF 527</b>, de 2019, assegurou-se às pessoas <b>trans e travestis privadas de liberdade</b> o direito de cumprir pena em estabelecimento feminino ou em ala específica, conforme sua escolha. No mesmo sentido, a <b>Resolução 348 do CNJ</b>, de 2020, estabeleceu diretrizes para o tratamento de pessoas LGBTQIA+ custodiadas, assegurando o uso do <b>nome social</b>, a escolha do local de custódia e a escolha do sexo do agente que realizará a <b>revista pessoal</b> — pontos de aplicação direta na atividade policial.</p>
 <p>Completam o quadro a <b>ADPF 291</b>, de 2015, que declarou não recepcionadas expressões discriminatórias do art. 235 do Código Penal Militar, e a <b>ADI 5543</b>, de 2020, que reputou inconstitucional a restrição à doação de sangue por homens que fazem sexo com homens. No plano interamericano, a <b>OC-24/17</b> tratou da identidade de gênero autopercebida e da obrigação de reconhecer vínculos entre pessoas do mesmo sexo.</p>
 <p>Na esfera federal, o Decreto 8.727/2016 disciplina o uso do nome social nos registros e no atendimento da administração pública, havendo resoluções estaduais no mesmo sentido.</p>
@@ -65714,6 +65815,7 @@ No caso de S.A., quando houver requerimento de acionistas que representem pelo m
 <p>Completam o regime o <b>Estatuto da Igualdade Racial</b> (Lei 12.288/2010) e a <b>CIRDI</b>, Convenção Interamericana contra o Racismo, de 2013, incorporada pelo Decreto 10.932/2022 com status de emenda constitucional. A CIRDI traz o conceito de <b>discriminação múltipla ou agravada</b> e prevê expressamente obrigações estatais relativas ao <b>perfilamento racial</b>.</p>
 <p>Na jurisprudência, a <b>ADPF 186</b>, de 2012, reconheceu a constitucionalidade das cotas raciais no ensino superior, e a <b>ADC 41</b>, de 2017, a das cotas em concursos públicos.</p>
 <p>Conceito indispensável é o de <b>racismo estrutural e institucional</b>: o racismo não se reduz a condutas individuais, operando também nas rotinas e práticas ordinárias das instituições. Na segurança pública, sua manifestação mais evidente é a <b>filtragem racial</b>, tratada adiante.</p>
+<p>Na <b>ADPF 973</b> ("ADPF Vidas Negras"), julgada em dezembro de 2025, o STF, por <b>unanimidade</b>, <b>reconheceu a existência de racismo estrutural no Brasil</b>, decorrente de graves violações sistemáticas a direitos fundamentais da população negra. Por maioria, porém, <b>afastou o estado de coisas inconstitucional</b>: como há diversas políticas públicas específicas em andamento para enfrentar o racismo, falta um dos requisitos do instituto — a <b>prolongada omissão das autoridades</b>. Entre essas políticas, o Tribunal citou a Lei 10.639/2003 (ensino de História e Cultura Afro-Brasileira), o Estatuto da Igualdade Racial, o SINAPIR, as cotas nas instituições federais de ensino (Lei 12.711/2012), a criação do Ministério da Igualdade Racial e a <b>Lei 15.142/2025</b>, que reserva <b>30%</b> das vagas de concursos federais a pessoas pretas e pardas, indígenas e quilombolas. Ainda assim, julgou o pedido parcialmente procedente e determinou providências, como a <b>atualização do PLANAPIR</b> (Plano Nacional de Promoção da Igualdade Racial) ou a elaboração de um novo Plano Nacional de Combate ao Racismo Estrutural. Ficaram vencidos, quanto ao estado de coisas inconstitucional, os ministros Fachin, Dino e Cármen Lúcia.</p>
 <p>No plano interamericano, o caso <b>Dos Santos Nascimento e Ferreira Gomes vs. Brasil</b>, de 2024, firmou o dever de <b>devida diligência reforçada</b> na investigação de casos com indícios de motivação racial.</p>
 </section>
 <section class="lepcard bordered">
