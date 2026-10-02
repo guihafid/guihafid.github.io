@@ -915,6 +915,19 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
   border-radius:50%;font:bold 11px Arial;cursor:pointer;line-height:16px;padding:0}
 .chipMat button:hover{background:var(--azulEscuro)}
 .resumoFase{margin:6px 10px 0;font-size:11px;color:#5a6a80;font-style:italic}
+/* ⓘ das exceções da desfiliação partidária (Constitucional) */
+.desfInfoChk{display:none !important}
+.desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
+ border:1.5px solid #2f6db5;border-radius:50%;color:#2f6db5;background:#eef4fc;font-size:13px;line-height:1;cursor:pointer;user-select:none}
+.desfInfoBtn:hover{background:#d9e8fa}
+.desfInfoPainel{display:none;margin:10px 0 14px;padding:14px 18px;background:#f4f8fd;border:1.5px solid #9dbde4;border-radius:10px;
+ font-size:14px;line-height:1.6;text-align:justify}
+.desfInfoChk:checked ~ .desfInfoPainel{display:block}
+.desfInfoPainel p{margin:0 0 8px}
+.desfInfoPainel .desfInfoTit{color:#14365c;font-size:15.5px;margin:14px 0 6px;border-bottom:1px solid #c9dbf1;padding-bottom:2px}
+.desfInfoPainel .desfInfoTit:first-of-type{margin-top:4px}
+.desfInfoPainel .desfInfoSub{color:#2f6db5;margin:10px 0 4px}
+.desfInfoPainel .desfInfoFecha{float:right;cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:1px 8px;background:#fff}
 
 /* ---------- painel / gráficos ---------- */
 .cards{display:flex;flex-wrap:wrap;gap:8px;margin:8px 10px}
@@ -20589,7 +20602,7 @@ function telaJuris(){
   });
   const jurParte = (rot, nome) => {
     const p = jurResumo.fases[nome] || { q: 0, m: 0 };
-    return rot + ": " + p.q + (p.q ? " em " + p.m + " matéria(s)" : "");
+    return rot + ": " + p.q + (p.q && jurResumo.mats.size > 1 ? " em " + p.m + " matéria(s)" : "");
   };
   FASES.forEach(fase => {
     const fj = FASES_JUR[fase.nome] || { titulo: fase.titulo, conta: fase.conta, vazio: fase.vazio };
@@ -20605,12 +20618,13 @@ function telaJuris(){
     if (fase.nome === "Pendente") semItensPend = semItens;
     const total = comItens.reduce((a,x) => a + x.itens.length, 0);
     if (fase.nome === "Pendente" && jurResumo.total) tela.appendChild(el("div","resumoFase",
-      "Total: " + jurResumo.total + " julgado(s) em " + jurResumo.mats.size + " matéria(s)  —  " +
+      "Total: " + jurResumo.total + " julgado(s)" +
+      (jurResumo.mats.size > 1 ? " em " + jurResumo.mats.size + " matéria(s)" : "") + "  —  " +
       [jurParte("Pendentes", "Pendente"), jurParte("Revisados", "Revisado"),
        jurParte("Dominados", "Dominado")].join("  ·  ") + "." +
       (filtro ? " Filtrado por " + filtro + "." : "")));
     else if (total) tela.appendChild(el("div","resumoFase",
-      total + " julgado(s) em " + comItens.length + " matéria(s)." +
+      total + " julgado(s)" + (jurResumo.mats.size > 1 ? " em " + comItens.length + " matéria(s)" : "") + "." +
       (filtro ? " Filtrado por " + filtro + "." : "")));
 
     comItens.forEach(({ mat, itens }) => {
@@ -41506,6 +41520,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <img src="img/c8daf786454cdea7.webp" alt="Fundo Partidário, Direito de Antena e Cláusula de Barreira" style="max-width:100%;height:auto;display:block;margin:0 auto;"/>
 </div>
 <!-- IMAGE8 RECREATED AS TABLE: Desfiliação - Regra Geral / Exceções -->
+<input type="checkbox" id="desfInfoChk" class="desfInfoChk"/>
 <div class="tbl-wrap">
 <table class="t">
 <tbody>
@@ -41514,7 +41529,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <td>Os Deputados Federais, os Deputados Estaduais, os Deputados Distritais e os Vereadores que se desligarem do partido pelo qual tenham sido eleitos perderão o mandato.</td>
 </tr>
 <tr>
-<td style="text-align:center;"><span class="hl-g">Exceções</span></td>
+<td style="text-align:center;"><span class="hl-g">Exceções</span><br/><label for="desfInfoChk" class="desfInfoBtn" title="Clique para ver a explicação das exceções">ⓘ</label></td>
 <td>
 1) anuência do partido<br/>
 2) situações de justa causa definidas em lei, sendo elas:<br/>
@@ -41525,6 +41540,30 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </tr>
 </tbody>
 </table>
+</div>
+<div class="desfInfoPainel">
+<label for="desfInfoChk" class="desfInfoFecha">fechar ✕</label>
+<p class="desfInfoTit">1) Anuência do partido</p>
+<p>Essa exceção foi incluída na Constituição pela EC 111/2021. Se o próprio partido concorda com a saída do parlamentar, ele pode se desfiliar sem perder o cargo.</p>
+<p>A lógica é simples: se o mandato pertence ao partido, só ele seria prejudicado pela saída. Se ele mesmo abre mão, não há razão para punir o parlamentar.</p>
+<p>A EC 111 trouxe ainda uma ressalva: essa migração não é contada para fins de distribuição do Fundo Partidário, de outros fundos públicos e do tempo de rádio e TV. Ou seja, o parlamentar não "leva" esses recursos para o novo partido, o que evita que a troca seja usada como moeda de negociação entre legendas.</p>
+<p class="desfInfoTit">2) Justa causa definida em lei (art. 22-A, parágrafo único, Lei 9.096/95)</p>
+<p class="desfInfoSub">a) Mudança substancial ou desvio reiterado do programa partidário</p>
+<p>Aqui a "culpa" é do partido. Quem se filiou e foi eleito sob certo programa e ideologia não é obrigado a permanecer se o partido abandona suas bandeiras de forma significativa (mudança substancial) ou contraria repetidamente o próprio programa (desvio reiterado).</p>
+<p>Não basta uma divergência pontual sobre uma votação ou uma decisão estratégica. É preciso demonstrar uma alteração real e relevante na identidade programática do partido.</p>
+<p class="desfInfoSub">b) Grave discriminação política pessoal</p>
+<p>Ocorre quando o parlamentar é perseguido ou isolado dentro do próprio partido, de modo a inviabilizar sua atuação. Exemplos que costumam ser discutidos são a exclusão injustificada de espaços de decisão, a negativa reiterada de legenda ou de apoio que é dado aos demais, ou hostilidade pessoal deliberada.</p>
+<p>A jurisprudência do TSE exige que a discriminação seja grave e pessoal. Meras disputas internas, derrotas em votações partidárias ou desentendimentos comuns da vida política não configuram justa causa.</p>
+<p class="desfInfoSub">c) A "janela partidária"</p>
+<p>É a hipótese mais usada na prática. Permite a troca de partido nos 30 dias que antecedem o prazo de filiação exigido para concorrer à eleição, desde que seja ao término do mandato vigente.</p>
+<p>Para entender: a lei eleitoral (Lei 9.504/97, art. 9º) exige que o candidato esteja filiado ao partido pelo menos 6 meses antes da eleição. A janela, portanto, abre-se cerca de 7 meses antes e fecha no limite dos 6 meses. Como as eleições ocorrem no início de outubro, a janela costuma cair entre o início de março e o início de abril do ano eleitoral.</p>
+<p>A expressão "ao término do mandato vigente" é decisiva: só pode usar a janela quem está no último ano do mandato. Na prática, vereadores usam a janela do ano de eleições municipais, e deputados (federais, estaduais e distritais) usam a janela do ano de eleições gerais. Um deputado, por exemplo, não pode aproveitar a janela de uma eleição municipal para trocar de partido no meio do mandato, segundo o entendimento do TSE.</p>
+<p>A finalidade é permitir que o parlamentar se reorganize politicamente para disputar a próxima eleição sem perder o cargo que ainda exerce.</p>
+<p class="desfInfoTit">Como isso funciona na prática</p>
+<p>Se o parlamentar sai sem uma dessas justificativas, o partido pode ajuizar ação de perda de cargo eletivo por desfiliação partidária na Justiça Eleitoral (regulada pela Resolução TSE 22.610/2007). O partido tem 30 dias após a desfiliação para agir. Se não agir, o Ministério Público Eleitoral ou quem tenha interesse jurídico (como o suplente) pode propor a ação nos 30 dias seguintes.</p>
+<p>Nessa ação, cabe ao parlamentar provar a justa causa (ou a anuência) para manter o mandato.</p>
+<p class="desfInfoTit">Resumo para memorizar</p>
+<p>A regra é que o mandato proporcional pertence ao partido. As exceções se dividem em duas: a anuência (o dono do mandato concorda) e a justa causa legal, que abrange duas situações em que o partido deu causa à saída (desvio do programa e discriminação pessoal grave) e uma situação temporal (a janela partidária no fim do mandato).</p>
 </div>
 <div class="warn-box">NÃO há inconstitucionalidade na cumulação entre a inelegibilidade e a suspensão de direitos políticos.” (BRASIL, Supremo Tribunal Federal, ADI n. 4.578; ADC n. 29; ADC n. 30, 2012).</div>
 <div class="note-box">(Súmula-TSE nº 67) — A perda do mandato em razão da desfiliação partidária não se aplica aos candidatos eleitos pelo sistema majoritário.</div>
