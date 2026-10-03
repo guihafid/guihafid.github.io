@@ -14685,15 +14685,19 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
   box-shadow:0 2px 8px rgba(0,0,0,.28)}
 .crimVolta:hover{background:#a33;color:#fff;border-color:#a33}
 /* ☰ ao lado da engrenagem: mostra a barra do topo (cronômetro, módulos, conta) suspensa */
-.contTopoBtn{position:fixed;top:12px;right:62px;z-index:70;width:40px;height:40px;padding:0;
+.contTopoBtn{position:fixed;top:12px;right:14px;z-index:70;width:40px;height:40px;padding:0;
   display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#5a2e92;
   border:1px solid #cbb3e6;border-radius:50%;font:bold 17px Arial,Helvetica,sans-serif;cursor:pointer;
   box-shadow:0 2px 8px rgba(0,0,0,.28)}
 .contTopoBtn:hover,.contTopoBtn.on{background:#6c3fa3;color:#fff;border-color:#6c3fa3}
 body.contTopoAberto #barra{position:fixed !important;top:0 !important;left:0;right:0;z-index:72}
 body.contTopoAberto #barra2{position:fixed !important;left:0;right:0;z-index:72;box-shadow:0 4px 12px rgba(0,0,0,.35)}
-body.contTopoAberto .contTopoBtn,body.contTopoAberto .crimEngr{top:calc(var(--contTopoH,76px) + 8px)}
-body.contTopoAberto .crimVolta{top:calc(var(--contTopoH,76px) + 56px)}
+/* coluna da direita: ☰ em cima, ⚙ embaixo dele, ↺ embaixo da engrenagem */
+.crimEngr{top:60px}
+.crimVolta{top:108px}
+body.contTopoAberto .contTopoBtn{top:calc(var(--contTopoH,76px) + 8px)}
+body.contTopoAberto .crimEngr{top:calc(var(--contTopoH,76px) + 56px)}
+body.contTopoAberto .crimVolta{top:calc(var(--contTopoH,76px) + 104px)}
 body.contTopoAberto .crimBarra{top:calc(var(--contTopoH,76px) + 8px)}
 @media print{ .contTopoBtn{display:none} }
 .crimEtiq{display:inline-flex;align-items:center;gap:5px;background:#fff7e0;color:#8a6d1a;
