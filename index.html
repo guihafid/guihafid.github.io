@@ -928,14 +928,23 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
  border:1.5px solid #2f6db5;border-radius:50%;color:#2f6db5;background:#eef4fc;font-size:13px;line-height:1;cursor:pointer;user-select:none}
 .desfInfoBtn:hover{background:#d9e8fa}
-.desfInfoPainel{display:none;margin:10px 0 14px;padding:14px 18px;background:#f4f8fd;border:1.5px solid #9dbde4;border-radius:10px;
- font-size:14px;line-height:1.6;text-align:justify}
-.desfInfoChk:checked ~ .desfInfoPainel{display:block}
-.desfInfoPainel p{margin:0 0 8px}
-.desfInfoPainel .desfInfoTit{color:#14365c;font-size:15.5px;margin:14px 0 6px;border-bottom:1px solid #c9dbf1;padding-bottom:2px}
-.desfInfoPainel .desfInfoTit:first-of-type{margin-top:4px}
-.desfInfoPainel .desfInfoSub{color:#2f6db5;margin:10px 0 4px}
-.desfInfoPainel .desfInfoFecha{float:right;cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:1px 8px;background:#fff}
+.desfInfoPainel{display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center;
+ padding:18px;box-sizing:border-box}
+.desfInfoChk:checked ~ .desfInfoPainel{display:flex}
+body:has(.desfInfoChk:checked){overflow:hidden}
+.desfInfoFundo{position:absolute;inset:0;background:rgba(15,30,51,.55);backdrop-filter:blur(6px);
+ -webkit-backdrop-filter:blur(6px);cursor:pointer}
+.desfInfoCaixa{position:relative;width:100%;max-width:780px;max-height:88vh;overflow:auto;overscroll-behavior:contain;
+ background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:0 26px 20px;box-sizing:border-box;
+ font-size:14.5px;line-height:1.65;text-align:justify;color:#1f2430}
+.desfInfoCab{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;background:#fff;
+ padding:14px 0 10px;margin-bottom:6px;border-bottom:2px solid #c9dbf1}
+.desfInfoCab .desfInfoCabTit{flex:1;color:#14365c;font-size:16px;text-align:left}
+.desfInfoCaixa p{margin:0 0 8px}
+.desfInfoCaixa .desfInfoTit{color:#14365c;font-size:15.5px;margin:16px 0 6px;border-bottom:1px solid #c9dbf1;padding-bottom:2px;text-align:left}
+.desfInfoCaixa .desfInfoSub{color:#2f6db5;margin:10px 0 4px;text-align:left}
+.desfInfoFecha{cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:2px 10px;background:#fff;white-space:nowrap}
+.desfInfoFecha:hover{background:#2f6db5;color:#fff}
 
 /* ---------- painel / gráficos ---------- */
 .cards{display:flex;flex-wrap:wrap;gap:8px;margin:8px 10px}
@@ -41609,7 +41618,9 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </table>
 </div>
 <div class="desfInfoPainel">
-<label for="desfInfoChk" class="desfInfoFecha">fechar ✕</label>
+<label for="desfInfoChk" class="desfInfoFundo" title="Fechar"></label>
+<div class="desfInfoCaixa" role="dialog" aria-label="Exceções à perda do mandato por desfiliação">
+<div class="desfInfoCab"><span class="desfInfoCabTit">Exceções à perda do mandato por desfiliação partidária</span><label for="desfInfoChk" class="desfInfoFecha">fechar ✕</label></div>
 <p class="desfInfoTit">1) Anuência do partido</p>
 <p>Essa exceção foi incluída na Constituição pela EC 111/2021. Se o próprio partido concorda com a saída do parlamentar, ele pode se desfiliar sem perder o cargo.</p>
 <p>A lógica é simples: se o mandato pertence ao partido, só ele seria prejudicado pela saída. Se ele mesmo abre mão, não há razão para punir o parlamentar.</p>
@@ -41631,6 +41642,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <p>Nessa ação, cabe ao parlamentar provar a justa causa (ou a anuência) para manter o mandato.</p>
 <p class="desfInfoTit">Resumo para memorizar</p>
 <p>A regra é que o mandato proporcional pertence ao partido. As exceções se dividem em duas: a anuência (o dono do mandato concorda) e a justa causa legal, que abrange duas situações em que o partido deu causa à saída (desvio do programa e discriminação pessoal grave) e uma situação temporal (a janela partidária no fim do mandato).</p>
+</div>
 </div>
 <div class="warn-box">NÃO há inconstitucionalidade na cumulação entre a inelegibilidade e a suspensão de direitos políticos.” (BRASIL, Supremo Tribunal Federal, ADI n. 4.578; ADC n. 29; ADC n. 30, 2012).</div>
 <div class="note-box">(Súmula-TSE nº 67) — A perda do mandato em razão da desfiliação partidária não se aplica aos candidatos eleitos pelo sistema majoritário.</div>
