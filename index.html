@@ -915,6 +915,14 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
   border-radius:50%;font:bold 11px Arial;cursor:pointer;line-height:16px;padding:0}
 .chipMat button:hover{background:var(--azulEscuro)}
 .resumoFase{margin:6px 10px 0;font-size:11px;color:#5a6a80;font-style:italic}
+/* tabelas dentro do texto dos julgados (vêm da extensão): os cartões usam td como bloco,
+   então aqui a tabela volta a ser tabela, no padrão do Buscador */
+.cadCard .cxRico table td,.cadCard .cxRico table th{display:table-cell;border:1px solid #d6cfc6 !important;padding:7px 12px !important}
+.cadCard .cxRico table td{background:#fff !important}
+.cxRico table,.ricoInfo table{border-collapse:collapse;width:100%;margin:8px 0;font-size:.95em;background:#fff}
+.cxRico table th,.cxRico table td,.ricoInfo table th,.ricoInfo table td{border:1px solid #d6cfc6;padding:7px 12px;text-align:left;vertical-align:top}
+.cxRico table th,.ricoInfo table th{background:#e2d9cd;color:#2b2b2b;text-align:center;font-weight:bold}
+.cxRico table tr:first-child th[colspan],.ricoInfo table tr:first-child th[colspan]{background:#7a1f1f;color:#fff}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -14676,6 +14684,18 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
   font:bold 17px Arial,Helvetica,sans-serif;cursor:pointer;
   box-shadow:0 2px 8px rgba(0,0,0,.28)}
 .crimVolta:hover{background:#a33;color:#fff;border-color:#a33}
+/* ☰ ao lado da engrenagem: mostra a barra do topo (cronômetro, módulos, conta) suspensa */
+.contTopoBtn{position:fixed;top:12px;right:62px;z-index:70;width:40px;height:40px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#5a2e92;
+  border:1px solid #cbb3e6;border-radius:50%;font:bold 17px Arial,Helvetica,sans-serif;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.28)}
+.contTopoBtn:hover,.contTopoBtn.on{background:#6c3fa3;color:#fff;border-color:#6c3fa3}
+body.contTopoAberto #barra{position:fixed !important;top:0 !important;left:0;right:0;z-index:72}
+body.contTopoAberto #barra2{position:fixed !important;left:0;right:0;z-index:72;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+body.contTopoAberto .contTopoBtn,body.contTopoAberto .crimEngr{top:calc(var(--contTopoH,76px) + 8px)}
+body.contTopoAberto .crimVolta{top:calc(var(--contTopoH,76px) + 56px)}
+body.contTopoAberto .crimBarra{top:calc(var(--contTopoH,76px) + 8px)}
+@media print{ .contTopoBtn{display:none} }
 .crimEtiq{display:inline-flex;align-items:center;gap:5px;background:#fff7e0;color:#8a6d1a;
   border:1px solid #f0dca8;border-radius:12px;padding:2px 9px;
   font:bold 10.5px Arial,Helvetica,sans-serif;margin-left:8px}
@@ -30473,6 +30493,10 @@ function telaMat(mat, id){
     matEstado = ""; render();
   };
   tit.appendChild(engr);
+  const bTopo = el("button","contTopoBtn" + (document.body.classList.contains("contTopoAberto") ? " on" : ""),"\u2630");
+  bTopo.title = "Mostrar/esconder a barra do topo (cron\u00f4metro, m\u00f3dulos e conta)";
+  bTopo.onclick = () => contTopoAlternar();
+  tit.appendChild(bTopo);
   // se esta se\u00e7\u00e3o (ou alguma do material) foi reescrita, d\u00e1 para desfazer tudo
   const reescritas = (todas ? M.secoes.map(x => x.id) : [id])
     .filter(x => matPodeVoltar(mat, x));
@@ -31030,7 +31054,28 @@ const grupoDe = cls => CLS_GRUPO[cls] || null;
 
 let cliqueGaveta = null;   // separa um clique de dois na gaveta da materia
 
+/* barra do topo suspensa no caderno de conteúdo (botão ☰ ao lado da ⚙) */
+function contTopoAlternar(abrir){
+  const b1 = document.getElementById("barra"), b2 = document.getElementById("barra2");
+  if (!b1 || !b2) return;
+  const on = abrir == null ? !document.body.classList.contains("contTopoAberto") : !!abrir;
+  let esp = document.getElementById("contTopoEspaco");
+  if (on){
+    const h1 = b1.offsetHeight, h2 = b2.offsetHeight;
+    if (!esp){ esp = document.createElement("div"); esp.id = "contTopoEspaco"; b1.parentNode.insertBefore(esp, b1); }
+    esp.style.height = (h1 + h2) + "px";        // segura o lugar: o texto não pula
+    b2.style.top = h1 + "px";
+    document.body.style.setProperty("--contTopoH", (h1 + h2) + "px");
+    document.body.classList.add("contTopoAberto");
+  } else {
+    document.body.classList.remove("contTopoAberto");
+    if (esp) esp.remove();
+    b2.style.top = "";
+  }
+  document.querySelectorAll(".contTopoBtn").forEach(x => x.classList.toggle("on", on));
+}
 function render(){
+  if (modulo !== "cCont" && document.body.classList.contains("contTopoAberto")) contTopoAlternar(false);
   sincronizarCiclo();            // o ciclo reflete as sessões de agora
   // mantém ce coerente com o estilo escolhido
   DB.concursos.forEach(c => c.ce = String(c.estilo||"").toUpperCase().indexOf("CERTO") >= 0);
