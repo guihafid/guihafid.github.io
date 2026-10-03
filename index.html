@@ -388,24 +388,6 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .avisoExt .modalAcoes{justify-content:center}
 .avisoExt a.avisoExtBt{display:inline-block;text-decoration:none;padding:7px 16px;border-radius:5px;
   background:var(--azulEscuro);color:#fff;font-weight:bold;font-size:13px}
-.filtroMatCad .filtroStatusCad{display:inline-flex;align-items:center;gap:6px;margin-left:10px}
-.filtroMatCad .notaFiltro,.filtroMatCad .avisoFiltro{flex:0 1 auto;min-width:0;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-@media (min-width:900px){ #tela .filtroMatCad{flex-wrap:nowrap} #tela .filtroMatCad > *{flex-shrink:0}
-  #tela .filtroMatCad > .notaFiltro,#tela .filtroMatCad > .avisoFiltro{flex-shrink:1}
-  #tela .filtroMatCad > .flex{flex-shrink:1;min-width:0} }
-.filtroMatCad .filtroStatusCad select.ativo{background:#FFF4CC;border-color:#e0c060;font-weight:bold}
-.barraFlutBt{position:fixed;top:12px;right:62px;z-index:70;width:40px;height:40px;padding:0;
-  display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #c9d4e3;
-  background:#fff;color:var(--azulEscuro);font:bold 18px Arial,Helvetica,sans-serif;cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,.28)}
-.barraFlutBt:hover,.barraFlutBt.on{background:var(--azulEscuro);color:#fff;border-color:var(--azulEscuro)}
-body.barraFlutuante #barra{position:fixed !important;top:0;left:0;right:0;z-index:65}
-body.barraFlutuante #barra2{position:fixed !important;left:0;right:0;z-index:64;box-shadow:0 3px 10px rgba(0,0,0,.18)}
-/* com a barra aberta, os botões suspensos descem para não tampar o menu da conta */
-body.barraFlutuante .barraFlutBt,body.barraFlutuante .crimEngr{top:var(--barraFlutAlt,92px)}
-body.barraFlutuante .crimVolta{top:calc(var(--barraFlutAlt,92px) + 48px)}
-@media print{ .barraFlutBt{display:none} }
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -933,6 +915,19 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
   border-radius:50%;font:bold 11px Arial;cursor:pointer;line-height:16px;padding:0}
 .chipMat button:hover{background:var(--azulEscuro)}
 .resumoFase{margin:6px 10px 0;font-size:11px;color:#5a6a80;font-style:italic}
+/* ⓘ das exceções da desfiliação partidária (Constitucional) */
+.desfInfoChk{display:none !important}
+.desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
+ border:1.5px solid #2f6db5;border-radius:50%;color:#2f6db5;background:#eef4fc;font-size:13px;line-height:1;cursor:pointer;user-select:none}
+.desfInfoBtn:hover{background:#d9e8fa}
+.desfInfoPainel{display:none;margin:10px 0 14px;padding:14px 18px;background:#f4f8fd;border:1.5px solid #9dbde4;border-radius:10px;
+ font-size:14px;line-height:1.6;text-align:justify}
+.desfInfoChk:checked ~ .desfInfoPainel{display:block}
+.desfInfoPainel p{margin:0 0 8px}
+.desfInfoPainel .desfInfoTit{color:#14365c;font-size:15.5px;margin:14px 0 6px;border-bottom:1px solid #c9dbf1;padding-bottom:2px}
+.desfInfoPainel .desfInfoTit:first-of-type{margin-top:4px}
+.desfInfoPainel .desfInfoSub{color:#2f6db5;margin:10px 0 4px}
+.desfInfoPainel .desfInfoFecha{float:right;cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:1px 8px;background:#fff}
 
 /* ---------- painel / gráficos ---------- */
 .cards{display:flex;flex-wrap:wrap;gap:8px;margin:8px 10px}
@@ -18916,38 +18911,7 @@ function importarDoTec(mod){
 // julgados abertos um a um quando o caderno está em "resumir" (só nesta página)
 const jurAbertos = new Set();
 const filtroMatCad = {};
-/* filtro de status ao lado do de matéria: "" = todos; ou o nome da fase
-   ("Pendente", "Revisado", "Dominado"). Só nesta página. */
-const filtroFaseCad = {};
-/* a caixa de matéria do tamanho do texto escolhido (e não da opção mais longa) */
-function caberNoTexto(sel){
-  const ajusta = () => {
-    if (!sel.isConnected) return;
-    const o = sel.options[sel.selectedIndex];
-    const c = caberNoTexto.ctx || (caberNoTexto.ctx = document.createElement("canvas").getContext("2d"));
-    const cs = getComputedStyle(sel);
-    c.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-    const w = Math.ceil(c.measureText(o ? o.textContent : "").width);
-    sel.style.width = Math.min(340, Math.max(90, w + 34)) + "px";   // + margens e a setinha
-  };
-  setTimeout(ajusta, 0);
-  sel.addEventListener("change", ajusta);
-}
-function seletorStatusCad(chave, lista){
-  const cx = el("span","filtroStatusCad");
-  cx.appendChild(el("span","rot","Status:"));
-  const sel = document.createElement("select");
-  const op = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); };
-  op("", "Todos (" + lista.length + ")");
-  const rot = { Pendente: "Pendentes", Revisado: "Revisados", Dominado: "Dominados" };
-  FASES.forEach(f => op(f.nome, (rot[f.nome] || f.nome) + " (" +
-    lista.filter(e => faseDe(e.status) === f.nome).length + ")"));
-  sel.value = filtroFaseCad[chave] || "";
-  if (sel.value) sel.classList.add("ativo");
-  sel.onchange = () => { filtroFaseCad[chave] = sel.value; render(); window.scrollTo(0,0); };
-  cx.appendChild(sel);
-  return cx;
-}    // por caderno: "" = todas as matérias
+const filtroFaseJur = {};   // informativos: "" = todas as situações; senão "Pendente"/"Revisado"/"Dominado"    // por caderno: "" = todas as matérias
 const alturaCad    = {};    // por caderno+fase: true = anotações abertas por inteiro
 
 /* balãozinho e janela com Data, Matéria, Assunto e Motivo do Erro.
@@ -19349,9 +19313,7 @@ function telaCaderno(mod){
     });
     sel.value = filtro;
     sel.onchange = () => { filtroMatCad[mod] = sel.value; render(); window.scrollTo(0,0); };
-    caberNoTexto(sel);
     barraF.appendChild(sel);
-    barraF.appendChild(seletorStatusCad(mod, lista));
     if (filtro){
       const limpar = el("button","btnLimpaFiltro","✕ ver todas");
       limpar.title = "Voltar a mostrar todas as matérias";
@@ -19474,7 +19436,6 @@ function telaCaderno(mod){
   };
 
   FASES.forEach(fase => {
-    if (filtroFaseCad[mod] && filtroFaseCad[mod] !== fase.nome) return;   // filtro de status
     /* faixa da fase com o botão de abrir/fechar as anotações no canto direito */
     const chaveAlt = mod + "|" + fase.nome;
     const aberto = !!alturaCad[chaveAlt];
@@ -20472,6 +20433,7 @@ function telaJuris(){
 
   /* ---------- filtro de matéria + botão de abrir/fechar as linhas ---------- */
   const filtro = filtroMatCad.JUR || "";
+  const filtroFase = filtroFaseJur.v || "";
   const aberto = !!alturaCad.JUR;
   const matsJur = () => {
     const todas = matsVisiveis();
@@ -20486,14 +20448,26 @@ function telaJuris(){
     sel.appendChild(op0);
     matsVisiveis().forEach(m => {
       const o = document.createElement("option");
-      o.value = m; o.textContent = m + " (" + lista.filter(x => x.mat === m).length + ")";
+      o.value = m; o.textContent = m + " (" + lista.filter(x => x.mat === m &&
+        (!filtroFase || faseDe(x.status) === filtroFase)).length + ")";
       sel.appendChild(o);
     });
     sel.value = filtro;
     sel.onchange = () => { filtroMatCad.JUR = sel.value; render(); window.scrollTo(0,0); };
-    caberNoTexto(sel);
     barraF.appendChild(sel);
-    barraF.appendChild(seletorStatusCad("JUR", lista));
+    // filtro por situação (pendente / revisado / dominado), ao lado da matéria
+    barraF.appendChild(el("span","rot","Situação:"));
+    const selF = document.createElement("select");
+    selF.style.width = "auto";
+    [["","Todas"],["Pendente","Pendentes"],["Revisado","Revisados"],["Dominado","Dominados"]].forEach(([v,t]) => {
+      const o = document.createElement("option");
+      const q = lista.filter(x => (!filtro || x.mat === filtro) && (!v || faseDe(x.status) === v)).length;
+      o.value = v; o.textContent = t + " (" + q + ")";
+      selF.appendChild(o);
+    });
+    selF.value = filtroFase;
+    selF.onchange = () => { filtroFaseJur.v = selF.value; render(); window.scrollTo(0,0); };
+    barraF.appendChild(selF);
     if (filtro){
       const limpar = el("button","btnLimpaFiltro","✕ ver todas");
       limpar.title = "Voltar a mostrar todas as matérias";
@@ -20631,8 +20605,23 @@ function telaJuris(){
       vazio:"Nenhum julgado dominado ainda. Troque o Status para \"Dominado\" e ele desce para cá." }
   };
   let semItensPend = [];
+  // resumo geral (fica no lugar da linha dos pendentes): total e cada parte
+  const jurResumo = { total: 0, mats: new Set(), fases: {} };
+  FASES.forEach(f => {
+    const ms = new Set(); let q = 0;
+    matsJur().forEach(mat => {
+      const k = lista.filter(e => e.mat === mat && faseDe(e.status) === f.nome).length;
+      if (k){ q += k; ms.add(mat); jurResumo.mats.add(mat); }
+    });
+    jurResumo.fases[f.nome] = { q: q, m: ms.size };
+    jurResumo.total += q;
+  });
+  const jurParte = (rot, nome) => {
+    const p = jurResumo.fases[nome] || { q: 0, m: 0 };
+    return rot + ": " + p.q + (p.q && jurResumo.mats.size > 1 ? " em " + p.m + " matéria(s)" : "");
+  };
   FASES.forEach(fase => {
-    if (filtroFaseCad.JUR && filtroFaseCad.JUR !== fase.nome) return;    // filtro de status
+    if (filtroFase && fase.nome !== filtroFase) return;   // filtro de situação
     const fj = FASES_JUR[fase.nome] || { titulo: fase.titulo, conta: fase.conta, vazio: fase.vazio };
     const sec = el("div","secCaderno " + fase.cls);
     sec.appendChild(el("span","tx", fj.titulo));
@@ -20645,8 +20634,14 @@ function telaJuris(){
     });
     if (fase.nome === "Pendente") semItensPend = semItens;
     const total = comItens.reduce((a,x) => a + x.itens.length, 0);
-    if (total) tela.appendChild(el("div","resumoFase",
-      total + " julgado(s) em " + comItens.length + " matéria(s)." +
+    if (fase.nome === (filtroFase || "Pendente") && jurResumo.total) tela.appendChild(el("div","resumoFase",
+      "Total: " + jurResumo.total + " julgado(s)" +
+      (jurResumo.mats.size > 1 ? " em " + jurResumo.mats.size + " matéria(s)" : "") + "  —  " +
+      [jurParte("Pendentes", "Pendente"), jurParte("Revisados", "Revisado"),
+       jurParte("Dominados", "Dominado")].join("  ·  ") + "." +
+      (filtro ? " Filtrado por " + filtro + "." : "")));
+    else if (total) tela.appendChild(el("div","resumoFase",
+      total + " julgado(s)" + (jurResumo.mats.size > 1 ? " em " + comItens.length + " matéria(s)" : "") + "." +
       (filtro ? " Filtrado por " + filtro + "." : "")));
 
     comItens.forEach(({ mat, itens }) => {
@@ -20679,7 +20674,8 @@ function telaJuris(){
   /* julgados que chegaram sem matéria reconhecida não podem sumir: ficam aqui,
      com um seletor na frente, até você dizer em que matéria eles entram */
   const conhecidas = matsVisiveis();
-  const orfaos = lista.filter(e => !conhecidas.includes(e.mat));
+  const orfaos = lista.filter(e => !conhecidas.includes(e.mat) &&
+    (!filtroFase || faseDe(e.status) === filtroFase));
   if (orfaos.length && filtro){
     tela.appendChild(el("div","avisoOrfaos",
       orfaos.length + " julgado(s) sem matéria estão escondidos pelo filtro. " +
@@ -30477,12 +30473,6 @@ function telaMat(mat, id){
     matEstado = ""; render();
   };
   tit.appendChild(engr);
-  // ao lado do ⚙: mostra/esconde a barra de cima presa no alto (cronômetro, módulos…)
-  const bBar = el("button","barraFlutBt" + (document.body.classList.contains("barraFlutuante") ? " on" : ""), "\u2630");
-  bBar.title = document.body.classList.contains("barraFlutuante") ? "Esconder a barra de cima" : "Mostrar a barra de cima (cronômetro, módulos…)";
-  bBar.onclick = () => { alternarBarraFlutuante(); bBar.classList.toggle("on", document.body.classList.contains("barraFlutuante"));
-    bBar.title = document.body.classList.contains("barraFlutuante") ? "Esconder a barra de cima" : "Mostrar a barra de cima (cronômetro, módulos…)"; };
-  tit.appendChild(bBar);
   // se esta se\u00e7\u00e3o (ou alguma do material) foi reescrita, d\u00e1 para desfazer tudo
   const reescritas = (todas ? M.secoes.map(x => x.id) : [id])
     .filter(x => matPodeVoltar(mat, x));
@@ -31233,33 +31223,9 @@ function render(){
     console.error(err);
   }
   if (mesmaTela && yAntes > 0 && Math.abs(window.scrollY - yAntes) > 2) window.scrollTo(0, yAntes);
-  if (modulo !== "cCont" && document.body.classList.contains("barraFlutuante")) alternarBarraFlutuante(false);
   restaurarLeitura();
 }
 
-/* ---------- barra de cima "suspensa" no caderno de conteúdo ----------
-   O botão ☰ (ao lado do ⚙) prende a barra de cima (#barra + #barra2) no alto
-   da tela, por cima do texto. Um espaço do mesmo tamanho fica no lugar dela,
-   para o texto não pular. Fora do caderno de conteúdo, volta ao normal. */
-function alternarBarraFlutuante(ligar){
-  const b1 = document.getElementById("barra"), b2 = document.getElementById("barra2");
-  if (!b1 || !b2) return;
-  const on = ligar === undefined ? !document.body.classList.contains("barraFlutuante") : !!ligar;
-  let esp = document.getElementById("barraFlutEsp");
-  if (on){
-    if (document.body.classList.contains("barraFlutuante")) return;
-    const h1 = b1.offsetHeight, h2 = b2.offsetHeight;
-    if (!esp){ esp = document.createElement("div"); esp.id = "barraFlutEsp"; b1.parentNode.insertBefore(esp, b1); }
-    esp.style.height = (h1 + h2) + "px";
-    document.body.style.setProperty("--barraFlutAlt", (h1 + h2 + 10) + "px");
-    b2.style.top = h1 + "px";
-    document.body.classList.add("barraFlutuante");
-  } else {
-    if (esp) esp.remove();
-    b2.style.top = "";
-    document.body.classList.remove("barraFlutuante");
-  }
-}
 /* ---------- posição de leitura no caderno de conteúdo ----------
    Guarda, por seção, o TRECHO onde você parou (qual parágrafo/item/quadro
    está no alto da tela e quanto dele já passou) — e não os pixels, porque o
@@ -33411,17 +33377,20 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <p style="font-size:13px;margin:2px 0">São 4 causas de aumento:</p>
 <div class="alinea az"><div class="ab">1/3</div><div class="atxt">Recusar, negar ou impedir ingresso/inscrição de aluno em estabelecimento de ensino, se praticado <b>contra menor de 18 anos</b> (art. 6º).</div></div>
 <div class="alinea az"><div class="ab">1/2</div><div class="atxt">Crime cometido mediante <b>concurso de duas ou mais pessoas</b> (art. 2º-A, parágrafo único).</div></div>
-<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Crimes praticados em contexto do intuito de <b>descontração, diversão ou recreação</b> (art. 20-A).</div></div>
-<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Injúria, prática, induzimento ou incitação à discriminação cometida por <b>funcionário público</b>, no exercício da função ou a pretexto de exercê-la (art. 20-B).</div></div>
-<div class="balloon b-roxo"><div class="bt">Forma qualificada (art. 20-A)</div>
-<p style="font-size:13px;margin:2px 0 8px">Quando o crime (art. 20-A) ocorre em contexto de <b>descontração, diversão ou recreação</b>, configura-se a FORMA QUALIFICADA. Esses locais incluem:</p>
+<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Qualquer crime desta Lei, quando ocorrer em contexto ou com intuito de <b>descontração, diversão ou recreação</b> — racismo recreativo (art. 20-A).</div></div>
+<div class="alinea az"><div class="ab">1/3 a 1/2</div><div class="atxt">Injúria racial (art. 2º-A) e prática, induzimento ou incitação à discriminação (art. 20) cometidas por <b>funcionário público</b>, no exercício da função ou a pretexto de exercê-la (art. 20-B).</div></div>
+<div class="balloon b-roxo"><div class="bt">Formas qualificadas do art. 20</div>
+<p style="font-size:13px;margin:2px 0 8px"><b>§ 2º — Meios de comunicação e internet:</b> quando o crime do art. 20 é cometido por intermédio dos <b>meios de comunicação social</b>, de <b>publicação em redes sociais</b>, da <b>rede mundial de computadores</b> ou de <b>publicação de qualquer natureza</b>.</p>
+<div class="note">Pena: <span class="mark">2 a 5 anos</span> e multa.</div>
+<p style="font-size:13px;margin:10px 0 8px"><b>§ 2º-A — Atividades destinadas ao público:</b> quando o crime do art. 20 é cometido no contexto de <b>atividades destinadas ao público</b>, configura-se a FORMA QUALIFICADA. Esses contextos são:</p>
 <ul class="dash">
-<li>⚽ Eventos Esportivos</li>
-<li>🙏 Reuniões Religiosas</li>
-<li>🎭 Expressões Artísticas</li>
-<li>🎉 Celebrações Culturais</li>
+<li>⚽ Atividades Esportivas</li>
+<li>🙏 Atividades Religiosas</li>
+<li>🎭 Atividades Artísticas</li>
+<li>🎉 Atividades Culturais</li>
 </ul>
-<div class="note">Consequência: além da pena de <span class="mark">2 a 5 anos</span>, há proibição de frequência, por 3 (três) anos, a esses locais.</div>
+<div class="note">Consequência: pena de <span class="mark">2 a 5 anos</span> e proibição de frequência, por 3 (três) anos, a locais destinados a práticas <b>esportivas, artísticas ou culturais</b> destinadas ao público, conforme o caso. <b>Atenção:</b> o contexto religioso qualifica o crime, mas <u>não</u> está na lista dos locais proibidos.</div>
+<div class="note">Não confundir: o <b>art. 20-A</b> (descontração, diversão ou recreação) é <b>causa de aumento</b>, não forma qualificada.</div>
 </div>
 </section>
 <section class="lepcard bordered">
@@ -33824,6 +33793,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <li>A <b>multa</b> é considerada <b>dívida de valor</b>, aplicando-se as normas relativas à dívida ativa da Fazenda Pública.</li>
 <li>A multa <span class="cp-r">não pode, de forma alguma, ser convertida em prisão</span>, como antes previa o art. 9º da LCP.</li>
 <li>A <b>transação penal</b> não admite o confisco dos bens de uma contravenção penal, pois a sentença tem <b>natureza homologatória</b>, sem qualquer juízo sobre a responsabilidade criminal do aceitante.</li>
+<li>O <b>porte de arma branca</b> é conduta que <span class="cp-r">permanece típica</span> na Lei das Contravenções Penais (art. 19) (Info 668 - STJ e Info 1153 - STF).</li>
 </ul>
 </div>
 <div class="cp-foot"><span class="l">@estudaguilherme</span><span><b>DL nº 3.688/1941</b> (Lei das Contravenções Penais) | <b>DL nº 6.259/1944</b></span></div>
@@ -38663,7 +38633,6 @@ b) <b>Instrução do 2º grau ou superior</b></li>
     </ul>
   
 
-<div class="mnemo"><span class="ico">🐸</span><span>Saponificação (adipocera) — Sapo vive em lago (úmido e argiloso)</span></div>
 <h4 class="subsub">Saponificação (adipocera)</h4>
   
   
@@ -38675,9 +38644,9 @@ b) <b>Instrução do 2º grau ou superior</b></li>
       <li>Preserva achados médico-legais.</li>
       <li>Favorecida em obesos, locais quentes, úmidos, argiloso e pouco ventilados.</li>
     </ul>
+<div class="mnemo"><span class="ico">🐸</span><span>Saponificação (adipocera) — Sapo vive em lago (úmido e argiloso)</span></div>
   
 
-<div class="mnemo"><span class="ico">🏜️</span><span>Mumificação — Múmia vive em deserto (seco e desidratante)</span></div>
 <h4 class="subsub">Mumificação</h4>
   
   
@@ -38688,6 +38657,7 @@ b) <b>Instrução do 2º grau ou superior</b></li>
       <li>Pele seca, dura e enegrecida.</li>
       <li>Peso reduzido.</li>
     </ul>
+<div class="mnemo"><span class="ico">🏜️</span><span>Mumificação — Múmia vive em deserto (seco e desidratante)</span></div>
   
 
 <h4 class="subsub">Corificação</h4>
@@ -38797,12 +38767,22 @@ b) <b>Instrução do 2º grau ou superior</b></li>
     </ul>
     <div class="img-inside">
 <div class="qdfig" role="group" aria-label="Trajetória da queda conforme a causa jurídica">
-<div class="qd-linha">
-<figure><svg viewBox="0 0 200 132" role="img"><line x1="4" y1="122" x2="196" y2="122" stroke="#8a8a8a" stroke-width="1.6"/><rect x="62" y="10" width="122" height="112" fill="#fff" stroke="#555" stroke-width="1.6"/><path d="M40 118 L40 12" stroke="#9a9a9a" stroke-width="2" stroke-dasharray="5 4" fill="none"/><rect x="30" y="112" width="20" height="10" fill="#fff" stroke="#555" stroke-width="1.4"/><rect x="34" y="116" width="6" height="6" fill="#bbb"/></svg><figcaption><b>a</b> — acidente</figcaption></figure>
-<figure><svg viewBox="0 0 200 132" role="img"><line x1="4" y1="122" x2="196" y2="122" stroke="#8a8a8a" stroke-width="1.6"/><rect x="62" y="10" width="122" height="112" fill="#fff" stroke="#555" stroke-width="1.6"/><path d="M40 118 Q42 40 96 16" stroke="#4a4a4a" stroke-width="2" stroke-dasharray="6 4" fill="none"/><rect x="30" y="112" width="20" height="10" fill="#fff" stroke="#555" stroke-width="1.4"/><rect x="34" y="116" width="6" height="6" fill="#bbb"/></svg><figcaption><b>b</b> — homicídio</figcaption></figure>
-<figure><svg viewBox="0 0 200 132" role="img"><line x1="4" y1="122" x2="196" y2="122" stroke="#8a8a8a" stroke-width="1.6"/><rect x="62" y="10" width="122" height="112" fill="#fff" stroke="#555" stroke-width="1.6"/><path d="M40 118 Q52 30 132 14" stroke="#4a4a4a" stroke-width="2" stroke-dasharray="6 4" fill="none"/><rect x="30" y="112" width="20" height="10" fill="#fff" stroke="#555" stroke-width="1.4"/><rect x="34" y="116" width="6" height="6" fill="#bbb"/></svg><figcaption><b>c</b> — suicídio</figcaption></figure>
-</div>
-<p class="qd-leg">a, acidente; b, homicídio; c, suicídio.</p>
+<svg viewBox="0 0 716 172" role="img" aria-label="a, acidente; b, homicídio; c, suicídio" style="display:block;width:100%;max-width:716px;height:auto;background:#fff">
+<g text-anchor="middle" style="font-family:'Times New Roman',Times,serif;font-size:14px;fill:#555;font-weight:normal"><text x="170" y="15.5">a</text><text x="388" y="15.5">b</text><text x="626" y="15.5">c</text></g>
+<line x1="82" y1="164" x2="227" y2="164" stroke="#555" stroke-width="3"/>
+<rect x="129.5" y="21.5" width="82" height="142.5" stroke="#444" stroke-width="2" fill="none"/>
+<path d="M118.5 27 L118.5 152" stroke="#7a7a7a" stroke-width="2.2" stroke-dasharray="9 4" fill="none"/>
+<rect x="112.5" y="156" width="13.0" height="8" stroke="#444" stroke-width="2" fill="none"/><line x1="119.5" y1="160" x2="119.5" y2="164" stroke="#444" stroke-width="2" fill="none"/>
+<line x1="275" y1="164" x2="441" y2="164" stroke="#555" stroke-width="3"/>
+<rect x="344.5" y="20.5" width="83" height="143.5" stroke="#444" stroke-width="2" fill="none"/>
+<path d="M343 21 L340.9 22 L339.3 26 L336.8 30 L334.2 34 L331.2 38 L328.6 42 L326.1 46 L323.5 50 L322.1 54 L319.7 58 L317.6 62 L316.5 66 L314.9 70 L313.4 74 L312.6 78 L311.3 82 L310.3 86 L309.9 90 L309.3 94 L308.8 98 L308.7 102 L308.3 106 L308 110 L307.9 114 L307.5 118 L306.9 122 L306.8 126 L306.6 130 L306.6 134 L306.6 138 L306.6 142 L306.6 146 L306.6 150 L306.6 152" stroke="#3a3a3a" stroke-width="2.4" stroke-dasharray="9 4" fill="none"/>
+<rect x="300.5" y="156" width="13.0" height="8" stroke="#444" stroke-width="2" fill="none"/><line x1="307.5" y1="158" x2="307.5" y2="164" stroke="#444" stroke-width="2" fill="none"/>
+<line x1="488" y1="163.5" x2="681" y2="163.5" stroke="#555" stroke-width="3"/>
+<rect x="583.5" y="20.5" width="82" height="143" stroke="#444" stroke-width="2" fill="none"/>
+<path d="M579.5 20.5 L575.8 21 L572 25 L566 29 L559.7 33 L554.5 37 L550 41 L546.4 45 L542.6 49 L539.1 53 L536.7 57 L534.2 61 L532.5 65 L530.6 69 L528.5 73 L527.5 77 L525.7 81 L524.1 85 L523.4 89 L522.2 93 L521.2 97 L520.6 101 L519.8 105 L519.1 109 L518.8 113 L518.5 117 L518.1 121 L517.8 125 L517.4 129 L517.1 133 L517 137 L517 141 L516.9 145 L516.8 149 L516.8 152" stroke="#3a3a3a" stroke-width="2.4" stroke-dasharray="9 4" fill="none"/>
+<rect x="509.5" y="156" width="13.0" height="8" stroke="#444" stroke-width="2" fill="none"/><line x1="516.5" y1="160" x2="516.5" y2="164" stroke="#444" stroke-width="2" fill="none"/>
+</svg>
+<div style="position:relative;width:100%;max-width:716px;height:22px;margin-top:6px;font-size:13px;color:#333"><span style="position:absolute;left:21.6%;transform:translateX(-50%);white-space:nowrap"><b>a</b> — acidente</span><span style="position:absolute;left:50.0%;transform:translateX(-50%);white-space:nowrap"><b>b</b> — homicídio</span><span style="position:absolute;left:81.6%;transform:translateX(-50%);white-space:nowrap"><b>c</b> — suicídio</span></div>
 </div>
     </div>
     <div class="img-inside">
@@ -41558,6 +41538,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <img src="img/c8daf786454cdea7.webp" alt="Fundo Partidário, Direito de Antena e Cláusula de Barreira" style="max-width:100%;height:auto;display:block;margin:0 auto;"/>
 </div>
 <!-- IMAGE8 RECREATED AS TABLE: Desfiliação - Regra Geral / Exceções -->
+<input type="checkbox" id="desfInfoChk" class="desfInfoChk"/>
 <div class="tbl-wrap">
 <table class="t">
 <tbody>
@@ -41566,7 +41547,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <td>Os Deputados Federais, os Deputados Estaduais, os Deputados Distritais e os Vereadores que se desligarem do partido pelo qual tenham sido eleitos perderão o mandato.</td>
 </tr>
 <tr>
-<td style="text-align:center;"><span class="hl-g">Exceções</span></td>
+<td style="text-align:center;"><span class="hl-g">Exceções</span><br/><label for="desfInfoChk" class="desfInfoBtn" title="Clique para ver a explicação das exceções">ⓘ</label></td>
 <td>
 1) anuência do partido<br/>
 2) situações de justa causa definidas em lei, sendo elas:<br/>
@@ -41577,6 +41558,30 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </tr>
 </tbody>
 </table>
+</div>
+<div class="desfInfoPainel">
+<label for="desfInfoChk" class="desfInfoFecha">fechar ✕</label>
+<p class="desfInfoTit">1) Anuência do partido</p>
+<p>Essa exceção foi incluída na Constituição pela EC 111/2021. Se o próprio partido concorda com a saída do parlamentar, ele pode se desfiliar sem perder o cargo.</p>
+<p>A lógica é simples: se o mandato pertence ao partido, só ele seria prejudicado pela saída. Se ele mesmo abre mão, não há razão para punir o parlamentar.</p>
+<p>A EC 111 trouxe ainda uma ressalva: essa migração não é contada para fins de distribuição do Fundo Partidário, de outros fundos públicos e do tempo de rádio e TV. Ou seja, o parlamentar não "leva" esses recursos para o novo partido, o que evita que a troca seja usada como moeda de negociação entre legendas.</p>
+<p class="desfInfoTit">2) Justa causa definida em lei (art. 22-A, parágrafo único, Lei 9.096/95)</p>
+<p class="desfInfoSub">a) Mudança substancial ou desvio reiterado do programa partidário</p>
+<p>Aqui a "culpa" é do partido. Quem se filiou e foi eleito sob certo programa e ideologia não é obrigado a permanecer se o partido abandona suas bandeiras de forma significativa (mudança substancial) ou contraria repetidamente o próprio programa (desvio reiterado).</p>
+<p>Não basta uma divergência pontual sobre uma votação ou uma decisão estratégica. É preciso demonstrar uma alteração real e relevante na identidade programática do partido.</p>
+<p class="desfInfoSub">b) Grave discriminação política pessoal</p>
+<p>Ocorre quando o parlamentar é perseguido ou isolado dentro do próprio partido, de modo a inviabilizar sua atuação. Exemplos que costumam ser discutidos são a exclusão injustificada de espaços de decisão, a negativa reiterada de legenda ou de apoio que é dado aos demais, ou hostilidade pessoal deliberada.</p>
+<p>A jurisprudência do TSE exige que a discriminação seja grave e pessoal. Meras disputas internas, derrotas em votações partidárias ou desentendimentos comuns da vida política não configuram justa causa.</p>
+<p class="desfInfoSub">c) A "janela partidária"</p>
+<p>É a hipótese mais usada na prática. Permite a troca de partido nos 30 dias que antecedem o prazo de filiação exigido para concorrer à eleição, desde que seja ao término do mandato vigente.</p>
+<p>Para entender: a lei eleitoral (Lei 9.504/97, art. 9º) exige que o candidato esteja filiado ao partido pelo menos 6 meses antes da eleição. A janela, portanto, abre-se cerca de 7 meses antes e fecha no limite dos 6 meses. Como as eleições ocorrem no início de outubro, a janela costuma cair entre o início de março e o início de abril do ano eleitoral.</p>
+<p>A expressão "ao término do mandato vigente" é decisiva: só pode usar a janela quem está no último ano do mandato. Na prática, vereadores usam a janela do ano de eleições municipais, e deputados (federais, estaduais e distritais) usam a janela do ano de eleições gerais. Um deputado, por exemplo, não pode aproveitar a janela de uma eleição municipal para trocar de partido no meio do mandato, segundo o entendimento do TSE.</p>
+<p>A finalidade é permitir que o parlamentar se reorganize politicamente para disputar a próxima eleição sem perder o cargo que ainda exerce.</p>
+<p class="desfInfoTit">Como isso funciona na prática</p>
+<p>Se o parlamentar sai sem uma dessas justificativas, o partido pode ajuizar ação de perda de cargo eletivo por desfiliação partidária na Justiça Eleitoral (regulada pela Resolução TSE 22.610/2007). O partido tem 30 dias após a desfiliação para agir. Se não agir, o Ministério Público Eleitoral ou quem tenha interesse jurídico (como o suplente) pode propor a ação nos 30 dias seguintes.</p>
+<p>Nessa ação, cabe ao parlamentar provar a justa causa (ou a anuência) para manter o mandato.</p>
+<p class="desfInfoTit">Resumo para memorizar</p>
+<p>A regra é que o mandato proporcional pertence ao partido. As exceções se dividem em duas: a anuência (o dono do mandato concorda) e a justa causa legal, que abrange duas situações em que o partido deu causa à saída (desvio do programa e discriminação pessoal grave) e uma situação temporal (a janela partidária no fim do mandato).</p>
 </div>
 <div class="warn-box">NÃO há inconstitucionalidade na cumulação entre a inelegibilidade e a suspensão de direitos políticos.” (BRASIL, Supremo Tribunal Federal, ADI n. 4.578; ADC n. 29; ADC n. 30, 2012).</div>
 <div class="note-box">(Súmula-TSE nº 67) — A perda do mandato em razão da desfiliação partidária não se aplica aos candidatos eleitos pelo sistema majoritário.</div>
@@ -41735,14 +41740,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <li>b) Intervenção dos Estados nos Municípios (intervenção estadual) – art. 35 da CF/88.</li>
 </ul>
 </div>
-<div class="fig"><img alt="Intervenção Federal — espontânea e provocada" src="img/3ca662802091210d.webp"/></div>
-<div class="balao azul">
-<span class="balao-tit">PGR</span>
-<ul class="plain">
-<li>Descumprimento de lei federal: Ação de executoriedade de lei federal.</li>
-<li>Princípios sensíveis: ADI interventiva.</li>
-</ul>
-</div>
+<div class="fig"><img alt="Intervenção Federal — espontânea e provocada" src="img/1d4e6536316d179a.webp"/></div>
 <p>Hipóteses relacionadas à receita:</p>
 <ul class="dash">
 <li>Deixar de entregar receita → INTERVENÇÃO (espontânea – ofício – contas).
@@ -41756,13 +41754,19 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </ul>
 </li>
 </ul>
-<p>Dispensa de controle político do Legislativo:</p>
+<p>Dispensa de controle político do Legislativo (art. 36, § 3º, CF)</p>
+<p>Hipóteses:</p>
 <ul class="dash">
-<li>ADI interventiva</li>
-<li>Intervenção por requisição.</li>
-<li>Nesses casos (art. 34, VI e VII), dispensada a apreciação pelo Congresso Nacional ou Assembleia Legislativa, o decreto limitar-se-á a suspender a execução do ato impugnado, se essa medida bastar ao restabelecimento da normalidade.</li>
-<li>Se não for suficiente, o Presidente da República decretará a intervenção federal, submetendo-a ao controle político do Congresso Nacional.</li>
+<li>ADI interventiva: provimento, pelo STF, de representação do PGR, para assegurar a observância dos princípios sensíveis (art. 34, VII) ou para prover a execução de lei federal (art. 34, VI, 1ª parte), conforme o art. 36, III.</li>
+<li>Requisição judicial do STF, STJ ou TSE para prover a execução de ordem ou decisão judicial (art. 34, VI, 2ª parte; art. 36, II).</li>
+<li>Intervenção estadual em Município por provimento de representação pelo TJ (art. 35, IV), caso em que se dispensa a apreciação pela Assembleia Legislativa.</li>
 </ul>
+<p>Consequência: o decreto limitar-se-á a suspender a execução do ato impugnado, se essa medida bastar ao restabelecimento da normalidade.</p>
+<p>Se a suspensão não bastar: o Presidente decreta a intervenção com medidas mais amplas, como a nomeação de interventor, e o decreto se submete ao controle político do Congresso Nacional. (Esse ponto é entendimento doutrinário; não está expresso no texto constitucional.)</p>
+<div class="balao vermelho">
+<span class="balao-tit">Atenção, pegadinha</span>
+<p>A requisição do STF por coação contra o Poder Judiciário (art. 34, IV; art. 36, I) não dispensa o controle político. Nesse caso o decreto vai ao Congresso em 24 horas, assim como em todas as demais hipóteses do art. 34, I a V.</p>
+</div>
 <p class="note">🎥 Vídeo — Assunto: Intervenção Federal e Estadual (arts. 34 a 36 da CF/1988):<br/>
 <a href="https://www.youtube.com/watch?v=RJD5VOjNIQ8&amp;pp=ygVFIEFzc3VudG86IEludGVydmVuw6fDo28gRmVkZXJhbCBlIEVzdGFkdWFsIChhcnRzLiAzNCBhIDM2IGRhIENGLzE5ODgp">https://www.youtube.com/watch?v=RJD5VOjNIQ8</a></p>
 </section>
@@ -41770,12 +41774,13 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <!-- ============ SEÇÃO 9 ============ -->
 <section class="c-vermelho">
 <div class="sec-head"><div class="sec-num">9</div><h2>Intervenção Estadual</h2></div>
-<div class="fig"><img alt="" src="img/5e397fcf45f6b18b.webp"/></div>
-<div class="mnemo">Bizu</div>
-<ul class="dash">
+<div class="fig"><img alt="Intervenção Estadual" src="img/c7d7249e8c3bcb73.webp"/></div>
+<div class="mnemo">Bizu
+<ul class="dash" style="margin:6px 0 2px">
 <li>A intervenção pelo governador sempre envolve questões financeiras.</li>
 <li>As demais, mediante requisição do TJ.</li>
 </ul>
+</div>
 </section>
 <hr class="soft"/>
 <!-- ============ SEÇÃO 10 (Dívida) ============ -->
@@ -41816,8 +41821,9 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <section class="c-azul">
 <div class="sec-head"><div class="sec-num">11</div><h2>Responsabilidade do Gestor Público</h2></div>
 <ul class="dash">
-<li>A Ação Direta de Inconstitucionalidade 5509 tratou da possibilidade de o Tribunal de Contas da União (TCU) imputar débito e aplicar sanções a gestores públicos sem necessidade de comprovação de dolo ou culpa grave.</li>
-<li>A Súmula 230 do TCU estabelece que o gestor pode ser responsabilizado mesmo sem dolo, bastando culpa, não sendo suficiente a mera alegação de boa-fé para afastar responsabilidade se houver dano ao erário.</li>
+<li>A Ação Direta de Inconstitucionalidade 5509 (STF, Rel. Min. Edson Fachin, julgada em 2021) tratou da prescrição nos Tribunais de Contas. O STF entendeu que os Estados podem fixar prazos de prescrição e decadência para seus Tribunais de Contas e que a imprescritibilidade do ressarcimento ao erário (art. 37, § 5º, CF) se limita aos atos dolosos de improbidade administrativa. Assim, a pretensão de ressarcimento apurada pelos Tribunais de Contas é, em regra, prescritível.</li>
+<li>A Súmula 230 do TCU estabelece que compete ao prefeito sucessor prestar contas dos recursos federais recebidos pelo antecessor, quando este não o fez e o prazo vence ou já está vencido na gestão do sucessor. Se isso for impossível, o sucessor deve adotar as medidas legais para resguardar o patrimônio público, sob pena de ser responsabilizado por omissão.</li>
+<li>A responsabilidade do gestor perante o TCU é subjetiva. Pelo art. 28 da LINDB, o agente público responde pessoalmente apenas por dolo ou erro grosseiro, que o TCU equipara à culpa grave. Como cabe ao gestor comprovar a boa e regular aplicação dos recursos (art. 70, parágrafo único, CF), a mera alegação de boa-fé não afasta o dever de ressarcir, mas a boa-fé reconhecida pode atenuar as consequências, como a dispensa de juros sobre o débito.</li>
 </ul>
 </section>
 <hr class="soft"/>
@@ -45454,7 +45460,7 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 </div>
 </div>
 
-<div class="balloon b-azul"><div class="bt">Contrabando e descaminho</div>
+<div class="balloon b-verde"><div class="bt">Contrabando e descaminho</div>
 <p>Compete à Justiça Federal o julgamento dos crimes de contrabando e de descaminho, ainda que inexistentes indícios de transnacionalidade na conduta.</p>
 </div>
 
@@ -49229,6 +49235,50 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <ul class="plain">
 <li><b>Rol taxativo.</b></li>
 <li><b>Discricionário do administrador:</b> a licitação é viável, haja vista a possibilidade de competição, mas é afastada, a critério do administrador, para atender o interesse público de forma mais célere e eficiente.</li>
+</ul>
+<p><b>Hipóteses de licitação dispensável (art. 75 da Lei 14.133/2021):</b></p>
+<ul class="plain">
+<li class="sem-bolinha">I – <b>obras e serviços de engenharia</b> ou <b>serviços de manutenção de veículos automotores</b> de valor inferior a <b><span class="mark">R$ 100 mil</span></b> (R$ 130.984,20 em 2026);</li>
+<li class="sem-bolinha">II – <b>outros serviços e compras</b> de valor inferior a <b><span class="mark">R$ 50 mil</span></b> (R$ 65.492,11 em 2026);</li>
+<li class="sem-bolinha">III – licitação realizada há <b>menos de 1 ano</b>, mantidas todas as condições do edital, quando nela: a) não surgiram licitantes interessados ou não houve propostas válidas (<b>deserta ou fracassada</b>); ou b) as propostas tinham preços manifestamente superiores aos de mercado ou incompatíveis com os fixados pelos órgãos oficiais;</li>
+<li class="sem-bolinha">IV – em razão do <b>objeto</b>:
+    <ul class="dash">
+<li class="sem-bolinha">a) bens, componentes ou peças para manutenção de equipamentos, comprados do <b>fornecedor original durante a garantia técnica</b>, quando a exclusividade for indispensável para manter a garantia;</li>
+<li class="sem-bolinha">b) bens, serviços, alienações ou obras nos termos de <b>acordo internacional</b> aprovado pelo Congresso, quando manifestamente vantajosos;</li>
+<li class="sem-bolinha">c) <b>produtos para pesquisa e desenvolvimento</b> (em obras e serviços de engenharia, limitados a R$ 300 mil, valor atualizado por decreto);</li>
+<li class="sem-bolinha">d) transferência de tecnologia ou licenciamento de criação protegida, contratados por <b>ICT pública ou agência de fomento</b>, demonstrada a vantagem;</li>
+<li class="sem-bolinha">e) <b>hortifrutigranjeiros, pães e outros gêneros perecíveis</b>, no tempo necessário para fazer a licitação, pelo <b>preço do dia</b>;</li>
+<li class="sem-bolinha">f) bens ou serviços produzidos ou prestados no País que envolvam, <b>cumulativamente</b>, alta complexidade tecnológica e defesa nacional;</li>
+<li class="sem-bolinha">g) materiais de uso das <b>Forças Armadas</b> (exceto de uso pessoal e administrativo), para manter a padronização logística, com autorização do comandante da força;</li>
+<li class="sem-bolinha">h) bens e serviços para contingentes militares em <b>operações de paz no exterior</b>, com justificativa de preço e de fornecedor e ratificação do comandante;</li>
+<li class="sem-bolinha">i) abastecimento de efetivos militares em <b>estada eventual de curta duração</b> em portos, aeroportos ou localidades fora da sede;</li>
+<li class="sem-bolinha">j) coleta, processamento e comercialização de <b>resíduos sólidos recicláveis</b> por associações ou cooperativas de <b>catadores</b> de baixa renda;</li>
+<li class="sem-bolinha">k) aquisição ou restauração de <b>obras de arte e objetos históricos</b> de autenticidade certificada, compatíveis com as finalidades do órgão;</li>
+<li class="sem-bolinha">l) serviços especializados e equipamentos para <b>captação ambiental e interceptação</b> (art. 3º, II e V, da Lei 12.850/2013), quando houver necessidade justificada de <b>sigilo</b> da investigação;</li>
+<li class="sem-bolinha">m) <b>medicamentos para doenças raras</b> definidas pelo Ministério da Saúde;</li>
+</ul>
+</li>
+<li class="sem-bolinha">V – cumprimento dos arts. 3º, 3º-A, 4º, 5º e 20 da <b>Lei de Inovação</b> (Lei 10.973/2004);</li>
+<li class="sem-bolinha">VI – risco de comprometer a <b>segurança nacional</b>, nos casos definidos pelo Ministro da Defesa, a pedido dos comandos das Forças Armadas ou dos demais ministérios;</li>
+<li class="sem-bolinha">VII – <b>guerra, estado de defesa, estado de sítio, intervenção federal</b> ou grave perturbação da ordem;</li>
+<li class="sem-bolinha">VIII – <b>emergência ou calamidade pública</b>, só para os bens necessários e para as parcelas de obras e serviços que possam ser concluídas em no máximo <b><span class="mark">1 ano</span></b> da ocorrência, <b>vedadas a prorrogação</b> do contrato e a <b>recontratação</b> da mesma empresa com base neste inciso;</li>
+<li class="sem-bolinha">IX – aquisição, por pessoa jurídica de direito público interno, de bens ou serviços de <b>órgão ou entidade da Administração criados para esse fim específico</b>, a preço de mercado;</li>
+<li class="sem-bolinha">X – quando a <b>União</b> tiver que <b>intervir no domínio econômico</b> para regular preços ou normalizar o abastecimento;</li>
+<li class="sem-bolinha">XI – <b>contrato de programa</b> com ente federativo ou entidade de sua Administração indireta, para prestação associada de serviços públicos (consórcio público ou convênio de cooperação);</li>
+<li class="sem-bolinha">XII – <b>transferência de tecnologia de produtos estratégicos para o SUS</b>, inclusive a aquisição desses produtos durante a absorção tecnológica;</li>
+<li class="sem-bolinha">XIII – <b>profissional de notória especialização</b> para compor a <b>comissão de avaliação de critérios de técnica</b>;</li>
+<li class="sem-bolinha">XIV – <b>associação de pessoas com deficiência</b>, sem fins lucrativos e idônea, para serviços prestados exclusivamente por pessoas com deficiência, a preço de mercado;</li>
+<li class="sem-bolinha">XV – instituição brasileira sem fins lucrativos, de inquestionável reputação, que apoie <b>ensino, pesquisa, extensão, desenvolvimento institucional, científico e tecnológico e inovação</b>, ou dedicada à <b>recuperação social da pessoa presa</b>;</li>
+<li class="sem-bolinha">XVI – aquisição, por pessoa jurídica de direito público interno, de <b>produtos estratégicos para a saúde</b> fornecidos por produtores públicos por meio de <b>fundação de apoio</b> criada para esse fim antes da Lei, a preço de mercado (redação da Lei 15.471/2026);</li>
+<li class="sem-bolinha">XVII – entidade privada sem fins lucrativos para implantar <b>cisternas</b> ou outras tecnologias sociais de acesso à água, para famílias rurais de baixa renda atingidas pela seca;</li>
+<li class="sem-bolinha">XVIII – entidade privada sem fins lucrativos para o <b>Programa Cozinha Solidária</b> (alimentação gratuita à população vulnerável, inclusive em situação de rua).</li>
+</ul>
+<p><b>Regras da dispensa por valor (incisos I e II):</b></p>
+<ul class="dash">
+<li>O limite é aferido pelo <b>somatório do exercício financeiro</b> na unidade gestora, com objetos de <b>mesma natureza</b> (mesmo ramo de atividade) — § 1º.</li>
+<li>Valores <b><span class="mark">duplicados</span></b> para <b>consórcio público</b> e para <b>autarquia ou fundação qualificadas como agência executiva</b> — § 2º.</li>
+<li>Manutenção de veículos do próprio órgão até R$ 8 mil (R$ 10.478,74 em 2026), com peças, fica fora do somatório — § 7º.</li>
+<li>Preferencialmente com aviso em sítio oficial por <b>3 dias úteis</b> (§ 3º) e pagamento por <b>cartão de pagamento</b> (§ 4º).</li>
 </ul>
 </div><div class="balao verde">
 <p class="titulo">Dispensada (Vinculada) — Alienação</p>
@@ -58242,6 +58292,38 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
       <span class="mnem">Bizu: só cabe retratação <b>na CAMA</b> — <b>CA</b>lúnia e difa<b>MA</b>ção.</span>
     </div>
 
+    <h4>9.3 Excludentes especiais</h4>
+    <div class="tbl-wrap">
+    <table class="t122">
+      <thead>
+        <tr>
+          <th class="th-roxo" style="width:130px;">CRIME</th>
+          <th class="th-roxo" style="width:110px;">CABE?</th>
+          <th class="th-roxo">FUNDAMENTO</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="l-verm">
+          <td class="rot">Calúnia</td>
+          <td class="rot">NÃO</td>
+          <td>O art. 142 só fala em <strong>injúria ou difamação</strong>. A imunidade da ofensa em juízo <u>não</u> alcança a calúnia (STF).</td>
+        </tr>
+        <tr class="l-azul">
+          <td class="rot">Difamação</td>
+          <td class="rot">SIM</td>
+          <td>Art. 142 — não há difamação punível:<br>I – na <strong>ofensa irrogada em juízo</strong>, na discussão da causa, pela parte ou por seu procurador;<br>II – na <strong>opinião desfavorável da crítica</strong> literária, artística ou científica, salvo intenção inequívoca de difamar;<br>III – no <strong>conceito desfavorável de funcionário público</strong>, em apreciação ou informação no cumprimento de dever do ofício.</td>
+        </tr>
+        <tr class="l-verde">
+          <td class="rot">Injúria</td>
+          <td class="rot">SIM</td>
+          <td>As <strong>mesmas três hipóteses</strong> do art. 142 (ofensa em juízo, crítica e conceito de funcionário público).</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p><strong>Atenção:</strong> nos casos dos incisos <strong>I e III</strong>, responde pela injúria ou difamação <strong>quem lhe dá publicidade</strong> (art. 142, parágrafo único).</p>
+
+
     <div class="box box-verde">
       <span class="lab">Fechando o capítulo</span>
       <ul class="plain">
@@ -65769,6 +65851,7 @@ No caso de S.A., quando houver requerimento de acionistas que representem pelo m
 <p>Nas <b>ADI 4277 e ADPF 132</b>, de 2011, o STF reconheceu a <b>união estável homoafetiva</b> como entidade familiar, mediante interpretação conforme do art. 1.723 do Código Civil. Em 2013, a <b>Resolução 175 do CNJ</b> vedou às autoridades competentes a recusa de habilitação e celebração de <b>casamento civil</b> entre pessoas do mesmo sexo.</p>
 <p>Na <b>ADI 4275</b>, de 2018, firmou-se o direito à <b>alteração de prenome e gênero no registro civil</b> de pessoas transgênero <b>independentemente de cirurgia, laudo, tratamento hormonal ou autorização judicial</b>, bastando a autodeclaração perante o cartório.</p>
 <p>Na <b>ADO 26</b> e no <b>MI 4733</b>, de 2019, o STF reconheceu a mora inconstitucional do Congresso e determinou o enquadramento da <b>homofobia e da transfobia</b> na <b>Lei 7.716/89</b>, até que sobrevenha legislação específica.</p>
+<p>No <b>MI 7452</b>, de 2025, o STF, por unanimidade, reconheceu nova omissão do Congresso — a simples tramitação de projetos de lei não a afasta — e estendeu a <b>Lei Maria da Penha</b> (Lei 11.340/2006), até que sobrevenha lei específica, às relações domésticas e familiares de <b>casais homoafetivos do sexo masculino</b>, quando fatores do contexto colocarem o homem vítima em <b>posição de subalternidade</b> na relação, e às <b>travestis e mulheres transexuais</b> com identidade social feminina. Os ministros Zanin, Mendonça e Fachin acompanharam com ressalva: para os homens, aplicam-se as <b>medidas protetivas de urgência</b>, mas não os tipos penais que pressupõem vítima mulher.</p>
 <p>Na <b>ADPF 527</b>, de 2019, assegurou-se às pessoas <b>trans e travestis privadas de liberdade</b> o direito de cumprir pena em estabelecimento feminino ou em ala específica, conforme sua escolha. No mesmo sentido, a <b>Resolução 348 do CNJ</b>, de 2020, estabeleceu diretrizes para o tratamento de pessoas LGBTQIA+ custodiadas, assegurando o uso do <b>nome social</b>, a escolha do local de custódia e a escolha do sexo do agente que realizará a <b>revista pessoal</b> — pontos de aplicação direta na atividade policial.</p>
 <p>Completam o quadro a <b>ADPF 291</b>, de 2015, que declarou não recepcionadas expressões discriminatórias do art. 235 do Código Penal Militar, e a <b>ADI 5543</b>, de 2020, que reputou inconstitucional a restrição à doação de sangue por homens que fazem sexo com homens. No plano interamericano, a <b>OC-24/17</b> tratou da identidade de gênero autopercebida e da obrigação de reconhecer vínculos entre pessoas do mesmo sexo.</p>
 <p>Na esfera federal, o Decreto 8.727/2016 disciplina o uso do nome social nos registros e no atendimento da administração pública, havendo resoluções estaduais no mesmo sentido.</p>
@@ -65803,6 +65886,7 @@ No caso de S.A., quando houver requerimento de acionistas que representem pelo m
 <p>Completam o regime o <b>Estatuto da Igualdade Racial</b> (Lei 12.288/2010) e a <b>CIRDI</b>, Convenção Interamericana contra o Racismo, de 2013, incorporada pelo Decreto 10.932/2022 com status de emenda constitucional. A CIRDI traz o conceito de <b>discriminação múltipla ou agravada</b> e prevê expressamente obrigações estatais relativas ao <b>perfilamento racial</b>.</p>
 <p>Na jurisprudência, a <b>ADPF 186</b>, de 2012, reconheceu a constitucionalidade das cotas raciais no ensino superior, e a <b>ADC 41</b>, de 2017, a das cotas em concursos públicos.</p>
 <p>Conceito indispensável é o de <b>racismo estrutural e institucional</b>: o racismo não se reduz a condutas individuais, operando também nas rotinas e práticas ordinárias das instituições. Na segurança pública, sua manifestação mais evidente é a <b>filtragem racial</b>, tratada adiante.</p>
+<p>Na <b>ADPF 973</b> ("ADPF Vidas Negras"), julgada em dezembro de 2025, o STF, por <b>unanimidade</b>, <b>reconheceu a existência de racismo estrutural no Brasil</b>, decorrente de graves violações sistemáticas a direitos fundamentais da população negra. Por maioria, porém, <b>afastou o estado de coisas inconstitucional</b>: como há diversas políticas públicas específicas em andamento para enfrentar o racismo, falta um dos requisitos do instituto — a <b>prolongada omissão das autoridades</b>. Entre essas políticas, o Tribunal citou a Lei 10.639/2003 (ensino de História e Cultura Afro-Brasileira), o Estatuto da Igualdade Racial, o SINAPIR, as cotas nas instituições federais de ensino (Lei 12.711/2012), a criação do Ministério da Igualdade Racial e a <b>Lei 15.142/2025</b>, que reserva <b>30%</b> das vagas de concursos federais a pessoas pretas e pardas, indígenas e quilombolas. Ainda assim, julgou o pedido parcialmente procedente e determinou providências, como a <b>atualização do PLANAPIR</b> (Plano Nacional de Promoção da Igualdade Racial) ou a elaboração de um novo Plano Nacional de Combate ao Racismo Estrutural. Ficaram vencidos, quanto ao estado de coisas inconstitucional, os ministros Fachin, Dino e Cármen Lúcia.</p>
 <p>No plano interamericano, o caso <b>Dos Santos Nascimento e Ferreira Gomes vs. Brasil</b>, de 2024, firmou o dever de <b>devida diligência reforçada</b> na investigação de casos com indícios de motivação racial.</p>
 </section>
 <section class="lepcard bordered">
