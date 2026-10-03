@@ -395,6 +395,17 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
   #tela .filtroMatCad > .notaFiltro,#tela .filtroMatCad > .avisoFiltro{flex-shrink:1}
   #tela .filtroMatCad > .flex{flex-shrink:1;min-width:0} }
 .filtroMatCad .filtroStatusCad select.ativo{background:#FFF4CC;border-color:#e0c060;font-weight:bold}
+.barraFlutBt{position:fixed;top:12px;right:62px;z-index:70;width:40px;height:40px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #c9d4e3;
+  background:#fff;color:var(--azulEscuro);font:bold 18px Arial,Helvetica,sans-serif;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.28)}
+.barraFlutBt:hover,.barraFlutBt.on{background:var(--azulEscuro);color:#fff;border-color:var(--azulEscuro)}
+body.barraFlutuante #barra{position:fixed !important;top:0;left:0;right:0;z-index:65}
+body.barraFlutuante #barra2{position:fixed !important;left:0;right:0;z-index:64;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+/* com a barra aberta, os botões suspensos descem para não tampar o menu da conta */
+body.barraFlutuante .barraFlutBt,body.barraFlutuante .crimEngr{top:var(--barraFlutAlt,92px)}
+body.barraFlutuante .crimVolta{top:calc(var(--barraFlutAlt,92px) + 48px)}
+@media print{ .barraFlutBt{display:none} }
 .jurImp .jurImpEx{font-size:11px;color:#7a8595;font-style:italic;margin-top:6px}
 /* ===== modo cartões dos cadernos (prefixo cad*) ===== */
 .cadModoSeg{display:inline-flex;border:1px solid #b6c2d2;border-radius:7px;overflow:hidden;margin-left:8px}
@@ -18908,6 +18919,20 @@ const filtroMatCad = {};
 /* filtro de status ao lado do de matéria: "" = todos; ou o nome da fase
    ("Pendente", "Revisado", "Dominado"). Só nesta página. */
 const filtroFaseCad = {};
+/* a caixa de matéria do tamanho do texto escolhido (e não da opção mais longa) */
+function caberNoTexto(sel){
+  const ajusta = () => {
+    if (!sel.isConnected) return;
+    const o = sel.options[sel.selectedIndex];
+    const c = caberNoTexto.ctx || (caberNoTexto.ctx = document.createElement("canvas").getContext("2d"));
+    const cs = getComputedStyle(sel);
+    c.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const w = Math.ceil(c.measureText(o ? o.textContent : "").width);
+    sel.style.width = Math.min(340, Math.max(90, w + 34)) + "px";   // + margens e a setinha
+  };
+  setTimeout(ajusta, 0);
+  sel.addEventListener("change", ajusta);
+}
 function seletorStatusCad(chave, lista){
   const cx = el("span","filtroStatusCad");
   cx.appendChild(el("span","rot","Status:"));
@@ -19324,6 +19349,7 @@ function telaCaderno(mod){
     });
     sel.value = filtro;
     sel.onchange = () => { filtroMatCad[mod] = sel.value; render(); window.scrollTo(0,0); };
+    caberNoTexto(sel);
     barraF.appendChild(sel);
     barraF.appendChild(seletorStatusCad(mod, lista));
     if (filtro){
@@ -20465,6 +20491,7 @@ function telaJuris(){
     });
     sel.value = filtro;
     sel.onchange = () => { filtroMatCad.JUR = sel.value; render(); window.scrollTo(0,0); };
+    caberNoTexto(sel);
     barraF.appendChild(sel);
     barraF.appendChild(seletorStatusCad("JUR", lista));
     if (filtro){
@@ -30450,6 +30477,12 @@ function telaMat(mat, id){
     matEstado = ""; render();
   };
   tit.appendChild(engr);
+  // ao lado do ⚙: mostra/esconde a barra de cima presa no alto (cronômetro, módulos…)
+  const bBar = el("button","barraFlutBt" + (document.body.classList.contains("barraFlutuante") ? " on" : ""), "\u2630");
+  bBar.title = document.body.classList.contains("barraFlutuante") ? "Esconder a barra de cima" : "Mostrar a barra de cima (cronômetro, módulos…)";
+  bBar.onclick = () => { alternarBarraFlutuante(); bBar.classList.toggle("on", document.body.classList.contains("barraFlutuante"));
+    bBar.title = document.body.classList.contains("barraFlutuante") ? "Esconder a barra de cima" : "Mostrar a barra de cima (cronômetro, módulos…)"; };
+  tit.appendChild(bBar);
   // se esta se\u00e7\u00e3o (ou alguma do material) foi reescrita, d\u00e1 para desfazer tudo
   const reescritas = (todas ? M.secoes.map(x => x.id) : [id])
     .filter(x => matPodeVoltar(mat, x));
@@ -31200,9 +31233,33 @@ function render(){
     console.error(err);
   }
   if (mesmaTela && yAntes > 0 && Math.abs(window.scrollY - yAntes) > 2) window.scrollTo(0, yAntes);
+  if (modulo !== "cCont" && document.body.classList.contains("barraFlutuante")) alternarBarraFlutuante(false);
   restaurarLeitura();
 }
 
+/* ---------- barra de cima "suspensa" no caderno de conteúdo ----------
+   O botão ☰ (ao lado do ⚙) prende a barra de cima (#barra + #barra2) no alto
+   da tela, por cima do texto. Um espaço do mesmo tamanho fica no lugar dela,
+   para o texto não pular. Fora do caderno de conteúdo, volta ao normal. */
+function alternarBarraFlutuante(ligar){
+  const b1 = document.getElementById("barra"), b2 = document.getElementById("barra2");
+  if (!b1 || !b2) return;
+  const on = ligar === undefined ? !document.body.classList.contains("barraFlutuante") : !!ligar;
+  let esp = document.getElementById("barraFlutEsp");
+  if (on){
+    if (document.body.classList.contains("barraFlutuante")) return;
+    const h1 = b1.offsetHeight, h2 = b2.offsetHeight;
+    if (!esp){ esp = document.createElement("div"); esp.id = "barraFlutEsp"; b1.parentNode.insertBefore(esp, b1); }
+    esp.style.height = (h1 + h2) + "px";
+    document.body.style.setProperty("--barraFlutAlt", (h1 + h2 + 10) + "px");
+    b2.style.top = h1 + "px";
+    document.body.classList.add("barraFlutuante");
+  } else {
+    if (esp) esp.remove();
+    b2.style.top = "";
+    document.body.classList.remove("barraFlutuante");
+  }
+}
 /* ---------- posição de leitura no caderno de conteúdo ----------
    Guarda, por seção, o TRECHO onde você parou (qual parágrafo/item/quadro
    está no alto da tela e quanto dele já passou) — e não os pixels, porque o
@@ -45395,6 +45452,9 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 <div class="cell cell-amar"><div class="ch">Agência franqueada</div><p>Justiça Estadual</p></div>
 <div class="cell cell-azul"><div class="ch">Agência comunitária</div><p>Justiça Federal</p></div>
 </div>
+</div>
+
+<div class="balloon b-azul"><div class="bt">Contrabando e descaminho</div>
 <p>Compete à Justiça Federal o julgamento dos crimes de contrabando e de descaminho, ainda que inexistentes indícios de transnacionalidade na conduta.</p>
 </div>
 
