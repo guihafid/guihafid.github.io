@@ -923,6 +923,29 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
 .cxRico table th,.cxRico table td,.ricoInfo table th,.ricoInfo table td{border:1px solid #d6cfc6;padding:7px 12px;text-align:left;vertical-align:top}
 .cxRico table th,.ricoInfo table th{background:#e2d9cd;color:#2b2b2b;text-align:center;font-weight:bold}
 .cxRico table tr:first-child th[colspan],.ricoInfo table tr:first-child th[colspan]{background:#7a1f1f;color:#fff}
+/* ⓘ genérico do caderno de conteúdo: janela centralizada com fundo fosco (sem JS).
+   Cada par <input.hfInfoChk> + <div.hfInfoPainel> fica dentro de um .hfInfoPar próprio. */
+.hfInfoChk{display:none !important}
+.hfInfoBtn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:24px;height:24px;margin-left:auto;
+ border:1.5px solid #2f6db5;border-radius:50%;color:#2f6db5;background:#eef4fc;font:14px/1 Arial,sans-serif;cursor:pointer;user-select:none}
+.hfInfoBtn:hover{background:#d9e8fa}
+.hfInfoPainel{display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+.hfInfoPar .hfInfoChk:checked + .hfInfoPainel{display:flex}
+body:has(.hfInfoChk:checked){overflow:hidden}
+.hfInfoFundo{position:absolute;inset:0;background:rgba(15,30,51,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);cursor:pointer}
+.hfInfoCaixa{position:relative;width:100%;max-width:780px;max-height:88vh;overflow:auto;overscroll-behavior:contain;
+ background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:0 26px 20px;box-sizing:border-box;
+ font:14.5px/1.65 Arial,Helvetica,sans-serif;text-align:justify;color:#1f2430}
+.hfInfoCab{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;background:#fff;
+ padding:14px 0 10px;margin-bottom:6px;border-bottom:2px solid #c9dbf1}
+.hfInfoCabTit{flex:1;color:#14365c;font-size:16px;font-weight:bold;text-align:left}
+.hfInfoCaixa p{margin:0 0 8px}
+.hfInfoCaixa .hfInfoTit{color:#14365c;font-size:15.5px;font-weight:bold;margin:16px 0 6px;border-bottom:1px solid #c9dbf1;padding-bottom:2px;text-align:left}
+.hfInfoCaixa .hfInfoSub{color:#2f6db5;font-weight:bold;margin:10px 0 4px;text-align:left}
+.hfInfoCaixa .hfInfoLista{margin:0 0 8px;padding-left:22px}
+.hfInfoCaixa .hfInfoLista li{margin:0 0 5px}
+.hfInfoFecha{cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:2px 10px;background:#fff;white-space:nowrap;font-weight:normal}
+.hfInfoFecha:hover{background:#2f6db5;color:#fff}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -43157,18 +43180,6 @@ Desde a expedição do diploma: Fi A está PRESA
 </svg>
 <p style="margin:12px 0 0;padding:0 14px;line-height:1.6;"><b style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:2px;">OBS</b>: A <b>extinção</b> de cargos públicos (quando vagos) poderá ser delegada, visto que está abarcada pelo decreto autônomo.</p>
 </div>
-<div style="border:1px solid #cfd6e0;border-radius:10px;padding:16px 20px;margin:14px 0;background:#fff;line-height:1.55;">
-<div style="color:#3b2fa0;font-size:1.35rem;font-weight:700;margin-bottom:12px;">✓ CRIMES DE RESPONSABILIDADE</div>
-<p style="margin:0 0 12px;"><b>Art. 85.</b> São crimes de responsabilidade os atos do Presidente da República que atentem contra a Constituição Federal e, especialmente, contra:</p>
-<p style="margin:0 0 10px;"><b>I - a existência da União;</b></p>
-<p style="margin:0 0 10px;"><b>II</b> - o livre exercício do Poder Legislativo, do Poder Judiciário, do Ministério Público e dos Poderes constitucionais das unidades da Federação;</p>
-<p style="margin:0 0 10px;"><b>III - o exercício dos direitos políticos, individuais e sociais;</b></p>
-<p style="margin:0 0 10px;"><b>IV</b> - a segurança interna do País;</p>
-<p style="margin:0 0 10px;"><b>V - a probidade na administração;</b></p>
-<p style="margin:0 0 10px;"><b>VI - a lei orçamentária;</b></p>
-<p style="margin:0 0 10px;"><b>VII - o cumprimento das leis e das decisões judiciais.</b></p>
-<p style="margin:0;"><b>Parágrafo único.</b> <b style="background:#ffef4a;padding:1px 3px;">Esses crimes serão definidos em lei especial</b>, que estabelecerá as normas de processo e julgamento.</p>
-</div>
 <div class="balao azul">
 <div class="balao-title">Dupla Vacância</div>
 <p>2 primeiros anos: <strong>90 dias</strong> depois, <strong>ELEIÇÕES DIRETAS</strong> (O POVO VOTA)</p>
@@ -43184,6 +43195,18 @@ Desde a expedição do diploma: Fi A está PRESA
 <h2 class="t-verm">Da Responsabilidade do Presidente da República (arts. 85 e 86)</h2>
 </div>
 <p class="ref-line"><a class="link-ref" href="https://www.tecconcursos.com.br/aulas/materias/2/assuntos/420" rel="noopener" target="_blank">Da Responsabilidade do Presidente da República (arts. 85 e 86 da CF/1988)</a></p>
+<div style="border:1px solid #cfd6e0;border-radius:10px;padding:16px 20px;margin:14px 0;background:#fff;line-height:1.55;">
+<div style="color:#3b2fa0;font-size:1.35rem;font-weight:700;margin-bottom:12px;">✓ CRIMES DE RESPONSABILIDADE</div>
+<p style="margin:0 0 12px;"><b>Art. 85.</b> São crimes de responsabilidade os atos do Presidente da República que atentem contra a Constituição Federal e, especialmente, contra:</p>
+<p style="margin:0 0 10px;"><b>I - a existência da União;</b></p>
+<p style="margin:0 0 10px;"><b>II</b> - o livre exercício do Poder Legislativo, do Poder Judiciário, do Ministério Público e dos Poderes constitucionais das unidades da Federação;</p>
+<p style="margin:0 0 10px;"><b>III - o exercício dos direitos políticos, individuais e sociais;</b></p>
+<p style="margin:0 0 10px;"><b>IV</b> - a segurança interna do País;</p>
+<p style="margin:0 0 10px;"><b>V - a probidade na administração;</b></p>
+<p style="margin:0 0 10px;"><b>VI - a lei orçamentária;</b></p>
+<p style="margin:0 0 10px;"><b>VII - o cumprimento das leis e das decisões judiciais.</b></p>
+<p style="margin:0;"><b>Parágrafo único.</b> <b style="background:#ffef4a;padding:1px 3px;">Esses crimes serão definidos em lei especial</b>, que estabelecerá as normas de processo e julgamento.</p>
+</div>
 <ul class="dash">
 <li><em>Art. 51. Compete privativamente à Câmara dos Deputados:</em>
 <ul class="dash">
@@ -43391,31 +43414,20 @@ Desde a expedição do diploma: Fi A está PRESA
 <span class="num">3</span>
 <h2>Competência — Instituição Privada de Ensino Superior</h2>
 </div>
-<ul class="dash">
-<li>Mandado de segurança:
-      <ul class="dash"><li>Justiça Federal.</li></ul>
-</li>
-<li>Ações contratuais privadas (mensalidade, cobrança, inadimplemento):
-      <ul class="dash"><li>Justiça Estadual.</li></ul>
-</li>
-<li>Discussão sobre:
-      <ul class="dash">
-<li>Registro de diploma;</li>
-<li>Credenciamento perante o MEC;</li>
-<li>Interesse da União presente;</li>
-<li>Competência da Justiça Federal.</li>
-</ul>
-</li>
-<li>Dificuldade de obtenção de diploma por falta de credenciamento da instituição, ainda que se limite ao pagamento de indenização:
-      <ul class="dash">
-<li>União deve integrar o polo passivo;</li>
-<li>Justiça Federal.</li>
-</ul>
-</li>
-<li>Pedido exclusivo de indenização por danos morais contra a instituição:
-      <ul class="dash"><li>Justiça Estadual.</li></ul>
-</li>
-</ul>
+<table class="tab tab-exec">
+<tr>
+<th class="colhead">Tipo de demanda</th>
+<th class="colhead">Competência</th>
+<th class="colhead">Observação</th>
+</tr>
+<tr><td class="cargo" style="text-align:left">Mandado de segurança contra instituição de ensino superior</td><td style="white-space:nowrap">Justiça Federal</td><td style="text-align:left">O dirigente atua por delegação da União (CF, art. 109, VIII)</td></tr>
+<tr><td class="cargo" style="text-align:left">Ações contratuais privadas (mensalidade, cobrança, inadimplemento)</td><td style="white-space:nowrap">Justiça Estadual</td><td style="text-align:left">Relação de natureza privada entre aluno e instituição</td></tr>
+<tr><td class="cargo" style="text-align:left">Registro de diploma</td><td style="white-space:nowrap">Justiça Federal</td><td style="text-align:left">Há interesse da União</td></tr>
+<tr><td class="cargo" style="text-align:left">Credenciamento da instituição perante o MEC</td><td style="white-space:nowrap">Justiça Federal</td><td style="text-align:left">Há interesse da União</td></tr>
+<tr><td class="cargo" style="text-align:left">Dificuldade de obter o diploma por falta de credenciamento, ainda que o pedido seja só de indenização</td><td style="white-space:nowrap">Justiça Federal</td><td style="text-align:left">A União deve integrar o polo passivo</td></tr>
+<tr><td class="cargo" style="text-align:left">Pedido exclusivo de indenização por danos morais contra a instituição</td><td style="white-space:nowrap">Justiça Estadual</td><td style="text-align:left">Sem discussão sobre registro ou credenciamento, não há interesse da União</td></tr>
+</table>
+<div class="juris">Esse entendimento está consolidado no STJ, no julgamento do <b>REsp 1.344.771/PR</b>, sob o rito dos recursos repetitivos (<b>Tema 584</b>).</div>
 <!-- SEÇÃO 4 -->
 <div class="section-head">
 <span class="num">4</span>
@@ -52542,26 +52554,28 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <div class="lep-body">
 
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">1</div><h3>Modelo Dissuasório (Clássico ou Retributivo)</h3></div>
+<div class="card-head"><div class="num">1</div><h3>Modelo Dissuasório (Clássico ou Retributivo)</h3><label for="crimModInfo1" class="hfInfoBtn" title="Clique para ver a explicação">ⓘ</label></div>
 <ul class="plain">
 <li>Foco APENAS na <b>punição do criminoso</b> para demonstrar que "o crime não compensa".</li>
 <li>Exclusivamente <b>retributivo</b>, sem considerar ressocialização ou reparação à vítima.</li>
 <li>São protagonistas apenas o Estado e o delinquente; a sociedade e a vítima são colocados em posição secundária, por vezes esquecidas.</li>
 <li>Aplicado apenas a imputáveis e semi-imputáveis. Os inimputáveis são submetidos a tratamentos psiquiátricos.</li>
 </ul>
+<div class="hfInfoPar"><input type="checkbox" id="crimModInfo1" class="hfInfoChk"/><div class="hfInfoPainel"><label for="crimModInfo1" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa" role="dialog" aria-label="Modelo Dissuasório (Clássico ou Retributivo)"><div class="hfInfoCab"><span class="hfInfoCabTit">1. Modelo Dissuasório (Clássico ou Retributivo)</span><label for="crimModInfo1" class="hfInfoFecha">fechar ✕</label></div><p><b>Ideia central:</b> a resposta ao crime é a pena, aplicada com rigor para mostrar que o delito não vale a pena.</p><p class="hfInfoTit">Raízes históricas</p><p>O modelo vem da Escola Clássica (Beccaria, Bentham, Feuerbach). Ela vê o criminoso como um ser racional, que pesa custos e benefícios antes de agir. Se a punição for certa e suficientemente dura, o "custo" do crime supera o "lucro", e a pessoa desiste.</p><p class="hfInfoTit">Explicando os pontos</p><p><b>Foco apenas na punição.</b> O objetivo é intimidar. Isso corresponde à prevenção geral negativa: a pena serve de exemplo para que a sociedade inteira tenha medo de delinquir. Também há um efeito sobre o próprio condenado (prevenção especial negativa), que é neutralizado pela prisão.</p><p><b>Exclusivamente retributivo.</b> A pena é vista como uma "retribuição", ou seja, o mal do crime é pago com o mal da pena. Não se pergunta o que vai acontecer com o condenado depois (ressocialização) nem como fica a vítima (reparação). O crime é tratado como uma ofensa ao Estado e à lei, não à pessoa atingida.</p><p><b>Protagonistas: Estado x delinquente.</b> O conflito é "estatizado". O Estado toma o lugar da vítima e conduz tudo sozinho. A vítima vira apenas uma testemunha ou fonte de prova, e a sociedade é mera espectadora. É o fenômeno que a Vitimologia chama de "neutralização da vítima".</p><p><b>Imputáveis e semi-imputáveis.</b> Como o modelo pressupõe alguém capaz de raciocinar e escolher, a pena só faz sentido para quem tem capacidade de entender o caráter ilícito do fato. O inimputável (por doença mental, por exemplo) não pode ser "dissuadido", pois não tem essa capacidade. Por isso recebe medida de segurança (tratamento psiquiátrico, internação), e não pena. O semi-imputável pode receber pena reduzida ou medida de segurança (art. 26, parágrafo único, e art. 98 do Código Penal).</p><p class="hfInfoTit">Críticas principais</p><ul class="hfInfoLista"><li>Estudos mostram que a certeza da punição dissuade muito mais do que a severidade. Aumentar penas, por si só, tem pouco efeito se a impunidade continuar alta.</li><li>Ignora a vítima e as causas sociais do crime.</li><li>Tende a gerar encarceramento em massa sem reduzir a reincidência.</li></ul></div></div></div>
 </section>
 
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">2</div><h3>Modelo Ressocializador</h3></div>
+<div class="card-head"><div class="num">2</div><h3>Modelo Ressocializador</h3><label for="crimModInfo2" class="hfInfoBtn" title="Clique para ver a explicação">ⓘ</label></div>
 <ul class="plain">
 <li>Visa a <b>reintegração do infrator à sociedade</b>, com participação social.</li>
 <li>Caráter <b>humanista</b>, buscando prevenir estigmas e reincidência.</li>
 <li>PENA → CARÁTER UTILITÁRIO.</li>
 </ul>
+<div class="hfInfoPar"><input type="checkbox" id="crimModInfo2" class="hfInfoChk"/><div class="hfInfoPainel"><label for="crimModInfo2" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa" role="dialog" aria-label="Modelo Ressocializador"><div class="hfInfoCab"><span class="hfInfoCabTit">2. Modelo Ressocializador</span><label for="crimModInfo2" class="hfInfoFecha">fechar ✕</label></div><p><b>Ideia central:</b> o crime é o sintoma de um problema, e a resposta deve recuperar o infrator para que ele volte à sociedade e não cometa novos crimes.</p><p class="hfInfoTit">Raízes históricas</p><p>Ganha força com a Escola Positiva (Lombroso, Ferri, Garofalo), que estudava o criminoso e as causas do crime. Atinge seu auge no pós-Segunda Guerra, com o Estado de bem-estar social.</p><p class="hfInfoTit">Explicando os pontos</p><p><b>Reintegração com participação social.</b> O foco passa do fato para a pessoa do infrator. A sociedade não é só espectadora: ela participa do processo, recebendo o egresso, oferecendo trabalho e estudo, e acompanhando a execução. No Brasil, a Lei de Execução Penal prevê isso expressamente. O art. 1º diz que a execução deve proporcionar condições para a harmônica integração social do condenado, e o art. 4º manda o Estado recorrer à cooperação da comunidade (por exemplo, os Conselhos da Comunidade). As APACs são um exemplo prático.</p><p><b>Caráter humanista.</b> O infrator é visto como pessoa com dignidade, não como inimigo. Busca-se evitar a estigmatização (o rótulo de "criminoso" que fecha portas e empurra a pessoa de volta ao crime, como explica a Teoria do Etiquetamento) e reduzir a reincidência.</p><p><b>Pena com caráter utilitário.</b> Aqui está a grande diferença em relação ao modelo anterior. A pena não é um fim em si (castigar por castigar). Ela é um meio para alcançar algo útil: a recuperação do condenado. Isso corresponde à prevenção especial positiva. Daí vêm institutos como progressão de regime, remição pela leitura, estudo ou trabalho, livramento condicional e individualização da pena.</p><p class="hfInfoTit">Críticas principais</p><ul class="hfInfoLista"><li>A própria prisão dificulta a ressocialização: é difícil ensinar alguém a viver em liberdade privando-o da liberdade.</li><li>Nos anos 1970, o relatório de Robert Martinson nos EUA popularizou a ideia do "nothing works" ("nada funciona"), o que enfraqueceu o modelo.</li><li>Há o risco de o Estado querer "moldar" a personalidade do condenado, o que esbarra na autonomia individual.</li><li>Assim como o modelo clássico, continua dando pouca atenção à vítima.</li></ul></div></div></div>
 </section>
 
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">3</div><h3>Modelo Restaurador (Integrador, Consensual de Justiça Penal ou Justiça Restaurativa)</h3></div>
+<div class="card-head"><div class="num">3</div><h3>Modelo Restaurador (Integrador, Consensual de Justiça Penal ou Justiça Restaurativa)</h3><label for="crimModInfo3" class="hfInfoBtn" title="Clique para ver a explicação">ⓘ</label></div>
 <ul class="plain"><li>Busca <b>reparar os danos causados pelo crime</b>, com:</li></ul>
 <ul class="dash">
 <li><b>Reeducação do infrator;</b></li>
@@ -52569,10 +52583,11 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <li><b>Composição de interesses</b> (ex.: conciliação, mediação).</li>
 </ul>
 <ul class="plain" style="margin-top:6px"><li><b>Divergências:</b> alguns autores limitam esse modelo a crimes <b>menos graves</b> (ex.: excluindo homicídios).</li></ul>
+<div class="hfInfoPar"><input type="checkbox" id="crimModInfo3" class="hfInfoChk"/><div class="hfInfoPainel"><label for="crimModInfo3" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa" role="dialog" aria-label="Modelo Restaurador (Integrador, Consensual ou Justiça Restaurativa)"><div class="hfInfoCab"><span class="hfInfoCabTit">3. Modelo Restaurador (Integrador, Consensual ou Justiça Restaurativa)</span><label for="crimModInfo3" class="hfInfoFecha">fechar ✕</label></div><p><b>Ideia central:</b> o crime é, antes de tudo, um conflito entre pessoas que causou um dano. A resposta deve reparar esse dano e restaurar as relações, com a participação ativa de vítima, infrator e comunidade.</p><p class="hfInfoTit">Explicando os pontos</p><p><b>Reparar os danos.</b> A pergunta deixa de ser "que pena esse sujeito merece?" e passa a ser "que dano foi causado, quem foi atingido e como consertar isso?". O nome "integrador" vem justamente de integrar todos os envolvidos no conflito.</p><p><b>Reeducação do infrator.</b> O infrator é levado a assumir a responsabilidade pelo que fez e a compreender o impacto concreto da sua conduta sobre a vítima. Isso costuma ter efeito educativo maior do que uma pena imposta de cima.</p><p><b>Assistência à vítima.</b> A vítima volta ao centro do processo. Ela é ouvida, pode expressar o que sofreu e participa da construção da solução. É uma resposta direta à "neutralização da vítima" do modelo clássico.</p><p><b>Composição de interesses.</b> Vítima e infrator buscam uma solução consensual, por meio de conciliação, mediação, círculos restaurativos e reuniões com a comunidade. Por isso o nome "consensual".</p><p class="hfInfoTit">Exemplos no direito brasileiro</p><ul class="hfInfoLista"><li>Lei 9.099/95 (Juizados Especiais Criminais): composição civil dos danos, transação penal e suspensão condicional do processo.</li><li>Acordo de Não Persecução Penal (art. 28-A do CPP), que prevê a reparação do dano como condição.</li><li>Art. 387, IV, do CPP: o juiz fixa na sentença um valor mínimo de reparação à vítima.</li><li>Resolução nº 225/2016 do CNJ: política nacional de Justiça Restaurativa no Judiciário.</li><li>No plano internacional, a Resolução 2002/12 da ONU sobre princípios básicos de programas restaurativos.</li></ul><p class="hfInfoTit">Divergências</p><ul class="hfInfoLista"><li>Alguns autores entendem que o modelo só cabe em crimes de menor gravidade, porque em crimes muito graves (homicídio, estupro) o interesse público na punição seria inafastável, e o encontro com o agressor poderia revitimizar a vítima.</li><li>Outros defendem que práticas restaurativas podem ser usadas também em crimes graves, não como substituto da pena, mas de forma complementar (por exemplo, durante a execução).</li><li>Há resistências específicas em casos de violência doméstica, onde a lei brasileira restringe soluções consensuais (a Lei Maria da Penha afasta a Lei 9.099/95), por causa do desequilíbrio de poder entre as partes.</li></ul></div></div></div>
 </section>
 
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">4</div><h3>Modelo de Segurança Cidadã</h3></div>
+<div class="card-head"><div class="num">4</div><h3>Modelo de Segurança Cidadã</h3><label for="crimModInfo4" class="hfInfoBtn" title="Clique para ver a explicação">ⓘ</label></div>
 <ul class="dash">
 <li>Nome vinculado à ideia de cidadania. No entanto, impõe práticas <b>pouco solidárias</b>;</li>
 <li>Ideia de cruzada contra as situações criminógenas;</li>
@@ -52581,11 +52596,12 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <li>Predomínio do sentimento coletivo de insegurança cidadã e de <b>medo do crime</b>;</li>
 <li>Exacerbação e substantividade dos <b>interesses das vítimas</b>;</li>
 <li><b>Populismo penal</b> e politização partidária do combate ao crime;</li>
-<li>Endurecimento do <b>rigor penal</b> e revalorização do componente aflitivo da população;</li>
+<li>Endurecimento do <b>rigor penal</b> e revalorização do componente aflitivo da pena;</li>
 <li>Confiança ilimitada nos órgãos estatais penais e <b>desprezo pelo sistema de garantias</b>;</li>
 <li><b>Implicação direta da sociedade</b> na luta contra a delinquência;</li>
 <li>Paradigma do <b>controle social</b>.</li>
 </ul>
+<div class="hfInfoPar"><input type="checkbox" id="crimModInfo4" class="hfInfoChk"/><div class="hfInfoPainel"><label for="crimModInfo4" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa" role="dialog" aria-label="Modelo de Segurança Cidadã"><div class="hfInfoCab"><span class="hfInfoCabTit">4. Modelo de Segurança Cidadã</span><label for="crimModInfo4" class="hfInfoFecha">fechar ✕</label></div><p><b>Ideia central:</b> a prioridade passa a ser controlar o crime e combater a sensação de insegurança, ainda que isso custe garantias individuais. Surge nos anos 1980 e 1990, nos EUA e no Reino Unido, e se espalha pelo mundo, influenciado por políticas como a "tolerância zero" e a Teoria das Janelas Quebradas.</p><p>O nome é enganoso, e é justamente esse o primeiro ponto da lista. Vamos item por item:</p><p><b>Nome ligado à cidadania, mas práticas pouco solidárias.</b> Fala-se em "cidadão", mas o cidadão protegido é o "cidadão de bem". O infrator é tratado como alguém de fora, quase um inimigo, sem solidariedade nem preocupação com sua reinserção.</p><p><b>Cruzada contra as situações criminógenas.</b> O discurso é de guerra ao crime: combater locais, grupos e comportamentos vistos como geradores de delito (bairros pobres, pequenas desordens, mendicância, pichação).</p><p><b>Excessos de vigilância penal.</b> Para prevenir, amplia-se o controle: câmeras, abordagens policiais frequentes, criminalização de condutas antes do dano (crimes de perigo, atos preparatórios). O direito penal se antecipa e se expande.</p><p><b>Protagonismo da delinquência convencional e favorecimento da criminalidade dos poderosos.</b> A atenção se concentra nos crimes de rua (furto, roubo, tráfico de varejo), cometidos em geral por pessoas pobres. Enquanto isso, a criminalidade econômica, a corrupção e os crimes ambientais (a "criminalidade do colarinho branco") ficam em segundo plano e acabam favorecidos pela menor fiscalização.</p><p><b>Sentimento coletivo de insegurança e medo do crime.</b> A política criminal passa a ser guiada pelo medo, e não por dados. Muitas vezes o medo é desproporcional ao risco real, alimentado pela cobertura midiática.</p><p><b>Exacerbação e substantividade dos interesses das vítimas.</b> A vítima volta ao centro, mas de forma bem diferente do modelo restaurador. Aqui ela é usada como símbolo para justificar penas mais duras. Seus interesses são tratados como contrapostos aos do réu: qualquer garantia ao acusado é vista como desrespeito à vítima.</p><p><b>Populismo penal e politização partidária.</b> Políticos propõem leis mais severas para ganhar votos, frequentemente logo após crimes de grande repercussão. É a chamada legislação simbólica ou "de pânico". Um exemplo brasileiro clássico é a Lei de Crimes Hediondos (1990), aprovada após uma série de sequestros de grande comoção.</p><p><b>Endurecimento penal e revalorização do componente aflitivo da pena.</b> Penas mais longas, regimes mais rígidos, menos benefícios. O sofrimento imposto pela pena volta a ser visto como algo positivo e desejável.</p><p><b>Confiança ilimitada nos órgãos penais e desprezo pelas garantias.</b> Polícia, Ministério Público e prisões são vistos como solução para tudo. Já as garantias processuais (presunção de inocência, devido processo legal, direito de defesa) são vistas como obstáculos ou "privilégios de bandido".</p><p><b>Implicação direta da sociedade na luta contra o crime.</b> O cidadão é chamado a participar: programas de vigilância comunitária, disque-denúncia, segurança privada. A sociedade vira uma extensão do aparato de controle.</p><p><b>Paradigma do controle social.</b> A finalidade última deixa de ser punir com justiça, ressocializar ou reparar. Passa a ser gerenciar riscos e controlar populações consideradas perigosas.</p><p class="hfInfoTit">Críticas principais</p><p>O modelo se aproxima do chamado direito penal do inimigo (Günther Jakobs), aumenta o encarceramento sem resultados proporcionais na redução do crime, seleciona os mais vulneráveis e enfraquece o Estado Democrático de Direito.</p></div></div></div>
 </section>
 
 </div>
