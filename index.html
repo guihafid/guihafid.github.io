@@ -923,6 +923,41 @@ table.g td.txt textarea:focus{background:#fffbe6;outline:1.5px solid var(--azulM
 .cxRico table th,.cxRico table td,.ricoInfo table th,.ricoInfo table td{border:1px solid #d6cfc6;padding:7px 12px;text-align:left;vertical-align:top}
 .cxRico table th,.ricoInfo table th{background:#e2d9cd;color:#2b2b2b;text-align:center;font-weight:bold}
 .cxRico table tr:first-child th[colspan],.ricoInfo table tr:first-child th[colspan]{background:#7a1f1f;color:#fff}
+/* esquema em fluxo dos prazos do art. 5º da Lei 15.358 (Leg. Penal Especial) */
+.fx15{max-width:640px;margin:6px auto 4px;font:14px/1.5 Arial,Helvetica,sans-serif;color:#1f2430}
+.fx15-par{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fx15-caixa{border:1.5px solid #c9d6e6;border-radius:12px;background:#fff;padding:12px 14px;box-shadow:0 2px 6px rgba(27,58,91,.06)}
+.fx15-prazo{text-align:center}
+.fx15-prazo .fx15-n{font-size:30px;font-weight:800;line-height:1.1}
+.fx15-prazo .fx15-q{font-weight:700;letter-spacing:.6px;font-size:12.5px;margin-top:2px}
+.fx15-prazo .fx15-m{font-size:12.5px;color:#4a5668;margin-top:4px}
+.fx15-azul{border-color:#9cc1e6;background:#eef5fc}.fx15-azul .fx15-n,.fx15-azul .fx15-q{color:#1d5b9c}
+.fx15-verde{border-color:#9fd3a3;background:#eef8ef}.fx15-verde .fx15-n,.fx15-verde .fx15-q{color:#2e7d32}
+.fx15-leg{text-align:center;font-size:12.5px;color:#4a5668;margin:8px 0 0}
+.fx15-seta{display:flex;flex-direction:column;align-items:center;margin:4px 0;color:#5b6b80}
+.fx15-seta::before{content:"";width:2px;height:16px;background:#9aa8ba}
+.fx15-seta::after{content:"";border:7px solid transparent;border-top:9px solid #9aa8ba;border-bottom:0}
+.fx15-seta span{font-size:12px;font-style:italic;margin:2px 0;background:#fff;padding:0 6px}
+.fx15-passo{display:flex;gap:14px;align-items:flex-start}
+.fx15-sel{flex:0 0 auto;min-width:74px;text-align:center;border-radius:10px;padding:8px 6px;color:#fff;font-weight:800;line-height:1.1}
+.fx15-sel b{display:block;font-size:24px}
+.fx15-sel small{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;margin-top:2px;opacity:.95}
+.fx15-txt{flex:1;min-width:0}
+.fx15-txt .fx15-t{font-weight:700;color:#1b3a5b;font-size:15px;margin-bottom:3px}
+.fx15-txt p{margin:0 0 4px;text-align:left}
+.fx15-art{display:inline-block;font-size:11.5px;font-weight:700;color:#1b3a5b;background:#e6edf5;border-radius:6px;padding:1px 7px;margin-top:2px}
+.fx15-c1{background:#1b3a5b}.fx15-c2{background:#7a4fb5}.fx15-c3{background:#1d5b9c}.fx15-c4{background:#c0392b}.fx15-c5{background:#c77d11}
+.fx15-inicio{text-align:center;font-weight:700;color:#1b3a5b;background:#f4f6f8}
+.fx15-urg{border-color:#f0a9a2;background:#fdf1ef}
+.fx15-del{border-color:#f0cf9a;background:#fff7ea}
+.fx15-pe{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.fx15-pe .fx15-caixa{font-size:13.5px}
+.fx15-pe .fx15-t{font-weight:700;color:#1b3a5b;margin-bottom:3px}
+.fx15-mnem{margin-top:14px;text-align:center;background:#fff7d6;border:1.5px dashed #e0b800;border-radius:10px;padding:9px 12px;font-weight:700;color:#6b5200;font-size:14.5px;letter-spacing:.3px}
+.fx15-mnem span{display:block;font-size:12px;font-weight:400;color:#7a6a2a;letter-spacing:0;margin-top:2px}
+.fx15 .fx15-prazo,.fx15 .fx15-prazo div,.fx15 p.fx15-leg,.fx15 .fx15-sel,.fx15 .fx15-sel *,.fx15 .fx15-mnem,.fx15 .fx15-mnem span,.fx15 .fx15-inicio{text-align:center !important}
+.fx15 .fx15-txt p,.fx15 .fx15-txt .fx15-t,.fx15 .fx15-pe .fx15-caixa{text-align:left !important}
+@media (max-width:560px){.fx15-par,.fx15-pe{grid-template-columns:1fr}.fx15-sel{min-width:62px}.fx15-sel b{font-size:20px}}
 /* ⓘ genérico do caderno de conteúdo: janela centralizada com fundo fosco (sem JS).
    Cada par <input.hfInfoChk> + <div.hfInfoPainel> fica dentro de um .hfInfoPar próprio. */
 .hfInfoChk{display:none !important}
@@ -35124,6 +35159,65 @@ details.qf .qf-r b.no{color:#b3261e}
 <div class="card-head"><div class="num">24</div><h3>Controle de constitucionalidade</h3></div>
 <ul class="plain"><li>Ao menos quatro ADIs contra a lei, entre elas a ADI 7.956 (Abracrim), sob relatoria do Min. Alexandre de Moraes, com audiência pública em 24 e 25/08/2026. Questionam a preventiva, a execução penal, o monitoramento entre advogado e preso, o confisco e o aumento de penas. <b>Acompanhar o julgamento.</b></li></ul>
 </section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">25</div><h3>Esquema: prazos do inquérito e das representações (art. 5º)</h3></div>
+<div class="fx15">
+
+<div class="fx15-par">
+  <div class="fx15-caixa fx15-prazo fx15-azul"><div class="fx15-n">90 dias</div><div class="fx15-q">INDICIADO PRESO</div><div class="fx15-m">+ 90 dias &rarr; até 180</div></div>
+  <div class="fx15-caixa fx15-prazo fx15-verde"><div class="fx15-n">270 dias</div><div class="fx15-q">INDICIADO SOLTO</div><div class="fx15-m">+ 270 dias &rarr; até 540</div></div>
+</div>
+<p class="fx15-leg">Prazo para <b>concluir o inquérito</b> nos crimes da Lei 15.358 &middot; prorrogável <b>uma vez, por igual período</b> <span class="fx15-art">art. 5º, caput</span></p>
+
+<div class="fx15-seta"><span>durante a investigação</span></div>
+<div class="fx15-caixa fx15-inicio">O <b>delegado representa</b> ou o <b>MP requer</b> uma medida ao juiz</div>
+
+<div class="fx15-seta"><span>se veio do delegado</span></div>
+<div class="fx15-caixa fx15-passo">
+  <div class="fx15-sel fx15-c2"><b>5</b><small>DIAS</small></div>
+  <div class="fx15-txt"><div class="fx15-t">Parecer do Ministério Público</div>
+  <p>Só quando a medida foi <b>representada pelo delegado</b>. Conta do <b>recebimento dos autos</b> pelo MP.</p>
+  <span class="fx15-art">art. 5º, § 2º</span></div>
+</div>
+
+<div class="fx15-seta"></div>
+<div class="fx15-caixa fx15-passo">
+  <div class="fx15-sel fx15-c3"><b>15</b><small>DIAS</small></div>
+  <div class="fx15-txt"><div class="fx15-t">Decisão do juiz</div>
+  <p>Vale para a <b>representação do delegado</b> e para o <b>requerimento do MP</b>. Conta da <b>conclusão dos autos</b>.</p>
+  <span class="fx15-art">art. 5º, § 1º</span></div>
+</div>
+
+<div class="fx15-seta"><span>e se houver urgência?</span></div>
+<div class="fx15-caixa fx15-passo fx15-urg">
+  <div class="fx15-sel fx15-c4"><b>24h</b><small>JUIZ + MP</small></div>
+  <div class="fx15-txt"><div class="fx15-t">Urgência ou risco de ineficácia da medida</div>
+  <p>MP e juiz atuam no <b>prazo simultâneo</b> de 24 horas (não são 24h para cada um, um depois do outro).</p>
+  <p>A parte pode se manifestar <b>depois da decisão</b> (contraditório diferido).</p>
+  <span class="fx15-art">art. 5º, § 3º</span></div>
+</div>
+
+<div class="fx15-seta"><span>e se for indeferida?</span></div>
+<div class="fx15-caixa fx15-passo fx15-del">
+  <div class="fx15-sel fx15-c5"><b>48h</b><small>DELEGADO</small></div>
+  <div class="fx15-txt"><div class="fx15-t">Revisão provocada pelo delegado</div>
+  <p>Se a <b>representação do delegado</b> for indeferida e o <b>MP não recorrer</b>, o delegado pode, em 48 horas, submeter a matéria à <b>instância superior do Ministério Público</b> (definida na respectiva Lei Orgânica).</p>
+  <p>A instância superior <b>delibera no mesmo prazo de 48 horas</b>.</p>
+  <p><b>Atenção:</b> não é recurso ao Judiciário. O delegado não recorre ao tribunal.</p>
+  <span class="fx15-art">art. 5º, § 6º</span></div>
+</div>
+
+<div class="fx15-pe">
+  <div class="fx15-caixa"><div class="fx15-t">Prazo estourado</div>O descumprimento dos prazos <b>não gera relaxamento automático</b> da prisão: o juiz avalia o caso concreto. <span class="fx15-art">§ 4º</span></div>
+  <div class="fx15-caixa"><div class="fx15-t">Investigação do MP</div>Os prazos e regras se aplicam, no que couber, ao <b>PIC</b> (procedimento investigatório criminal do MP). <span class="fx15-art">§ 5º</span></div>
+</div>
+
+<div class="fx15-mnem">90 / 270 &rarr; 5 &rarr; 15 &rarr; 24h &rarr; 48h<span>inquérito (preso/solto) &rarr; parecer do MP &rarr; decisão do juiz &rarr; urgência (juiz + MP) &rarr; revisão pelo delegado</span></div>
+
+</div>
+</section>
+
 
 <section class="lepcard bordered qfix">
 <style>
