@@ -172,7 +172,39 @@ input,select,textarea{font:inherit}
 .matCab{padding:6px 10px;background:#eef1f6;border-bottom:1px solid #e2e7ef;
   font:bold 11px Arial,Helvetica,sans-serif;letter-spacing:.6px;
   text-transform:uppercase;color:#6b7a8f}
-.matItem .mtNome{flex:1;font-weight:bold;color:var(--azulEscuro)}
+.matItem .mtNome{flex:1;font-weight:bold;color:var(--azulEscuro);
+  white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+/* o n\u00famero da se\u00e7\u00e3o: um selo na cor dela (s\u00f3 se troca pelo \u270e) */
+.mtNum{--cs:#1f3a5f;flex:0 0 auto;box-sizing:border-box;display:inline-block;
+  min-width:34px;height:28px;padding:0 6px;margin:0;text-align:center;
+  font:bold 13.5px/28px Arial,Helvetica,sans-serif;color:#fff;background:var(--cs);
+  border:2px solid var(--cs);border-radius:9px;
+  box-shadow:0 1px 2px rgba(20,35,60,.18),inset 0 -2px 0 rgba(0,0,0,.12)}
+.mtNum.c-azul{--cs:#2f5aa0}
+.mtNum.c-verde{--cs:#2e9e6b}
+.mtNum.c-verm{--cs:#d1503f}
+.mtNum.c-roxo{--cs:#7d55b5}
+.mtNum.c-amar{--cs:#d99a1c}
+.mtNum.c-teal{--cs:#1f8a8a}
+/* a janelinha do \u270e */
+.secEdFundo{z-index:100001}
+.secEdCaixa{max-width:560px}
+.secEdLinha{display:flex;gap:12px;align-items:flex-start;margin:10px 0 4px}
+.secEdCampo{display:flex;flex-direction:column;gap:5px}
+.secEdNome{flex:1;min-width:0}
+.secEdRot{font:bold 11px Arial,Helvetica,sans-serif;color:#5b6b82;
+  text-transform:uppercase;letter-spacing:.4px}
+.secEdNum input.mtNum{width:62px;height:44px;font-size:19px;line-height:40px;
+  background:#fff;color:var(--cs);cursor:text;caret-color:var(--cs);
+  -moz-appearance:textfield;appearance:textfield;outline:none;
+  box-shadow:0 0 0 0 transparent;transition:box-shadow .15s}
+.secEdNum input.mtNum::-webkit-outer-spin-button,
+.secEdNum input.mtNum::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.secEdNum input.mtNum:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--cs) 25%,transparent)}
+.secEdTxt{box-sizing:border-box;width:100%;min-height:44px;padding:9px 11px;resize:vertical;
+  font:bold 14px/1.35 Arial,Helvetica,sans-serif;color:var(--azulEscuro);
+  border:2px solid #c9d3e2;border-radius:9px;outline:none}
+.secEdTxt:focus{border-color:#5b8bd0;box-shadow:0 0 0 4px rgba(91,139,208,.2)}
 .matItem .mtQt{color:#7b879a;font-size:11px;white-space:nowrap}
 /* o grupo da aba que está aberta ganha um filete embaixo */
 .grupo.ativo{box-shadow:inset 0 -3px 0 rgba(15,30,51,.45)}
@@ -19701,6 +19733,8 @@ function garantirCadernos(){
   if (!DB.secNovas || typeof DB.secNovas !== "object") DB.secNovas = {};
   if (!Array.isArray(DB.secOcultas)) DB.secOcultas = [];
   if (!Array.isArray(DB.secExcluidas)) DB.secExcluidas = [];
+  // a ordem que voc\u00ea deu \u00e0s se\u00e7\u00f5es de cada mat\u00e9ria: { mat\u00e9ria: [ids] }
+  if (!DB.secOrdem || typeof DB.secOrdem !== "object" || Array.isArray(DB.secOrdem)) DB.secOrdem = {};
   // o que voce reescreveu nos materiais: uma chave por secao
   if (!DB.crimEdit || typeof DB.crimEdit !== "object") DB.crimEdit = {};
   Object.keys(DB.crimEdit).forEach(k => {
@@ -28920,54 +28954,54 @@ let MATS = {
     rot:"01 - LEGISLA\u00c7\u00c3O PENAL", cls:"lep", est:"mat_lep", secoes:[
     { id:"lep", c:"c-azul", cl:"card", t:"Lei n\u00ba 7.210/1984 \u2014 Lei de Execu\u00e7\u00e3o Penal (LEP)" },
     { id:"8", c:"c-azul", cl:"card", t:"Lei n\u00ba 8.072/1990 \u2014 Crimes Hediondos" },
-    { id:"10", c:"c-verde", cl:"card", t:"Leis 8.078/1990 e 8.137/1990 (Consumo e ordem tribut\u00e1ria/eco" },
+    { id:"10", c:"c-verde", cl:"card", t:"Leis 8.078/1990 e 8.137/1990 (Consumo e ordem tribut\u00e1ria/econ\u00f4mica \u2013 parte penal)" },
     { id:"13", c:"c-azul", cl:"card", t:"Lei 9.296/1996 (Intercepta\u00e7\u00f5es)" },
     { id:"14", c:"c-verm", cl:"card", t:"Lei 9.455/1997 (Tortura)" },
     { id:"17", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.613/1998 \u2014 Lavagem de Dinheiro" },
     { id:"15", c:"c-azul", cl:"card", t:"Lei 9.503/1997 (CTB \u2013 crimes)" },
-    { id:"20", c:"c-verm", cl:"card", t:"Lei n\u00ba 10.826/2003, Decreto n\u00ba 9.847/2019 e Decreto n\u00ba 11.61" },
-    { id:"21", c:"c-verm", cl:"card", t:"Lei n\u00ba 11.340/2006 \u2014 Viol\u00eancia Dom\u00e9stica e Familiar contra a" },
+    { id:"20", c:"c-verm", cl:"card", t:"Lei n\u00ba 10.826/2003, Decreto n\u00ba 9.847/2019 e Decreto n\u00ba 11.615/2023 \u2014 Estatuto do Desarmamento" },
+    { id:"21", c:"c-verm", cl:"card", t:"Lei n\u00ba 11.340/2006 \u2014 Viol\u00eancia Dom\u00e9stica e Familiar contra a Mulher (Maria da Penha)" },
     { id:"22", c:"c-verm", cl:"card", t:"Lei n\u00ba 11.343/2006 \u2014 Lei de Drogas" },
     { id:"23", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.850/2013 \u2014 Crime Organizado" },
     { id:"27", c:"c-verm", cl:"card", t:"Lei n\u00ba 13.869/2019 \u2014 Lei de Abuso de Autoridade" },
     { id:"6", c:"c-azul", cl:"card", t:"Lei n\u00ba 7.716/1989 \u2014 Crimes de Preconceito de Ra\u00e7a ou Cor" },
     { id:"amb", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.605/1998 \u2014 Crimes contra o Meio Ambiente" },
     { id:"7", c:"c-azul", cl:"card", t:"Lei n\u00ba 8.069/1990 \u2014 Estatuto da Crian\u00e7a e do Adolescente" },
-    { id:"19", c:"c-roxo", cl:"card", t:"Lei n\u00ba 10.741/2003 \u2014 Estatuto do Idoso (Crimes - arts. 92 a " },
-    { id:"28", c:"c-verm", cl:"card", t:"Lei n\u00ba 14.344/2022 \u2014 Enfrentamento da Viol\u00eancia Dom\u00e9stica e " },
+    { id:"19", c:"c-roxo", cl:"card", t:"Lei n\u00ba 10.741/2003 \u2014 Estatuto do Idoso (Crimes - arts. 92 a 108)" },
+    { id:"28", c:"c-verm", cl:"card", t:"Lei n\u00ba 14.344/2022 \u2014 Enfrentamento da Viol\u00eancia Dom\u00e9stica e Familiar contra a Crian\u00e7a e Adolescente (Lei Henry Borel) \u2014 N\u00e3o vai cair PCMA \u2014 Apenas PCPR" },
     { id:"0", c:"c-azul", cl:"card", t:"Contraven\u00e7\u00f5es Penais (DL 3.688/1941 e DL 6.259/1944)" },
     { id:"30", c:"c-verde", cl:"card", t:"Lei n\u00ba 7.960/1989 \u2014 Pris\u00e3o Tempor\u00e1ria" },
-    { id:"32", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.431/2017 \u2014 Depoimento Especial / Sistema de Garant" },
-    { id:"del", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.830/2013 \u2014 Investiga\u00e7\u00e3o Criminal pelo Delegado de " },
+    { id:"32", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.431/2017 \u2014 Depoimento Especial / Sistema de Garantias (CPP) \u2014 N\u00e3o vai cair PCMA \u2014 Apenas PCPR" },
+    { id:"del", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.830/2013 \u2014 Investiga\u00e7\u00e3o Criminal pelo Delegado de Pol\u00edcia" },
     { id:"18", c:"c-roxo", cl:"card", t:"Lei n\u00ba 9.807/1999 \u2014 Programa de Prote\u00e7\u00e3o \u00e0 Testemunha" },
     { id:"3", c:"c-azul", cl:"card", t:"Crimes Eleitorais (Leis 4.737/1965, 6.091/1974 e 9.504/1997)" },
     { id:"26", c:"c-verm", cl:"card", t:"Lei n\u00ba 13.260/2016 \u2013 Terrorismo" },
     { id:"11", c:"c-verde", cl:"card", t:"Lei 9.099/1995 (JECRIM)" },
-    { id:"7492", c:"c-verde", cl:"card", t:"Lei n\u00ba 7.492/1986 \u2014 Crimes contra o Sistema Financeiro Nacio" },
-    { id:"15358", c:"c-verm", cl:"card", t:"Lei n\u00ba 15.358/2026 \u2014 Marco Legal do Combate ao Crime Organiz" },
+    { id:"7492", c:"c-verde", cl:"card", t:"Lei n\u00ba 7.492/1986 \u2014 Crimes contra o Sistema Financeiro Nacional" },
+    { id:"15358", c:"c-verm", cl:"card", t:"Lei n\u00ba 15.358/2026 \u2014 Marco Legal do Combate ao Crime Organizado" },
     { id:"oab", c:"c-roxo", cl:"card", t:"Lei n\u00ba 8.906/1994 \u2014 Estatuto da OAB" },
-    { id:"14155", c:"c-azul", cl:"card", t:"Lei n\u00ba 14.155/2021 \u2014 Crimes Eletr\u00f4nicos, Fraudes Eletr\u00f4nicas" },
-    { id:"13445", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.445/2017 \u2014 Lei de Migra\u00e7\u00e3o: disposi\u00e7\u00f5es penais e p" },
-    { id:"1521", c:"c-verde", cl:"card", t:"Lei n\u00ba 1.521/1951 \u2014 Crimes contra a Economia Popular \u2014 N\u00e3o v" },
-    { id:"5553", c:"c-verm", cl:"card", t:"Lei n\u00ba 5.553/1968 \u2014 Apresenta\u00e7\u00e3o e Uso de Documentos de Iden" },
-    { id:"12037", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.037/2009 \u2014 Identifica\u00e7\u00e3o Criminal (CPP) \u2014 N\u00e3o vai " },
-    { id:"2889", c:"c-azul", cl:"card", t:"Lei n\u00ba 2.889/1956 \u2014 Crime de Genoc\u00eddio \u2014 N\u00e3o vai cair PCPR \u2014" },
-    { id:"14597", c:"c-amar", cl:"card", t:"Lei n\u00ba 14.597/2023 \u2014 Crimes na Lei Geral do Esporte \u2014 N\u00e3o va" },
-    { id:"9609", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.609/1998 \u2014 Propriedade Intelectual e Programa de Co" },
-    { id:"13146", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.146/2015 \u2014 Crimes na Lei Brasileira de Inclus\u00e3o da" },
-    { id:"10446", c:"c-verm", cl:"card", t:"Lei n\u00ba 10.446/2002 \u2014 Infra\u00e7\u00f5es Penais de Repercuss\u00e3o Interes" },
-    { id:"dl201", c:"c-roxo", cl:"card", t:"Decreto-Lei n\u00ba 201/1967 \u2014 Responsabilidade de Prefeitos e Ve" },
+    { id:"14155", c:"c-azul", cl:"card", t:"Lei n\u00ba 14.155/2021 \u2014 Crimes Eletr\u00f4nicos, Fraudes Eletr\u00f4nicas e Invas\u00e3o de Dispositivo Inform\u00e1tico \u2014 N\u00e3o vai cair PCMA \u2014 Apenas PCPR" },
+    { id:"13445", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.445/2017 \u2014 Lei de Migra\u00e7\u00e3o: disposi\u00e7\u00f5es penais e processuais penais aplic\u00e1veis N\u00e3o vai cair PCMA \u2014 Apenas PCPR" },
+    { id:"1521", c:"c-verde", cl:"card", t:"Lei n\u00ba 1.521/1951 \u2014 Crimes contra a Economia Popular \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"5553", c:"c-verm", cl:"card", t:"Lei n\u00ba 5.553/1968 \u2014 Apresenta\u00e7\u00e3o e Uso de Documentos de Identifica\u00e7\u00e3o \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"12037", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.037/2009 \u2014 Identifica\u00e7\u00e3o Criminal (CPP) \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"2889", c:"c-azul", cl:"card", t:"Lei n\u00ba 2.889/1956 \u2014 Crime de Genoc\u00eddio \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"14597", c:"c-amar", cl:"card", t:"Lei n\u00ba 14.597/2023 \u2014 Crimes na Lei Geral do Esporte \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"9609", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.609/1998 \u2014 Propriedade Intelectual e Programa de Computador \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"13146", c:"c-verde", cl:"card", t:"Lei n\u00ba 13.146/2015 \u2014 Crimes na Lei Brasileira de Inclus\u00e3o da Pessoa com Defici\u00eancia \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"10446", c:"c-verm", cl:"card", t:"Lei n\u00ba 10.446/2002 \u2014 Infra\u00e7\u00f5es Penais de Repercuss\u00e3o Interestadual \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
+    { id:"dl201", c:"c-roxo", cl:"card", t:"Decreto-Lei n\u00ba 201/1967 \u2014 Responsabilidade de Prefeitos e Vereadores \u2014 N\u00e3o vai cair PCPR \u2014 Apenas PCMA" },
     { id:"9610", c:"c-azul", cl:"card", t:"Lei n\u00ba 9.610/1998 \u2014 Direitos Autorais" },
-    { id:"12737", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.737/2012 \u2014 Delitos Inform\u00e1ticos (Lei Carolina Diec" },
+    { id:"12737", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.737/2012 \u2014 Delitos Inform\u00e1ticos (Lei Carolina Dieckmann)" },
     { id:"13344", c:"c-verm", cl:"card", t:"Lei n\u00ba 13.344/2016 \u2014 Tr\u00e1fico de Pessoas" },
     { id:"12318", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.318/2010 \u2014 Aliena\u00e7\u00e3o Parental" },
-    { id:"11105", c:"c-amar", cl:"card", t:"Lei n\u00ba 11.105/2005 \u2014 Organismos Geneticamente Modificados (B" },
+    { id:"11105", c:"c-amar", cl:"card", t:"Lei n\u00ba 11.105/2005 \u2014 Organismos Geneticamente Modificados (Biosseguran\u00e7a)" },
     { id:"11101", c:"c-verde", cl:"card", t:"Lei n\u00ba 11.101/2005 \u2014 Crimes Falimentares" },
-    { id:"lidicp", c:"c-azul", cl:"card", t:"Decreto-Lei n\u00ba 3.914/1941 \u2014 Lei de Introdu\u00e7\u00e3o ao C\u00f3digo Pena" },
+    { id:"lidicp", c:"c-azul", cl:"card", t:"Decreto-Lei n\u00ba 3.914/1941 \u2014 Lei de Introdu\u00e7\u00e3o ao C\u00f3digo Penal" },
     { id:"6001", c:"c-verde", cl:"card", t:"Lei n\u00ba 6.001/1973 \u2014 Estatuto do \u00cdndio" },
     { id:"12288", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.288/2010 \u2014 Estatuto da Igualdade Racial" },
-    { id:"9029", c:"c-roxo", cl:"card", t:"Lei n\u00ba 9.029/1995 \u2014 Atestado de Gravidez e Pr\u00e1ticas Discrimi" },
-    { id:"9434", c:"c-amar", cl:"card", t:"Lei n\u00ba 9.434/1997 \u2014 Remo\u00e7\u00e3o de \u00d3rg\u00e3os, Tecidos e Partes do C" },
+    { id:"9029", c:"c-roxo", cl:"card", t:"Lei n\u00ba 9.029/1995 \u2014 Atestado de Gravidez e Pr\u00e1ticas Discriminat\u00f3rias" },
+    { id:"9434", c:"c-amar", cl:"card", t:"Lei n\u00ba 9.434/1997 \u2014 Remo\u00e7\u00e3o de \u00d3rg\u00e3os, Tecidos e Partes do Corpo Humano" },
     { id:"12015", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.015/2009 \u2014 Corrup\u00e7\u00e3o de Menores" }
   ]},
   med: {
@@ -29029,7 +29063,7 @@ let MATS = {
     { id:"6", c:"c-verde", cl:"card", t:"Das Quest\u00f5es e Processos Incidentes (arts. 92 a 154 do CPP)" },
     { id:"7", c:"c-azul", cl:"card", t:"Da Prova (arts. 155 a 250 do CPP)" },
     { id:"8", c:"c-roxo", cl:"card", t:"Sujeitos do Processo Penal (arts. 251 a 281 do CPP)" },
-    { id:"9", c:"c-verm", cl:"card", t:"Da Pris\u00e3o, das Medidas Cautelares e da Liberdade Provis\u00f3ria " },
+    { id:"9", c:"c-verm", cl:"card", t:"Da Pris\u00e3o, das Medidas Cautelares e da Liberdade Provis\u00f3ria (arts. 282 a 350 do CPP)" },
     { id:"10", c:"c-azul", cl:"card", t:"Da Comunica\u00e7\u00e3o dos Atos Processuais (arts. 351 a 372 do CPP)" },
     { id:"11", c:"c-amar", cl:"card", t:"Processos Criminais em Esp\u00e9cie" },
     { id:"12", c:"c-verm", cl:"card", t:"Recursos e Suced\u00e2neos Recursais Criminais" }
@@ -29138,7 +29172,7 @@ let MATS = {
     rot:"11 - LEGISLA\u00c7\u00c3O ESTADUAL", cls:"legest", est:"mat_lep",
     lei:{ url:"https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14735.htm",
           nome:"a Lei n\u00ba 14.735/2023 (Lei Org\u00e2nica Nacional das Pol\u00edcias Civis)" }, secoes:[
-    { id:"14735", c:"c-azul", cl:"card", t:"Lei n\u00ba 14.735/2023 \u2014 Lei Org\u00e2nica Nacional das Pol\u00edcias Civis" }
+    { id:"14735", c:"c-azul", cl:"card", t:"Lei n\u00ba 14.735/2023 \u2014 Lei Org\u00e2nica Nacional das Pol\u00edcias Civis (LONPC)" }
   ]},
   amb: {
     rot:"12 - DIREITO AMBIENTAL", cls:"amb", est:"mat_amb", secoes:[
@@ -29187,12 +29221,12 @@ let MATS = {
     { id:"sec3", c:"c-verm", cl:"chapter", t:"Princ\u00edpios" },
     { id:"sec4", c:"c-roxo", cl:"chapter", t:"Imunidades" },
     { id:"sec5", c:"c-amar", cl:"chapter", t:"Compet\u00eancia Tribut\u00e1ria (CF/1988 e CTN)" },
-    { id:"sec6", c:"c-verde", cl:"chapter", t:"Legisla\u00e7\u00e3o Tribut\u00e1ria (arts. 96 a 112 do CTN e art. 146 e 14" },
+    { id:"sec6", c:"c-verde", cl:"chapter", t:"Legisla\u00e7\u00e3o Tribut\u00e1ria (arts. 96 a 112 do CTN e art. 146 e 146-A da CF/1988)" },
     { id:"sec7", c:"c-azul", cl:"chapter", t:"Obriga\u00e7\u00e3o Tribut\u00e1ria (arts. 113 a 138 do CTN)" },
     { id:"sec8", c:"c-verde", cl:"chapter", t:"Cr\u00e9dito Tribut\u00e1rio (arts. 139 a 193 do CTN)" },
     { id:"sec9", c:"c-verm", cl:"chapter", t:"Administra\u00e7\u00e3o Tribut\u00e1ria (arts. 194 a 208 do CTN)" },
     { id:"sec10", c:"c-roxo", cl:"chapter", t:"Impostos Federais, Estaduais e Municipais" },
-    { id:"sec11", c:"c-amar", cl:"chapter", t:"Reparti\u00e7\u00e3o Constitucional de Receitas Tribut\u00e1rias (arts. 157" }
+    { id:"sec11", c:"c-amar", cl:"chapter", t:"Reparti\u00e7\u00e3o Constitucional de Receitas Tribut\u00e1rias (arts. 157 a 162 da CF/1988)" }
   ]},
   tribleg: {
     rot:"14 - DIREITO TRIBUT\u00c1RIO  \u00b7  02 - LEGISLA\u00c7\u00c3O TRIBUT\u00c1RIA", cls:"trib",
@@ -29297,7 +29331,30 @@ function matSecoesDe(k, base){
     .map(s => {
       const nome = DB.secNome[k + ":" + s.id];
       return nome ? Object.assign({}, s, { t:nome }) : s;
-    });
+    })
+    // na ordem que voc\u00ea escolheu; as que n\u00e3o est\u00e3o nela v\u00e3o para o fim
+    .map((s, i) => [s, i])
+    .sort((a, b) => secPosOrdem(k, a[0].id, a[1]) - secPosOrdem(k, b[0].id, b[1]))
+    .map(x => x[0]);
+}
+function secPosOrdem(k, id, natural){
+  const ord = DB.secOrdem && Array.isArray(DB.secOrdem[k]) ? DB.secOrdem[k] : null;
+  if (!ord) return natural;
+  const i = ord.indexOf(id);
+  return i < 0 ? 1e6 + natural : i;
+}
+/* leva a se\u00e7\u00e3o para a posi\u00e7\u00e3o pedida (1, 2, 3...) e renumera as demais */
+function secMoverPara(k, id, pos){
+  garantirCadernos();
+  const ids = MATS[k].secoes.map(x => x.id).filter(x => x !== id);
+  const p = Math.max(1, Math.min(ids.length + 1, Math.round(pos) || 1));
+  ids.splice(p - 1, 0, id);
+  DB.secOrdem[k] = ids;
+}
+/* grava a ordem que est\u00e1 na tela, sem a se\u00e7\u00e3o que saiu: se ela voltar, vem no fim */
+function secTirarDaOrdem(k, id){
+  garantirCadernos();
+  DB.secOrdem[k] = MATS[k].secoes.map(x => x.id).filter(x => x !== id);
 }
 function matSecaoNova(mat, id){
   garantirCadernos();
@@ -29550,6 +29607,13 @@ function matQuadro(mat, id){
   const art = el("section","crimSec " + (secOrig && secOrig.cl ? secOrig.cl : "card"));
   art.id = "matQ_" + mat + "_" + id;
   art.innerHTML = html;
+  // o n\u00famero do cabe\u00e7alho acompanha a posi\u00e7\u00e3o da se\u00e7\u00e3o na lista
+  const posSec = MATS[mat] ? MATS[mat].secoes.findIndex(x => x.id === id) : -1;
+  const h2Sec = art.querySelector("h2");
+  const numSec = h2Sec && h2Sec.parentElement
+    ? h2Sec.parentElement.querySelector(":scope > .num") : null;
+  if (posSec >= 0 && numSec && /^\s*\d+\s*$/.test(numSec.textContent))
+    numSec.textContent = String(posSec + 1);
   if (matReescrita(mat, id)) art.classList.add("reescrito");
   // se esta se\u00e7\u00e3o tem lei pr\u00f3pria, o t\u00edtulo dela vira link para o Planalto.
   // S\u00f3 no modo leitura: assim o link nunca entra no que voc\u00ea escreve nem \u00e9 gravado
@@ -30747,6 +30811,48 @@ function recarregarMaterias(){
   });
   if (modulo === "cCont") ABAS = ABAS_CONT;
 }
+/* a janelinha do \u270e: n\u00famero (posi\u00e7\u00e3o) e nome da se\u00e7\u00e3o */
+function janelaEditarSecao(pos, total, nome, cor, aoSalvar){
+  const fundo = el("div","modalFundo secEdFundo");
+  const caixa = el("div","modalCaixa secEdCaixa");
+  const sair = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
+  caixa.appendChild(el("h3", null, "Editar se\u00e7\u00e3o"));
+  const linha = el("div","secEdLinha");
+  const cN = el("label","secEdCampo secEdNum");
+  cN.appendChild(el("span","secEdRot","N\u00ba"));
+  const iN = el("input","mtNum " + (cor || ""));
+  iN.type = "number"; iN.min = 1; iN.max = total; iN.value = pos; iN.inputMode = "numeric";
+  cN.appendChild(iN);
+  const cT = el("label","secEdCampo secEdNome");
+  cT.appendChild(el("span","secEdRot","Nome da se\u00e7\u00e3o"));
+  const iT = el("textarea","secEdTxt");
+  iT.rows = 2; iT.value = nome;
+  cT.appendChild(iT);
+  linha.appendChild(cN); linha.appendChild(cT);
+  caixa.appendChild(linha);
+  caixa.appendChild(el("p","dica",
+    "Mude o n\u00famero (de 1 a " + total + ") para levar a se\u00e7\u00e3o a outra posi\u00e7\u00e3o: " +
+    "as outras se renumeram. Deixe o nome em branco para voltar ao original."));
+  const ok = () => {
+    const v = parseInt(iN.value, 10);
+    const p = v ? Math.max(1, Math.min(total, v)) : pos;
+    const n = iT.value.replace(/\s+/g, " ").trim();
+    sair(); aoSalvar(p, n);
+  };
+  const acoes = el("div","modalAcoes");
+  const bC = el("button","secundario","Cancelar"); bC.onclick = sair;
+  const bOk = el("button","principal","Salvar"); bOk.onclick = ok;
+  acoes.appendChild(bC); acoes.appendChild(bOk);
+  caixa.appendChild(acoes);
+  [iN, iT].forEach(x => x.onkeydown = ev => {
+    if (ev.key === "Enter"){ ev.preventDefault(); ok(); }
+    if (ev.key === "Escape"){ ev.preventDefault(); sair(); }
+  });
+  fundo.appendChild(caixa);
+  fundo.onclick = ev => { if (ev.target === fundo) sair(); };
+  document.body.appendChild(fundo);
+  setTimeout(() => { iN.focus(); iN.select(); }, 30);
+}
 /* ---------- a janela da engrenagem de cada mat\u00e9ria: as se\u00e7\u00f5es ---------- */
 function janelaSecoes(gaveta, soEsta){
   const mats = MAT_ORDEM.filter(k => (MATS[k].pai || MATS[k].rot) === gaveta)
@@ -30773,6 +30879,7 @@ function janelaSecoes(gaveta, soEsta){
     caixa.appendChild(linha);
   }
   caixa.appendChild(el("p","dica",
+    "No \u270e voc\u00ea troca o nome e o n\u00famero (a se\u00e7\u00e3o muda de lugar e as outras se renumeram). " +
     "D\u00e1 para trocar o nome de qualquer se\u00e7\u00e3o, acrescentar uma nova (que nasce " +
     "vazia, no formato das outras) e tirar da lista as que voc\u00ea n\u00e3o usa. Tirar uma " +
     "se\u00e7\u00e3o do arquivo se desfaz; as que voc\u00ea criar somem de vez."));
@@ -30788,19 +30895,25 @@ function janelaSecoes(gaveta, soEsta){
         const minha = !!matSecaoNova(k, s.id) && !MATS_FABRICA[k];
         const criada = !!(DB.secNovas[k] || []).find(x => x.id === s.id);
         const L = el("div","matItem" + (criada ? " minha" : ""));
-        L.appendChild(el("span","mtNome", (i + 1) + ". " + s.t));
-        const bR = el("button","mini","\u270e"); bR.title = "Trocar o nome";
-        bR.onclick = () => {
-          const nome = prompt("Novo nome da se\u00e7\u00e3o:", s.t);
-          if (nome === null) return;
-          if (!nome.trim()) delete DB.secNome[k + ":" + s.id];
-          else DB.secNome[k + ":" + s.id] = nome.trim().slice(0, 60);
+        // o n\u00famero s\u00f3 se troca pelo \u270e, junto com o nome
+        L.appendChild(el("span","mtNum " + (s.c || ""), String(i + 1)));
+        L.appendChild(el("span","mtNome", s.t));
+        const bR = el("button","mini","\u270e");
+        bR.title = "Trocar o nome ou o n\u00famero";
+        bR.onclick = () => janelaEditarSecao(i + 1, M.secoes.length, s.t, s.c, (pos, nome) => {
+          garantirCadernos();
+          const orig = (MATS_FABRICA[k] && MATS_FABRICA[k].secoes.find(x => x.id === s.id))
+                    || matSecaoNova(k, s.id);
+          if (!nome || (orig && nome === orig.t)) delete DB.secNome[k + ":" + s.id];
+          else if (nome !== s.t) DB.secNome[k + ":" + s.id] = nome.slice(0, 300);
+          if (pos && pos !== i + 1){ recarregarMaterias(); secMoverPara(k, s.id, pos); }
           salvar(); recarregarMaterias(); pintar(); render();
-        };
+        });
         if (!criada){
           const bO = el("button","mini","\u{1F441}");
           bO.title = "Ocultar esta se\u00e7\u00e3o";
           bO.onclick = () => {
+            secTirarDaOrdem(k, s.id);
             DB.secOcultas.push(k + ":" + s.id);
             if (abaAtual === "mat_" + k + "_" + s.id) abaAtual = "mat_" + k;
             salvar(); recarregarMaterias(); pintar(); render();
@@ -30814,6 +30927,7 @@ function janelaSecoes(gaveta, soEsta){
           if (criada){
             if (!confirm("Excluir \"" + s.t + "\"?\nEla foi criada por voc\u00ea: " +
                          "n\u00e3o tem como trazer de volta.")) return;
+            secTirarDaOrdem(k, s.id);
             DB.secNovas[k] = (DB.secNovas[k] || []).filter(x => x.id !== s.id);
             delete DB.crimEdit[k + ":" + s.id];
             delete DB.secNome[k + ":" + s.id];
@@ -30822,6 +30936,7 @@ function janelaSecoes(gaveta, soEsta){
                          "Ela sai da lista e o que voc\u00ea escreveu nela \u00e9 apagado.\n" +
                          "Se s\u00f3 quer tir\u00e1-la da frente, use o olho.")) return;
             delete DB.crimEdit[k + ":" + s.id];
+            secTirarDaOrdem(k, s.id);
             DB.secExcluidas.push(k + ":" + s.id);
           }
           if (abaAtual === "mat_" + k + "_" + s.id) abaAtual = "mat_" + k;
@@ -30848,6 +30963,11 @@ function janelaSecoes(gaveta, soEsta){
         bV.title = "Trazer esta se\u00e7\u00e3o de volta";
         bV.onclick = () => {
           DB[onde] = DB[onde].filter(x => x !== chave);
+          // volta no fim da lista
+          if (MATS[k]){
+            const ids = MATS[k].secoes.map(x => x.id).filter(x => x !== id);
+            ids.push(id); DB.secOrdem[k] = ids;
+          }
           salvar(); recarregarMaterias(); pintar(); render();
         };
         L.appendChild(bV);
@@ -30864,7 +30984,7 @@ function janelaSecoes(gaveta, soEsta){
     const alvo = mats[mats.length - 1];
     const nome = prompt("Nome da nova se\u00e7\u00e3o:", "Nova se\u00e7\u00e3o");
     if (nome === null) return;
-    const titulo = (nome.trim() || "Nova se\u00e7\u00e3o").slice(0, 60);
+    const titulo = (nome.trim() || "Nova se\u00e7\u00e3o").slice(0, 300);
     garantirCadernos();
     const jah = DB.secNovas[alvo] = DB.secNovas[alvo] || [];
     let n = 1;
