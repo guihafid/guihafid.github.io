@@ -320,7 +320,7 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtNomeD{flex:1}
 .vtCont{--p:0%;font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;
   background:linear-gradient(90deg,#2f7d4f var(--p),rgba(255,255,255,.18) var(--p))}
-.vtTab{width:100%;border-collapse:collapse;font-size:12.5px}
+.vtTab{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
 .vtTab th{background:#eef2f8;color:#5a6a80;font-size:10.5px;padding:4px 6px;text-align:left;border-bottom:1px solid #d7dde7}
 .vtTab th.vtThC{width:34px;text-align:center}
 .vtTab td{padding:5px 6px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#1F3864;line-height:16px}
@@ -328,12 +328,20 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtTab td.vtC{text-align:center;vertical-align:middle}
 .vtLin{display:flex;gap:7px;align-items:baseline}
 .vtSub,.vtSubVazio{flex:0 0 16px;width:16px}
+.vtEdNome{display:block;font-weight:normal;font-size:10.5px;opacity:.75;margin-top:1px}
+.vtLink{display:flex;align-items:baseline;gap:5px;box-sizing:border-box;max-width:calc(100% - 23px);width:max-content;margin:3px 0 1px 23px;padding:2px 8px;
+  border:1px solid #cfdcf0;border-radius:10px;background:#f2f6fc;color:#2F5597;cursor:pointer;
+  font:11px/15px Arial,Helvetica,sans-serif;text-align:left}
+.vtLink::before{content:"\1F4D6";font-size:10px}
+.vtLink:hover{background:#e3ecf9;border-color:#9fb8e0}
+.vtLinkN{font-weight:bold;white-space:nowrap}
+.vtLinkT{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .vtSub{height:16px;padding:0;border:0;background:none;cursor:pointer;color:#5a6a80;
   font-size:11px;line-height:16px;border-radius:3px;transition:transform .15s}
 .vtSub:hover{background:#e3e9f3;color:#1F3864}
 .vtSub.fechado{transform:rotate(-90deg);color:#2F5597}
 .vtA .vtNum{flex:0 0 auto;min-width:26px;color:#2F5597}
-.vtTx{flex:1;min-width:0}
+.vtTx{flex:1;min-width:0;overflow-wrap:anywhere}
 .vtN1 td.vtA{font-weight:bold}
 .vtN1 td.vtA .vtNum{color:#1F3864}
 .vtN2 td.vtA{padding-left:22px}
@@ -22099,6 +22107,80 @@ function vertLer(txt){
   return { titulo: juntar(titulo), disc };
 }
 
+/* ---- edital × caderno de conteúdo: liga disciplina à gaveta e tópico à seção ---- */
+const VT_VAZIAS = new Set(("de da do das dos e em a o as os no na nos nas para por com sem sua suas seu seus " +
+  "direito direitos lei leis nº n art arts artigo artigos alteracoes alteracao respectivos regulamentos " +
+  "geral gerais conceito conceitos nocoes nocao aspectos parte ou ao aos pelo pela contra crimes crime dos medico medicos legais").split(" "));
+function vtNorm(s){
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+function vtPalavras(s){
+  return vtNorm(s).replace(/^\s*\d+\s*-\s*/, "").split(/[^a-z0-9]+/)
+    .filter(w => w.length > 2 && !VT_VAZIAS.has(w) && !/^\d+$/.test(w));
+}
+// números de lei: 11.340, 9.605, 3.688 (sem o ano)
+function vtLeis(s){
+  return (String(s || "").match(/\b\d{1,2}\.\d{3}\b/g) || []);
+}
+function vtGavetas(){
+  const vistas = []; const por = {};
+  MAT_ORDEM.forEach(k => {
+    const pai = MATS[k].pai || MATS[k].rot;
+    if (!por[pai]){ por[pai] = { nome: pai, mats: [] }; vistas.push(por[pai]); }
+    por[pai].mats.push(k);
+  });
+  return vistas;
+}
+/* a(s) gaveta(s) de uma disciplina do edital: a que mais casa e, se sobrar
+   palavra (ex.: CIVIL E EMPRESARIAL), outra que case só com o que sobrou */
+function vtGavetasDe(nomeDisc, gav){
+  let resto = vtPalavras(nomeDisc);
+  const prim = resto[0];
+  const achadas = [];
+  for (let volta = 0; volta < 3 && resto.length; volta++){
+    let melhor = null, nota = 0;
+    gav.forEach(g => {
+      if (achadas.indexOf(g) >= 0) return;
+      const pg = vtPalavras(g.nome);
+      if (!pg.length || !pg.every(w => resto.indexOf(w) >= 0)) return;
+      const n = pg.length + (pg[0] === (volta ? resto[0] : prim) ? 1 : 0);
+      if (n > nota){ nota = n; melhor = g; }
+    });
+    if (!melhor) break;
+    achadas.push(melhor);
+    const usadas = vtPalavras(melhor.nome);
+    resto = resto.filter(w => usadas.indexOf(w) < 0);
+  }
+  return achadas;
+}
+/* a seção que trata do tópico: primeiro pelo número da lei, depois pelas palavras.
+   Palavra que aparece no título de várias seções (crimes, contra, pública...) vale pouco. */
+function vtSecaoDe(texto, mats){
+  const leis = vtLeis(texto), pt = vtPalavras(texto);
+  const secs = [];
+  mats.forEach(k => MATS[k].secoes.forEach((s, i) => secs.push({ k, s, pos: i + 1, ps: vtPalavras(s.t) })));
+  const freq = {};
+  secs.forEach(x => new Set(x.ps).forEach(w => freq[w] = (freq[w] || 0) + 1));
+  const peso = w => freq[w] >= 3 ? .25 : freq[w] === 2 ? .6 : 1;
+  let melhor = null, nota = 0;
+  secs.forEach(x => {
+    let n = 0;
+    if (leis.length){
+      // tópico que cita lei só casa com seção da mesma lei
+      if (!vtLeis(x.s.t).some(l => leis.indexOf(l) >= 0)) return;
+      n = 10;
+    } else {
+      const comuns = pt.filter((w, j) => pt.indexOf(w) === j && x.ps.indexOf(w) >= 0);
+      n = comuns.reduce((t, w) => t + peso(w), 0);
+      const cobre = n / Math.max(1, x.ps.reduce((t, w) => t + peso(w), 0));
+      const doTopico = comuns.length / Math.max(1, new Set(pt).size);
+      if (n < 1 || cobre < .5 || doTopico < .4) return;
+    }
+    if (n > nota){ nota = n; melhor = { k: x.k, id: x.s.id, pos: x.pos, t: x.s.t }; }
+  });
+  return melhor;
+}
+
 const VT_COLS = [["T","Teoria","Teoria estudada"],["Q","Questões","Questões feitas"],["R","Revisão","Revisão feita"]];
 const vtChave = (d, it, i) => d.nome + "|" + (it.n || "#" + i);
 function vertTotal(c){
@@ -22203,11 +22285,35 @@ function janelaVerticalizar(num){
       });
     }
     // disciplinas
-    V.disc.forEach((d, di) => {
+    // na ordem do edital ou na do Caderno de conteúdo (com as gavetas de lá)
+    const peloCont = V.modo === "conteudo";
+    let lista = V.disc.map((d, i) => ({ d, i, gav: [] }));
+    if (peloCont){
+      const gav = vtGavetas();
+      lista.forEach(x => {
+        x.gav = vtGavetasDe(x.d.nome, gav);
+        x.ord = x.gav.length ? Math.min(...x.gav.map(g => gav.indexOf(g))) : 1e3 + x.i;
+      });
+      lista.sort((a, b) => a.ord - b.ord || a.i - b.i);
+    }
+    const irPara = (k, id) => {
+      if (fundo.parentNode) document.body.removeChild(fundo);
+      document.removeEventListener("keydown", tecla);
+      irParaModulo("cCont", "mat_" + k + "_" + id);
+    };
+    lista.forEach(({ d, gav }) => {
+      const di = d.nome;
       const bl = el("div","vtDisc" + (fechados.has(di) ? " fechada" : ""));
       const cab = el("button","vtCab");
       cab.appendChild(el("span","vtSeta","▾"));
-      cab.appendChild(el("span","vtNomeD", d.nome));
+      if (peloCont && gav.length){
+        const nm = el("span","vtNomeD", gav.map(g => g.nome).join("  +  "));
+        nm.appendChild(el("small","vtEdNome","no edital: " + d.nome));
+        cab.appendChild(nm);
+      } else cab.appendChild(el("span","vtNomeD", d.nome +
+        (peloCont ? "  (sem matéria correspondente no conteúdo)" : "")));
+      const matsD = [].concat(...gav.map(g => g.mats));
+      const ligPai = {};      // n -> seção ligada (para não repetir nos subtópicos)
       const cont = el("span","vtCont");
       contDisc.push([d, cont]);
       cab.appendChild(cont);
@@ -22243,6 +22349,23 @@ function janelaVerticalizar(num){
         if (it.n) lin.appendChild(el("b","vtNum", it.n));
         lin.appendChild(el("span","vtTx", it.t));
         tdA.appendChild(lin);
+        if (peloCont && matsD.length){
+          const sec = vtSecaoDe(it.t, matsD);
+          const chaveSec = sec ? sec.k + ":" + sec.id : "";
+          const partes = (it.n || "").split(".");
+          let doPai = "";
+          for (let j = partes.length - 1; j > 0 && !doPai; j--) doPai = ligPai[partes.slice(0, j).join(".")] || "";
+          if (it.n) ligPai[it.n] = chaveSec || doPai;
+          if (sec && chaveSec !== doPai){
+            const M2 = MATS[sec.k];
+            const lk = el("button","vtLink");
+            lk.appendChild(el("span","vtLinkN", (M2.sub ? M2.sub.replace(/^\d+\s*-\s*/, "") + "  ·  " : "") + sec.pos + "."));
+            lk.appendChild(el("span","vtLinkT", sec.t));
+            lk.title = "Abrir no Caderno de conteúdo: " + (M2.pai || M2.rot) + "  ·  " + sec.pos + ". " + sec.t;
+            lk.onclick = () => irPara(sec.k, sec.id);
+            tdA.appendChild(lk);
+          }
+        }
         tr.appendChild(tdA);
         VT_COLS.forEach(([k, rot, dica]) => {
           const td = el("td","vtC");
@@ -22279,7 +22402,7 @@ function janelaVerticalizar(num){
     const bTodas = el("button","btn","Recolher tudo");
     bTodas.onclick = () => {
       const abrir = fechados.size === V.disc.length;
-      V.disc.forEach((d, i) => abrir ? fechados.delete(i) : fechados.add(i));
+      V.disc.forEach(d => abrir ? fechados.delete(d.nome) : fechados.add(d.nome));
       corpo.querySelectorAll(".vtDisc").forEach(x => x.classList.toggle("fechada", !abrir));
       bTodas.textContent = abrir ? "Recolher tudo" : "Abrir tudo";
     };
@@ -22300,6 +22423,16 @@ function janelaVerticalizar(num){
       visiveis.forEach(x => x.visDisc());
       rotSubs(); salvar();
     };
+    const bOrg = el("button","btn" + (peloCont ? " azulzinho" : ""),
+      peloCont ? "✓ Organizado pelo conteúdo" : "Organizar conforme o conteúdo");
+    bOrg.title = peloCont
+      ? "Voltar à ordem do edital"
+      : "Põe as disciplinas na ordem e com o nome das matérias do Caderno de conteúdo " +
+        "e liga cada tópico à seção de lá que trata dele";
+    bOrg.onclick = () => {
+      if (peloCont) delete V.modo; else V.modo = "conteudo";
+      salvar(); mostrar();
+    };
     const bCol = el("button","btn","✎  Colar outro texto");
     bCol.onclick = colar;
     const bApagar = el("button","btn","Apagar");
@@ -22310,7 +22443,7 @@ function janelaVerticalizar(num){
     };
     rodape.appendChild(el("span","modalNota", total + " itens em " + V.disc.length +
       " disciplina(s)" + (V.em ? "  ·  verticalizado em " + dataBR(V.em) : "")));
-    rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bSubs); rodape.appendChild(bTodas);
+    rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bOrg); rodape.appendChild(bSubs); rodape.appendChild(bTodas);
     const bF = el("button","btn azulzinho","Fechar"); bF.onclick = sair;
     rodape.appendChild(bF);
   }
