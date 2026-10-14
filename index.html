@@ -328,6 +328,30 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtTab td.vtC{text-align:center;vertical-align:middle}
 .vtLin{display:flex;gap:7px;align-items:baseline}
 .vtSub,.vtSubVazio{flex:0 0 16px;width:16px}
+.edBox{padding:10px 14px 0}
+.edAbrir{padding:6px 12px;font-size:12px}
+.edPainel{margin-top:8px;border:1px solid #c9d4e3;border-radius:6px;padding:10px;background:#f6f9fd}
+.edDica{font-size:11.5px;color:#4a5a70;line-height:16px;margin-bottom:6px}
+.edTxt{box-sizing:border-box;width:100%;height:120px;resize:vertical;padding:7px 9px;
+  font:12px/16px Arial,Helvetica,sans-serif;color:#1F3864;border:1px solid #c9d4e3;border-radius:4px}
+.edLinha{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.edLinha .btn{padding:5px 12px;font-size:12px}
+.edRes{font-size:12px;color:#1F3864;margin-top:6px}
+.edResTit{font-weight:bold;color:#1f6f4a;margin-bottom:2px}
+.edLista{margin:2px 0 0;padding-left:18px;line-height:17px}
+.vtDica2{margin-top:12px}
+.vtTxt2{height:90px;min-height:70px}
+.vtTotQ{margin:2px 0 7px;font:bold 12px Arial,Helvetica,sans-serif;color:#7a4b00;background:#fff4dc;
+  border:1px solid #f0d49a;border-radius:6px;padding:4px 9px;display:inline-block}
+.vtGrupoFaixa{display:flex;align-items:center;gap:10px;margin:14px 0 8px;padding:7px 12px;border-radius:7px;
+  background:#5b3b8c;color:#fff;font:bold 13px Arial,Helvetica,sans-serif;letter-spacing:.4px}
+.vtGrupoFaixa .vtGrupoNome{flex:1}
+.vtGrupoTag{font-size:10.5px;font-weight:bold;background:#efe6fb;color:#5b3b8c;border-radius:9px;padding:2px 8px;white-space:nowrap}
+.vtQtd{font:bold 10.5px Arial,Helvetica,sans-serif;background:#fff4dc;color:#7a4b00;border:1px solid #f0d49a;
+  border-radius:9px;padding:2px 8px;white-space:nowrap;cursor:pointer}
+.vtQtd:hover{filter:brightness(.96)}
+.vtQtd.vazio{background:transparent;color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.3);font-weight:normal}
+.vtQtd.claro.vazio{color:rgba(255,255,255,.7)}
 .vtEdNome{display:block;font-weight:normal;font-size:10.5px;opacity:.75;margin-top:1px}
 .vtLink{display:flex;align-items:baseline;gap:5px;box-sizing:border-box;max-width:calc(100% - 23px);width:max-content;margin:3px 0 1px 23px;padding:2px 8px;
   border:1px solid #cfdcf0;border-radius:10px;background:#f2f6fc;color:#2F5597;cursor:pointer;
@@ -22071,18 +22095,26 @@ function telaCadastro(){
    (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
    numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
    não quebram o texto no lugar errado.                              */
-const VT_VER = 2;           // versão do leitor: subiu, os editais já colados são relidos
+const VT_VER = 3;           // versão do leitor: subiu, os editais já colados são relidos
 function vertLer(txt){
   const MAI = "A-ZÀ-ÖØ-Þ";
   const linhas = String(txt || "").replace(/\r/g, "").split("\n");
   // 1) acha os cabeçalhos de disciplina no começo das linhas
   const reCab = new RegExp("^\\s*([" + MAI + "][" + MAI + "\\s,/()\\-–—&ºª.]{2,}?)\\s*:\\s*(.*)$");
-  const blocos = []; let titulo = []; let atual = null;
+  const blocos = []; let titulo = []; let atual = null; let grupo = "";
+  // GRUPO I, BLOCO II, CONHECIMENTOS GERAIS/ESPECÍFICOS... numa linha só (pode vir numerada: "23.2.2 GRUPO I")
+  const reGrupo = /^\s*(?:\d+(?:\.\d+)*\.?\s+)?((?:GRUPO|BLOCO|M[ÓO]DULO|EIXO|PARTE)\s+[IVXLC\d]+\b.*|CONHECIMENTOS\s+(?:GERAIS|ESPEC[ÍI]FICOS|B[ÁA]SICOS|COMPLEMENTARES)\b.*)$/;
   linhas.forEach(l => {
+    const g = l.trim().length < 90 && l === l.toUpperCase() ? l.match(reGrupo) : null;
+    if (g && !/:\s*\S/.test(g[1])){
+      grupo = g[1].replace(/[:.\s]+$/, "").replace(/\s+/g, " ").trim();
+      atual = null;            // o que vier até a próxima disciplina não é de nenhuma
+      return;
+    }
     const m = l.match(reCab);
     const nome = m ? m[1].replace(/\s+/g, " ").trim() : "";
     if (m && /[A-ZÀ-Þ]{3}/.test(nome) && nome === nome.toUpperCase() && !/CARGO\b/.test(nome)){
-      atual = { nome, txt:[m[2]] }; blocos.push(atual);
+      atual = { nome, txt:[m[2]], grupo }; blocos.push(atual);
     } else if (atual) atual.txt.push(l);
     else titulo.push(l);
   });
@@ -22134,7 +22166,7 @@ function vertLer(txt){
     // texto antes do item 1 (ou disciplina sem numeração) vira item único
     const antes = aceitos.length ? s.slice(0, aceitos[0].ini).trim() : s;
     if (antes) itens.unshift({ n:"", nivel:1, t: antes.replace(/[\s.;]+$/, "") });
-    return { nome: b.nome, itens };
+    return b.grupo ? { nome: b.nome, itens, grupo: b.grupo } : { nome: b.nome, itens };
   }).filter(d => d.itens.length);
   return { titulo: juntar(titulo), disc };
 }
@@ -22142,7 +22174,8 @@ function vertLer(txt){
 /* ---- edital × caderno de conteúdo: liga disciplina à gaveta e tópico à seção ---- */
 const VT_VAZIAS = new Set(("de da do das dos e em a o as os no na nos nas para por com sem sua suas seu seus " +
   "direito direitos lei leis nº n art arts artigo artigos alteracoes alteracao respectivos regulamentos " +
-  "geral gerais conceito conceitos nocoes nocao aspectos parte ou ao aos pelo pela contra crimes crime dos medico medicos legais").split(" "));
+  "geral gerais conceito conceitos nocoes nocao aspectos parte ou ao aos pelo pela contra crimes crime dos medico medicos legais " +
+  "penal penais processual processuais estado estados").split(" "));
 function vtNorm(s){
   return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
@@ -22155,6 +22188,13 @@ function vtRaiz(w){
   if (/ns$/.test(w)) return w.slice(0, -2) + "m";
   if (/s$/.test(w)) return w.slice(0, -1);
   return w;
+}
+// nomes de matéria: "penal", "processual" e "estado" contam (DIREITO PENAL, PROCESSUAL PENAL)
+const VT_SO_TOPICO = new Set(["penal","processual","estado"]);
+function vtPalavrasNome(s){
+  return vtNorm(s).replace(/^\s*\d+\s*-\s*/, "").split(/[^a-z0-9]+/)
+    .filter(w => w.length > 2 && !/^\d+$/.test(w)).map(vtRaiz)
+    .filter(w => VT_SO_TOPICO.has(w) || !VT_VAZIAS.has(w));
 }
 function vtPalavras(s){
   return vtNorm(s).replace(/^\s*\d+\s*-\s*/, "").split(/[^a-z0-9]+/)
@@ -22177,21 +22217,21 @@ function vtGavetas(){
 /* a(s) gaveta(s) de uma disciplina do edital: a que mais casa e, se sobrar
    palavra (ex.: CIVIL E EMPRESARIAL), outra que case só com o que sobrou */
 function vtGavetasDe(nomeDisc, gav){
-  let resto = vtPalavras(nomeDisc);
+  let resto = vtPalavrasNome(nomeDisc);
   const prim = resto[0];
   const achadas = [];
   for (let volta = 0; volta < 3 && resto.length; volta++){
     let melhor = null, nota = 0;
     gav.forEach(g => {
       if (achadas.indexOf(g) >= 0) return;
-      const pg = vtPalavras(g.nome);
+      const pg = vtPalavrasNome(g.nome);
       if (!pg.length || !pg.every(w => resto.indexOf(w) >= 0)) return;
       const n = pg.length + (pg[0] === (volta ? resto[0] : prim) ? 1 : 0);
       if (n > nota){ nota = n; melhor = g; }
     });
     if (!melhor) break;
     achadas.push(melhor);
-    const usadas = vtPalavras(melhor.nome);
+    const usadas = vtPalavrasNome(melhor.nome);
     resto = resto.filter(w => usadas.indexOf(w) < 0);
   }
   return achadas;
@@ -22252,7 +22292,81 @@ const VT_ARVORE = {
     "Formas de Controle: Sistemas, Momentos, Modelos e Vias de Controle|Controle Difuso (Incidental ou Incidenter Tantum)|" +
     "Ações de Controle Concentrado de Constitucionalidade|Ação Direta de Inconstitucionalidade (ADI)|" +
     "Ação Direta de Inconstitucionalidade por Omissão (ADI por Omissão)|Ação Declaratória de Constitucionalidade (ADC)|" +
-    "Arguição de Descumprimento de Preceito Fundamental (ADPF)|Controle de Constitucionalidade pelos Tribunais de Justiça dos Estados"
+    "Arguição de Descumprimento de Preceito Fundamental (ADPF)|Controle de Constitucionalidade pelos Tribunais de Justiça dos Estados",
+  "pen1:cap-0": "Conceitos, Objeto, Teorias e Evolução do Direito Penal|Princípios de Direito Penal|Princípios da Legalidade e Anterioridade Penal e Demais Princípios Decorrentes|Princípios Constitucionais de Direito Penal|Princípios Modernos de Direito Penal|Lei Penal (Conceito, Classificação, Características, Interpretação)|Classificações dos Crimes",
+  "pen1:cap-1": "Causas de exclusão da tipicidade|Teoria do Crime|Conceito de Crime|Fato Típico|Elementos do Fato Típico|Conduta|Ação e Omissão|Dolo, Culpa e Preterdolo|Erro de Tipo|Tipicidade e Resultado|Nexo de Causalidade|Nexo de Causalidade: Teorias|Nexo de Causalidade: Concausas",
+  "pen1:cap-2": "Iter Criminis|Fases do Delito|Crime Impossível|Desistência Voluntária|Arrependimento Eficaz|Tentativa (Crime)|Consumação|Arrependimento Posterior",
+  "pen1:cap-3": "Causas de exclusão da ilicitude|Excludentes de ilicitude|Ilicitude e suas Excludentes|Considerações Gerais sobre a Ilicitude e suas Excludentes|Estado de Necessidade|Legítima Defesa|Estrito Cumprimento do Dever Legal|Exercício Regular de Direito",
+  "pen1:cap-4": "Causas de exclusão da culpabilidade|Excludentes de culpabilidade|Culpabilidade|Conceitos Gerais da Culpabilidade|Imputabilidade Penal|Potencial Consciência da Ilicitude: Erro de Proibição e Descriminantes Putativas|Exigibilidade de Conduta Diversa",
+  "pen1:cap-5": "Concurso de Agentes|Autoria e Participação|Sujeitos do Crime|Sujeito Ativo e Passivo (Crimes)|Concurso de Pessoas",
+  "pen1:cap-6": "Das Penas|Espécies de Penas|Penas Privativas de Liberdade: Espécies, Regimes e Progressão|Das Penas Restritivas de Direitos|Da Pena de Multa|Da Aplicação da Pena|Concurso de Crimes|Efeitos da Condenação|Das Medidas de Segurança e da Reabilitação|Suspensão Condicional da Pena e Livramento Condicional|Da Ação Penal",
+  "pen1:cap-7": "Da Extinção da Punibilidade|Causas de Extinção da Punibilidade|Da Prescrição",
+  "pen2:cap-1": "Dos Crimes contra a Pessoa|Dos Crimes contra a Vida|Homicídio|Feminicídio|Vicaricídio|Induzimento, Instigação ou Auxílio a Suicídio ou a Automutilação|Infanticídio|Aborto Provocado pela Gestante ou com seu Consentimento|Aborto Provocado por Terceiro",
+  "pen2:cap-2": "Das Lesões Corporais",
+  "pen2:cap-3": "Dos Crimes contra a Honra",
+  "pen2:cap-4": "Dos Crimes contra a Liberdade Individual|Dos Crimes contra a Liberdade Pessoal",
+  "pen2:cap-5": "Dos Crimes contra o Patrimônio|Do Furto|Do Roubo e da Extorsão|Da Usurpação|Do Dano|Da Apropriação Indébita|Do Estelionato e das Outras Fraudes|Da Receptação|Das Disposições Gerais dos Crimes contra o Patrimônio",
+  "pen2:cap-6": "Dos Crimes contra a Propriedade Imaterial",
+  "pen2:cap-7": "Dos Crimes contra a Dignidade Sexual|Dos Crimes contra a Liberdade Sexual e da Exposição da Intimidade Sexual|Dos Crimes Sexuais contra Vulnerável|Lenocínio e Tráfico de Pessoas para Prostituição ou Exploração Sexual|Do Ultraje Público ao Pudor",
+  "pen2:cap-8": "Dos Crimes de Perigo Comum",
+  "pen2:cap-9": "Dos Crimes contra a Fé Pública|Da Moeda Falsa|Moeda Falsa|Crimes Assimilados ao de Moeda Falsa|Petrechos para Falsificação de Moeda|Emissão de Título ao Portador sem Permissão Legal|Da Falsidade de Títulos e Outros Papéis Públicos|Falsificação de Papéis Públicos|Petrechos de Falsificação|Da Falsidade Documental|Falsificação do Selo ou Sinal Público|Falsificação de Documento Público|Falsificação de Documento Particular|Falsidade Ideológica|Falso Reconhecimento de Firma ou Letra|Certidão/Atestado Ideologicamente Falso e Falsidade Material de Atestado/Certidão|Falsidade de Atestado Médico|Reprodução ou Adulteração de Selo ou Peça Filatélica|Uso de Documento Falso|Supressão de Documento|De Outras Falsidades e das Fraudes em Certame de Interesse Público|Falsificação do Sinal para Metal Precioso ou na Fiscalização Alfandegária|Falsa Identidade|Fraude de Lei sobre Estrangeiro|Adulteração de Sinal Identificador de Veículo Automotor|Fraudes em Certames de Interesse Público|Dos Crimes contra a Paz Pública",
+  "pen2:cap-10": "Dos Crimes contra a Administração Pública|Dos Crimes Praticados por Funcionário Público contra a Administração em Geral|Funcionário Público para Fins Penais|Peculato|Peculato Mediante Erro de Outrem|Inserção de Dados Falsos em Sistema de Informações|Modificação ou Alteração Não Autorizada de Sistema de Informações|Extravio, Sonegação ou Inutilização de Livro ou Documento|Emprego Irregular de Verbas ou Rendas Públicas|Concussão e Excesso de Exação|Corrupção Passiva|Facilitação de Contrabando ou Descaminho|Prevaricação|Condescendência Criminosa|Advocacia Administrativa|Violência Arbitrária|Abandono de Função|Exercício Funcional Ilegalmente Antecipado ou Prolongado|Violação de Sigilo Funcional|Violação do Sigilo de Proposta de Concorrência|Dos Crimes Praticados por Particular contra a Administração em Geral|Usurpação de Função Pública|Resistência|Desobediência|Desacato|Tráfico de Influência|Corrupção Ativa|Descaminho e Contrabando|Impedimento, Perturbação ou Fraude de Concorrência|Inutilização de Edital ou de Sinal|Subtração ou Inutilização de Livro ou Documento|Sonegação de Contribuição Previdenciária|Crimes Praticados por Particular contra a Administração Pública Estrangeira|Dos Crimes contra a Administração da Justiça|Reingresso de Estrangeiro Expulso|Denunciação Caluniosa|Comunicação Falsa de Crime ou de Contravenção|Auto-Acusação Falsa|Falso Testemunho ou Falsa Perícia|Coação no Curso do Processo|Exercício Arbitrário das Próprias Razões|Fraude Processual|Favorecimento Pessoal|Favorecimento Real|Fuga de Pessoa Presa ou Submetida a Medida de Segurança|Evasão mediante Violência contra a Pessoa|Arrebatamento de Preso|Motim de Presos|Patrocínio Infiel e Patrocínio Simultâneo ou Tergiversação|Sonegação de Papel ou Objeto de Valor Probatório|Exploração de Prestígio|Violência ou Fraude em Arrematação Judicial|Desobediência a Decisão Judicial sobre Perda ou Suspensão de Direito",
+  "pen2:cap-11": "Dos Crimes em Licitações e Contratos Administrativos",
+  "pen2:cap-12": "Dos Crimes contra as Finanças Públicas",
+  "ppenal:1": "Processo Penal, seus Sistemas e Princípios|Aplicação da Lei Processual Penal|Interpretação e Integração da Lei Processual Penal|Lei Processual Penal no Tempo, no Espaço e em Relação às Pessoas",
+  "ppenal:2": "Inquérito Policial",
+  "ppenal:4": "Da Ação Penal|Da Ação Civil Ex Delicto",
+  "ppenal:5": "Competência Processual Penal|Jurisdição e Competência - Conceitos Gerais|Critério de Fixação de Competência|Prorrogação de Competência (Conexão e Continência)",
+  "ppenal:6": "Das Questões e Processos Incidentes|Das Questões Prejudiciais|Das Exceções, das Incompatibilidades e Impedimentos|Do Conflito de Jurisdição|Da Restituição de Coisas Apreendidas|Das Medidas Assecuratórias|Incidente de Falsidade|Da Insanidade Mental do Acusado",
+  "ppenal:7": "Da Prova|Teoria Geral da Prova Penal|Provas em Espécie|Do Exame de Corpo de Delito, da Cadeia de Custódia e das Perícias em Geral|Do Interrogatório do Acusado|Da Confissão|Do Ofendido|Das Testemunhas|Do Reconhecimento de Pessoas e Coisas|Da Acareação|Dos Documentos|Dos Indícios|Da Busca e Apreensão",
+  "ppenal:8": "Sujeitos do Processo Penal|Do Juiz|Do Ministério Público|Do Acusado e seu Defensor|Dos Assistentes|Dos Auxiliares da Justiça",
+  "ppenal:9": "Da Prisão, das Medidas Cautelares e da Liberdade Provisória|Disposições Gerais e Prisão Especial|Da Prisão em Flagrante|Da Prisão Preventiva|Da Prisão Domiciliar|Das Medidas Cautelares Diversas da Prisão|Da Liberdade Provisória, com ou sem Fiança",
+  "ppenal:10": "Da Comunicação dos Atos Processuais|Citações e Intimações",
+  "ppenal:11": "Processos Criminais em Espécie|Do Procedimento Comum Ordinário|Alcance do Procedimento Comum Ordinário|Fase Postulatória|Fase Instrutória|Fase Decisória e Sentença Penal|Do Procedimento Comum Sumário|Procedimentos Especiais|Procedimento dos Crimes de Responsabilidade dos Funcionários Públicos|Procedimento dos Crimes contra a Honra|Procedimento dos Crimes contra a Propriedade Imaterial|Procedimento dos Crimes da Competência do Tribunal do Júri|Do Processo de Restauração de Autos Extraviados ou Destruídos|Nulidades Processuais Penais",
+  "ppenal:12": "Recursos e Sucedâneos Recursais Criminais|Teoria Geral dos Recursos Criminais (Disposições Gerais sobre Recursos)|Recursos em Espécie|Recurso em Sentido Estrito|Da Apelação|Embargos Infringentes e de Nulidade|Embargos Declaratórios|Da Revisão Criminal|Carta Testemunhável|Habeas Corpus",
+  "adm:cap-0": "Origem, Conceito e Fontes do Direito Administrativo",
+  "adm:cap-1": "Regime Jurídico Administrativo|Regime Jurídico da Administração e Regime Jurídico Administrativo|Princípios Expressos, Explícitos ou Constitucionais|Princípios Implícitos, Reconhecidos e Infraconstitucionais",
+  "adm:cap-2": "Atos Administrativos|Conceito de Atos Administrativos|Mérito Administrativo|Elementos, Requisitos e Pressupostos (Atos Administrativos)|Atributos ou Características dos Atos Administrativos|Atos Administrativos: Espécies, Classificação, Fases de Constituição|Desfazimento do Ato Administrativo (Anulação, Revogação, Cassação, Caducidade, Contraposição)|Convalidação e Conversão dos Atos Administrativos|Teoria dos Motivos Determinantes",
+  "adm:cap-3": "Poderes e Deveres da Administração|Poder Vinculado e Discricionário|Poder Regulamentar|Poder Hierárquico|Poder Disciplinar|Poder de Polícia|Abuso de Poder: Excesso de Poder e Desvio de Finalidade|Deveres da Administração",
+  "adm:cap-4": "Organização Administrativa|Organização Administrativa da União|Administração Direta (Órgãos Públicos)|Administração Indireta|Conselhos Profissionais|Desconcentração e Descentralização|Agências Reguladoras e Executivas|Terceiro Setor (OSs, OSCIPs, Sistema S e Fundações de Apoio)|Estatuto Jurídico da EP e SEM",
+  "adm:cap-5": "Responsabilidade Civil do Estado|Conceitos Iniciais e Teorias da Responsabilidade|Responsabilidade Objetiva das Empresas Estatais e das Prestadoras de Serviços Públicos|Responsabilidade dos Agentes Públicos e Direito de Regresso|Excludentes e Atenuantes de Responsabilidade|Responsabilidade Civil por Atos Omissivos|Responsabilidade por Atos Legislativos e Judiciais|Casos Especiais (Danos decorrentes de Obra Pública, Responsabilidade dos Tabeliães)",
+  "adm:cap-6": "Lei nº 8.987/1995|Lei nº 11.079/2004|Lei nº 11.107/2005|Lei nº 13.019/2014|Serviços Públicos|Conceitos (Serviços Públicos)|Classificação de Serviços Públicos|Princípios (Serviços Públicos)|Repartição de Competências (Serviços Públicos)|Concessões (Serviços Públicos)|Deveres e Direitos (Usuários, Concedente, Concessionária)|Autorização, Permissão e Concessão (Serviços Públicos)|Formas de Extinção (Serviços Públicos)|Intervenção (Serviços Públicos)|Subconcessão|Convênios Administrativos|Parceria Público-Privada (PPP)|Normas Gerais de Contratação de Consórcios Públicos|Estatuto das Parcerias|Direitos Básicos do Usuário do Serviço Público",
+  "adm:cap-7": "Controle da Administração|Controle da Administração: Conceitos, Princípios, Abrangência e Classificações|Controle Administrativo|Controle Legislativo ou Parlamentar|Parlamentar Direto (Controle Político)|Parlamentar Indireto (Tribunais de Contas e Controle Técnico-Financeiro)|Controle Popular ou Social|Controle Jurisdicional",
+  "adm:cap-8": "Domínio Público|Domínio Público e Bens Públicos: Conceito|Bens Públicos|Classificação dos Bens Públicos|Características dos Bens Públicos|Afetação e Desafetação (Bens Públicos)|Bens Públicos em Espécie (Domínio Terrestre, Hídrico e Aéreo)|Formas de Utilização de Bens Públicos|Aquisição de Bens pelo Estado",
+  "adm:cap-9": "Lei nº 8.112/1990|Agentes Públicos|Conceito para Agentes Públicos|Classificação dos Agentes Públicos|Funções, Cargos e Empregos Públicos|Criação, Transformação e Extinção de Cargos Públicos|Aspectos Constitucionais pertinentes aos Servidores Públicos|Concurso Público|Acessibilidade aos Cargos e Empregos Públicos|Acumulação de Cargos e Empregos Públicos e Funções|Estabilidade e Estágio Probatório|Associação Sindical e Direito de Greve|Direitos Sociais dos Servidores Públicos|Remuneração (Componentes, Subsídio, Teto, Equiparação, Vinculação, Irredutibilidade)|Mandato Eletivo|Regime Previdenciário (Aposentadoria, Pensão, RPPS)|Estatuto dos Servidores Federais|Formas de Provimento|Vacância|Remoção, Redistribuição e Substituição|Do Regime Disciplinar|Do Processo Administrativo Disciplinar|Contratação Temporária|Nepotismo",
+  "legadm:cap-3": "Lei nº 14.133/2021|Licitações e Contratos Administrativos|Licitações|Contratos Administrativos|Modalidades de Licitação|Contratação Direta, Inexigibilidade e Dispensa|Critérios de Julgamento|Fases da Licitação - Julgamento, Habilitação e Encerramento|Instrumentos Auxiliares|Pregão|Sistema de Registro de Preços",
+  "legadm:cap-0": "Lei nº 8.429/1992|Improbidade Administrativa|Dos Atos de Improbidade|Enriquecimento ilícito",
+  "legadm:cap-lai": "Lei nº 12.527/2011|Acesso à Informação|Lei de Acesso à Informação",
+  "legadm:cap-1": "Lei nº 9.784/1999|Processo Administrativo|Processo Administrativo Federal|Do Recurso Administrativo e da Revisão|Da Anulação, Revogação e Convalidação|Dos Impedimentos e da Suspeição|Prescrição e Coisa Julgada Administrativa",
+  "legadm:cap-4": "Lei nº 12.846/2013|Lei Anticorrupção|Do Acordo de Leniência|Da Responsabilização Administrativa|Do Processo Administrativo de Responsabilização",
+  "legadm:cap-2": "Intervenção do Estado na Propriedade Privada|Servidões Administrativas|Requisição da Propriedade Privada|Ocupação Provisória|Limitações Administrativas (Intervenção da Propriedade)|Tombamento|Desapropriação",
+  "civil:02": "Das Pessoas|Das Pessoas Naturais|Da Personalidade e da Capacidade|Dos Direitos da Personalidade|Da Ausência das Pessoas Naturais|Das Pessoas Jurídicas|Disposições Gerais - Pessoas Jurídicas|Das Associações|Das Fundações|Desconsideração da Personalidade Jurídica|Domicílio das Pessoas Naturais e Jurídicas|Domicílio e residência",
+  "civil:03": "Dos Bens|Classificação dos Bens|Bens Públicos",
+  "civil:04": "Dos Fatos Jurídicos|Fatos Jurídicos: Conceito, Classificação e Princípios Gerais|Negócio Jurídico|Negócio Jurídico. Classificações. Disposições Gerais|Da Representação|Da Condição, Termo e Encargo|Defeitos ou Vícios do Negócio Jurídico|Invalidade do Negócio Jurídico|Dos Atos Ilícitos|Prescrição e Decadência|Prova do Negócio Jurídico",
+  "civil:06": "Do Direito das Coisas|Princípios Gerais do Direito das Coisas|Da Posse|Conceito e Teorias Justificadoras da Posse|Da Posse e sua Classificação|Da Aquisição e Transmissão da Posse|Dos Efeitos da Posse|Da Perda da Posse|Dos Direitos Reais|Da Propriedade|Da Propriedade em Geral|Da Aquisição da Propriedade Imóvel - Usucapião, Acessão e Registro|Da Aquisição da Propriedade Móvel|Da Perda da Propriedade Móvel e Imóvel|Dos Direitos de Vizinhança|Do Condomínio Geral|Do Condomínio em Multipropriedade|Da Propriedade Resolúvel|Da Propriedade Fiduciária|Direitos Reais de Gozo ou Fruição|Da Superfície|Das Servidões|Do Usufruto|Do Uso|Da Habitação|Do Direito do Promitente Comprador|Direitos Reais Sobre a Coisa Alheia|Do Penhor|Da Hipoteca|Da Anticrese|Da Laje|Direito real sobre coisa alheia",
+  "civil:07": "Da Responsabilidade Civil|Teoria da culpa e do risco",
+  "trib:sec1": "Introdução ao Direito Tributário|Conceito de Tributo|Classificação Doutrinária dos Tributos|A Natureza Jurídica Específica dos Tributos",
+  "trib:sec2": "Espécies de Tributos|Impostos (Conceito e Classificações)|Taxas|Contribuições de Melhoria|Empréstimo Compulsório|Contribuições Especiais",
+  "trib:sec3": "Princípios Tributários|Limitações Constitucionais ao Poder de Tributar",
+  "trib:sec4": "Imunidades Tributárias",
+  "trib:sec5": "Competência Tributária|Competência para Legislar sobre Direito Tributário|Competência Tributária: Conceitos e Características|Repartição da Competência Tributária (Privativa, Comum, Cumulativa, Residual, Extraordinária e Compartilhada)|Bitributação e Bis in Idem",
+  "trib:sec6": "Legislação Tributária|Disposições Gerais da Legislação|Vigência e Aplicação da Legislação Tributária|Interpretação e Integração da Legislação Tributária|Espécies Normativas Aplicadas ao Direito Tributário|Normas gerais de direito tributário|Código Tributário Nacional",
+  "trib:sec7": "Obrigação Tributária|Disposições Gerais sobre Obrigação Tributária (Conceito, Obrigação Principal e Acessória)|Fato Gerador|Sujeito: Ativo e Passivo|Solidariedade|Capacidade Tributária|Domicílio Tributário|Responsabilidade Tributária",
+  "trib:sec8": "Crédito Tributário|Disposições Gerais do Crédito Tributário|Lançamento e Constituição do Crédito Tributário|Suspensão da Exigibilidade do Crédito Tributário|Extinção do Crédito Tributário|Exclusão do Crédito Tributário|Garantias e Privilégios do Crédito Tributário|Prescrição e decadência|Repetição do indébito",
+  "trib:sec9": "Administração Tributária|Fiscalização Tributária|Dívida Ativa Tributária|Certidão Negativa|Processo Administrativo Fiscal",
+  "trib:sec10": "Tributos da União, dos Estados, do Distrito Federal e dos Municípios|Impostos Federais, Estaduais e Municipais|Impostos Federais|Imposto de Renda - IR|Imposto sobre Produtos Industrializados - IPI|Imposto sobre Operações Financeiras - IOF|Imposto sobre Grandes Fortunas - IGF|Imposto de Exportação - IE|Imposto de Importação - II|Imposto sobre Propriedade Territorial Rural - ITR|Impostos Estaduais|Imposto sobre Circulação de Mercadorias e Serviços - ICMS|Imposto sobre Propriedade de Veículos Automotores - IPVA|Imposto de Transmissão Causa Mortis e Doação - ITCMD|Impostos Municipais|Imposto Predial e Territorial Urbano - IPTU|Imposto sobre Transmissão de Bens Imóveis - ITBI",
+  "trib:sec11": "Repartição Constitucional de Receitas Tributárias",
+  "tribleg:sec1": "Reforma Tributária|Imposto sobre Bens e Serviços - IBS|Contribuição sobre Bens e Serviços - CBS|Comitê Gestor do IBS|Imposto Seletivo - IS",
+  "tribleg:sec3": "Imposto sobre Serviços - ISS",
+  "tribleg:sec4": "Lei de Execução Fiscal|Execução fiscal|Exceção de pré-executividade|Embargos do executado|Direito Processual Tributário",
+  "emp:cap1": "Direito Empresarial: Conceito, Autonomia, Fontes, Princípios, Histórico|Origem; evolução histórica; autonomia; fontes; características",
+  "emp:cap2": "Direito de Empresa|Do Empresário|Do Empresário: da Caracterização e da Inscrição|Do Empresário: da Capacidade|Do Estabelecimento|Dos Institutos Complementares|Do Registro|Do Nome Empresarial|Dos Prepostos|Da Escrituração|Estabelecimento empresarial",
+  "emp:cap3": "Da Sociedade|Sociedade: Conceito, Classificação e Disposições Gerais|Sociedades Não Personificadas|Sociedade em Comum|Sociedade em Conta de Participação|Sociedade Personificada|Sociedade Simples|Sociedade em Nome Coletivo|Sociedade em Comandita Simples|Sociedade Cooperativa|Da Sociedade Dependente de Autorização - Nacional e Estrangeira|Operações Societárias|Sociedades Coligadas, Controladas, Filiadas|Teoria geral do direito societário|Responsabilidade dos sócios",
+  "emp:cap4": "Sociedade Limitada",
+  "emp:cap5": "Dissolução, Liquidação e Extinção das Sociedades",
+  "empleg:cap-sa": "Lei nº 6.404/1976|Sociedade Anônima|Características e Natureza da Companhia ou Sociedade Anônima|Constituição da Companhia|Capital Social e Modificação do Capital Social|Acionistas|Ações, Partes Beneficiárias, Debêntures, Bônus de Subscrição|Assembleia Geral, Conselhos, Diretoria|Dissolução, Liquidação e Extinção das SA|Sociedades de Economia Mista|Grupo de Sociedades|Sociedade em Comandita por Ações",
+  "empleg:cap-1": "Lei nº 11.101/2005|Recuperação Judicial e Falência|Disposições Comuns à Recuperação Judicial e à Falência|Da Recuperação Judicial e da Convolação da Recuperação Judicial em Falência|Da Falência|Da Recuperação Extrajudicial|Da Insolvência Transnacional|Recuperação judicial; recuperação extrajudicial; falência do empresário e da sociedade empresária",
+  "empleg:cap-2": "Lei nº 9.279/1996|Propriedade Industrial|Das Patentes|Dos Desenhos Industriais|Das Marcas|Das Indicações Geográficas|Da Transferência de Tecnologia e da Franquia"
 };
 // o que a seção cobre: o título dela + os assuntos da árvore (sem os "(arts. 18 a 43 da CF/1988)")
 function vtAssuntos(k, s){
@@ -22265,9 +22379,17 @@ function vtAssuntos(k, s){
 function vtSecaoDe(texto, mats){
   const r = vtSecaoDe1(texto, mats);
   if (r) return r;
-  // tópico longo ("Poder Legislativo: conceito, fundamento..."; "a; b; c"): tenta pedaço a pedaço
-  const pedacos = String(texto).split(/[;:]/).map(x => x.trim()).filter(x => x && x !== texto);
-  for (const p of pedacos){ const q = vtSecaoDe1(p, mats); if (q) return q; }
+  // tópico longo ("Poder Legislativo: conceito, fundamento..."): tenta só a cabeça dele
+  const pedacos = String(texto).split(/[;:]/).map(x => x.trim()).filter(Boolean);
+  if (pedacos.length < 2) return null;
+  const q = vtSecaoDe1(pedacos[0], mats);
+  if (q) return q;
+  // os outros pedaços só valem se casarem em cheio ("supremacia da constituição")
+  for (const p of pedacos.slice(1)){
+    if (new Set(vtPalavras(p)).size < 2) continue;
+    const r2 = vtSecaoDe1(p, mats);
+    if (r2 && vtCobreTudo(p, r2.k, r2.id)) return r2;
+  }
   return null;
 }
 // a seção do tópico de cima também fala deste subtópico? (alguma palavra em comum)
@@ -22290,7 +22412,7 @@ function vtSecaoDe1(texto, mats){
     let n = 0;
     if (leis.length){
       // tópico que cita lei só casa com seção da mesma lei
-      if (!vtLeis(x.s.t).some(l => leis.indexOf(l) >= 0)) return;
+      if (!vtLeis(x.s.t + " " + (VT_ARVORE[x.k + ":" + x.s.id] || "")).some(l => leis.indexOf(l) >= 0)) return;
       n = 10;
     } else {
       x.frases.forEach(f => {
@@ -22300,15 +22422,61 @@ function vtSecaoDe1(texto, mats){
         const cobreF = soma / Math.max(.01, f.reduce((t, w) => t + peso(w), 0));
         const cobreT = comuns.length / Math.max(1, pt.length);
         // casa se cobre boa parte do assunto e do tópico, ou o tópico inteiro cabe no assunto
-        if (!((cobreF >= .5 && cobreT >= .4) || (cobreT === 1 && cobreF >= .2))) return;
+        if (!((cobreF >= .5 && cobreT >= .4) || (cobreT === 1 && cobreF >= .2) ||
+              (cobreF >= .99 && cobreT >= .3 && soma >= .6))) return;
         const v = soma + cobreF + cobreT;
         if (v > n) n = v;
       });
       if (!n) return;
     }
-    if (n > nota){ nota = n; melhor = { k: x.k, id: x.s.id, pos: x.pos, t: x.s.t }; }
+    if (n > nota){ nota = n; melhor = { k: x.k, id: x.s.id, pos: x.pos, t: x.s.t, nota: n }; }
   });
   return melhor;
+}
+// algum assunto da seção tem todas as palavras do tópico?
+function vtCobreTudo(texto, k, id){
+  const s = MATS[k] && MATS[k].secoes.find(x => x.id === id);
+  const pt = [...new Set(vtPalavras(texto))];
+  return !!(s && pt.length && vtAssuntos(k, s).some(f => { const pf = vtPalavras(f); return pt.every(w => pf.indexOf(w) >= 0); }));
+}
+// quanto o subtópico combina com uma seção (sem exigir mínimo): 0 = nada em comum
+function vtNotaNaSecao(texto, k, id){
+  const s = MATS[k] && MATS[k].secoes.find(x => x.id === id);
+  if (!s) return 0;
+  const pt = [...new Set(vtPalavras(texto))];
+  let n = 0;
+  vtAssuntos(k, s).forEach(f => {
+    const pf = [...new Set(vtPalavras(f))];
+    const comuns = pt.filter(w => pf.indexOf(w) >= 0);
+    if (!comuns.length) return;
+    const v = comuns.length + comuns.length / pf.length + comuns.length / Math.max(1, pt.length);
+    if (v > n) n = v;
+  });
+  return n;
+}
+/* número de questões: lê o quadro de provas do edital.
+   Primeiro os grupos ("Grupo I – Direito Civil, ... 20"); no que sobrar, cada disciplina
+   ("Direito Penal ... 15"). Devolve { grupo: {chave: n}, disc: {nome: n} }. */
+const vtChaveGrupo = g => vtNorm(g).replace(/[^a-z0-9]+/g, " ").trim().split(" ").slice(0, 2).join(" ");
+function vtQuestoes(quadro, disc){
+  const out = { grupo: {}, disc: {} };
+  let t = " " + String(quadro || "").replace(/\s+/g, " ") + " ";
+  if (!t.trim()) return out;
+  const reG = /\b((?:GRUPO|BLOCO|M[ÓO]DULO|EIXO)\s+(?:[IVXLC]+|\d+))\s*[–—\-:]\s*([^\d]{2,400}?)\s(\d{1,3})\b/gi;
+  const reC = /\b(CONHECIMENTOS\s+(?:GERAIS|ESPEC[ÍI]FICOS|B[ÁA]SICOS|COMPLEMENTARES))\b([^\d]{0,400}?)\s(\d{1,3})\b/gi;
+  [reG, reC].forEach(re => {
+    t = t.replace(re, (m0, g, lista, n) => { out.grupo[vtChaveGrupo(g)] = +n; return " ¦ "; });
+  });
+  const tn = vtNorm(t);
+  disc.forEach(d => {
+    const pal = vtNorm(d.nome).replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(Boolean);
+    for (let k = pal.length; k >= Math.min(2, pal.length); k--){
+      const nome = pal.slice(0, k).join("[^a-z0-9]+");
+      const m = tn.match(new RegExp("\\b" + nome + "\\b[^0-9¦]{0,40}?\\s(\\d{1,3})\\b"));
+      if (m){ out.disc[d.nome] = +m[1]; break; }
+    }
+  });
+  return out;
 }
 const VT_COLS = [["T","Teoria","Teoria estudada"],["Q","Questões","Questões feitas"],["R","Revisão","Revisão feita"]];
 const vtChave = (d, it, i) => d.nome + "|" + (it.n || "#" + i);
@@ -22348,11 +22516,34 @@ function janelaVerticalizar(num){
     corpo.appendChild(ta);
     const aviso = el("div","vtAviso");
     corpo.appendChild(aviso);
+    corpo.appendChild(el("div","vtDica vtDica2",
+      "Opcional — quadro de provas: cole o trecho do edital com o número de questões " +
+      "(ex.: “Grupo I – Direito Civil, Direito Ambiental 20 · Grupo II – … 32” ou “Direito Penal 15”)."));
+    const ta2 = document.createElement("textarea");
+    ta2.className = "vtTxt vtTxt2";
+    ta2.placeholder = "Prova objetiva (P1) Grupo I – Direito Digital, Direito Civil... 20  Grupo II – Direito Administrativo... 32";
+    if (c.vert && c.vert.quadro) ta2.value = c.vert.quadro;
+    corpo.appendChild(ta2);
+    const aviso2 = el("div","vtAviso");
+    corpo.appendChild(aviso2);
+    const ler2 = () => {
+      const q = vtQuestoes(ta2.value, vertLer(ta.value).disc);
+      const ng = Object.keys(q.grupo).length, nd = Object.keys(q.disc).length;
+      aviso2.textContent = ta2.value.trim()
+        ? (ng ? ng + " grupo(s) com número de questões" : "") + (ng && nd ? " e " : "") +
+          (nd ? nd + " disciplina(s) com número de questões" : "") + (ng || nd ? "." : "Não achei número de questões.")
+        : "";
+      return q;
+    };
+    ta2.addEventListener("input", ler2);
+    ta2.addEventListener("paste", () => setTimeout(ler2, 0));
     const ler = () => {
       const r = vertLer(ta.value);
       const n = r.disc.reduce((t, d) => t + d.itens.length, 0);
+      const gs = [...new Set(r.disc.map(d => d.grupo).filter(Boolean))];
       aviso.textContent = ta.value.trim()
-        ? r.disc.length + " disciplina(s) e " + n + " item(ns) encontrados."
+        ? r.disc.length + " disciplina(s) e " + n + " item(ns) encontrados" +
+          (gs.length ? ", em " + gs.length + " grupo(s): " + gs.join(" · ") : "") + "."
         : "";
       return r;
     };
@@ -22368,6 +22559,9 @@ function janelaVerticalizar(num){
                  em: new Date().toISOString().slice(0, 10) };
       if (ant.rec) c.vert.rec = ant.rec;
       if (ant.modo) c.vert.modo = ant.modo;
+      if (ant.qEdit) c.vert.qEdit = ant.qEdit;
+      c.vert.quadro = ta2.value;
+      c.vert.qtd = ler2();
       salvar(); mostrar();
     };
     const bNao = el("button","btn", c.vert ? "Voltar" : "Cancelar");
@@ -22388,6 +22582,33 @@ function janelaVerticalizar(num){
     // resumo geral
     const res = el("div","vtResumo");
     if (V.titulo) res.appendChild(el("div","vtTitulo", V.titulo));
+    // número de questões (do quadro de provas ou digitado por você)
+    const QE = V.qEdit = V.qEdit || {};
+    const QT = V.qtd || { grupo: {}, disc: {} };
+    const qGrupo = g => ("g:" + vtChaveGrupo(g)) in QE ? QE["g:" + vtChaveGrupo(g)] : QT.grupo[vtChaveGrupo(g)];
+    const qDisc = d => ("d:" + d.nome) in QE ? QE["d:" + d.nome] : QT.disc[d.nome];
+    const editarQ = (chave, rot, atual) => {
+      const r = prompt("Número de questões — " + rot + ":\n(deixe em branco para tirar)", atual == null ? "" : atual);
+      if (r === null) return;
+      const v = parseInt(r, 10);
+      if (r.trim() === "") QE[chave] = null; else if (v >= 0) QE[chave] = v; else return;
+      salvar(); mostrar();
+    };
+    const chipQ = (n, chave, rot, cls) => {
+      const sp = el("span","vtQtd " + (cls || "") + (n == null ? " vazio" : ""),
+        n == null ? "nº de questões" : n + (n === 1 ? " questão" : " questões"));
+      sp.title = "Número de questões de " + rot + " (clique para mudar)";
+      sp.onclick = ev => { ev.stopPropagation(); editarQ(chave, rot, n); };
+      return sp;
+    };
+    {
+      const grupos = [...new Set(V.disc.map(d => d.grupo).filter(Boolean))];
+      const somaG = grupos.map(qGrupo).filter(x => x != null);
+      const semG = V.disc.filter(d => !d.grupo || qGrupo(d.grupo) == null).map(qDisc).filter(x => x != null);
+      const tot = somaG.reduce((a, b) => a + b, 0) + semG.reduce((a, b) => a + b, 0);
+      if (tot) res.appendChild(el("div","vtTotQ", "Prova objetiva: " + tot + " questões" +
+        (grupos.length ? "  ·  " + grupos.map(g => g.replace(/^(GRUPO|BLOCO)\s+/i, "$1 ") + (qGrupo(g) != null ? ": " + qGrupo(g) : "")).join("  ·  ") : "")));
+    }
     const barras = el("div","vtBarras");
     res.appendChild(barras);
     corpo.appendChild(res);
@@ -22439,8 +22660,17 @@ function janelaVerticalizar(num){
       document.removeEventListener("keydown", tecla);
       irParaModulo("cCont", "mat_" + k + "_" + id);
     };
+    let grupoCab = null;
     lista.forEach(({ d, gav }) => {
       const di = d.nome;
+      // ordem do edital: faixa do grupo (GRUPO I, CONHECIMENTOS GERAIS...) antes das disciplinas dele
+      if (!peloCont && (d.grupo || "") !== (grupoCab || "") && d.grupo){
+        grupoCab = d.grupo;
+        const fx = el("div","vtGrupoFaixa");
+        fx.appendChild(el("span","vtGrupoNome", d.grupo));
+        fx.appendChild(chipQ(qGrupo(d.grupo), "g:" + vtChaveGrupo(d.grupo), d.grupo, "claro"));
+        corpo.appendChild(fx);
+      }
       const bl = el("div","vtDisc" + (fechados.has(di) ? " fechada" : ""));
       const cab = el("button","vtCab");
       cab.appendChild(el("span","vtSeta","▾"));
@@ -22452,6 +22682,8 @@ function janelaVerticalizar(num){
         (peloCont ? "  (sem matéria correspondente no conteúdo)" : "")));
       const matsD = [].concat(...gav.map(g => g.mats));
       const ligPai = {};      // n -> seção ligada (para não repetir nos subtópicos)
+      if (peloCont && d.grupo) cab.appendChild(el("span","vtGrupoTag", d.grupo));
+      cab.appendChild(chipQ(qDisc(d), "d:" + d.nome, d.nome));
       const cont = el("span","vtCont");
       contDisc.push([d, cont]);
       cab.appendChild(cont);
@@ -22473,20 +22705,30 @@ function janelaVerticalizar(num){
         const doN = {};
         ordem.forEach(x => {
           // a seção do tópico de cima (5 para o 5.3, 5.3 para o 5.3.1...)
-          let doPai = "";
+          let doPai = "", temPai = false;
           if (x.it.n){
             const pt = x.it.n.split(".");
+            temPai = pt.length > 1 && (pt.slice(0, -1).join(".") in doN);
             for (let j = pt.length - 1; j > 0 && !doPai; j--) doPai = doN[pt.slice(0, j).join(".")] || "";
           }
-          let ef = "";
-          // o subtópico fica com o tópico de cima se a seção dele também trata do assunto
-          if (doPai){
+          // o subtópico fica com o tópico de cima, a não ser que outra seção trate dele
+          // claramente melhor (todas as palavras dele num assunto de lá)
+          const sec = vtSecaoDe(x.it.t, matsD);
+          let ef = sec ? sec.k + ":" + sec.id : "";
+          // tópico de cima sem seção no conteúdo: o subtópico só sai dali se casar em cheio
+          if (temPai && !doPai && sec && !vtCobreTudo(x.it.t, sec.k, sec.id)) ef = "";
+          const nPal = new Set(vtPalavras(x.it.t)).size;
+          if (doPai && ef !== doPai && nPal <= 1) ef = doPai;           // "Conceito", "Natureza"...
+          if (doPai && ef !== doPai && nPal === 2){                      // "Espécies e classificação"
             const c = doPai.indexOf(":");
             if (vtSecaoFala(x.it.t, doPai.slice(0, c), doPai.slice(c + 1))) ef = doPai;
           }
-          if (!ef){
-            const sec = vtSecaoDe(x.it.t, matsD);
-            ef = sec ? sec.k + ":" + sec.id : doPai;
+          if (doPai && ef !== doPai){
+            const c = doPai.indexOf(":");
+            const notaPai = vtNotaNaSecao(x.it.t, doPai.slice(0, c), doPai.slice(c + 1));
+            const notaSua = sec ? vtNotaNaSecao(x.it.t, sec.k, sec.id) : 0;
+            const forte = sec && vtCobreTudo(x.it.t, sec.k, sec.id);
+            if (!sec || (notaPai > 0 && !(forte && notaPai < notaSua * .8))) ef = doPai;
           }
           if (x.it.n) doN[x.it.n] = ef;
           x.g = ef;
@@ -22652,6 +22894,180 @@ function janelaVerticalizar(num){
   if (c.vert && c.vert.disc && c.vert.disc.length) mostrar(); else colar();
 }
 
+/* ===================== ler o edital inteiro =====================
+   Você cola (ou anexa em PDF/TXT) o edital completo e o app tira dele o que
+   der: nome, UF, cargo, banca, estilo, nº de questões, tempo das provas, link,
+   o conteúdo programático (vira o edital verticalizado), o quadro de provas
+   (nº de questões por grupo/disciplina) e o cronograma (Anexo).            */
+const ED_UF = { "acre":"AC","alagoas":"AL","amapa":"AP","amazonas":"AM","bahia":"BA","ceara":"CE",
+  "distrito federal":"DF","espirito santo":"ES","goias":"GO","maranhao":"MA","mato grosso do sul":"MS",
+  "mato grosso":"MT","minas gerais":"MG","para":"PA","paraiba":"PB","parana":"PR","pernambuco":"PE",
+  "piaui":"PI","rio de janeiro":"RJ","rio grande do norte":"RN","rio grande do sul":"RS","rondonia":"RO",
+  "roraima":"RR","santa catarina":"SC","sao paulo":"SP","sergipe":"SE","tocantins":"TO" };
+const ED_BANCAS = [["Cebraspe",/cebraspe|\bcespe\b/gi],["FGV",/funda[cç][aã]o getulio vargas|\bFGV\b/g],
+  ["FCC",/funda[cç][aã]o carlos chagas|\bFCC\b/g],["Vunesp",/vunesp/gi],["Cesgranrio",/cesgranrio/gi],
+  ["IADES",/\bIADES\b/g],["Quadrix",/quadrix/gi],["IBFC",/\bIBFC\b/g],["AOCP",/\bAOCP\b/g],
+  ["Consulplan",/consulplan/gi],["Fundatec",/fundatec/gi],["IDECAN",/idecan/gi]];
+function edTitulo(s){
+  const peq = new Set(["de","da","do","das","dos","e","em","a","o","para"]);
+  return String(s).toLowerCase().split(/(\s+)/).map((w, i) =>
+    /^\s+$/.test(w) || (i && peq.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join("")
+    .replace(/\b(i|ii|iii|iv|v|vi)\b/gi, x => x.toUpperCase());
+}
+function edHoras(t, qual){
+  const m = t.match(new RegExp("prova\\s+" + qual + "[^.]{0,60}?dura[çc][ãa]o\\s+de\\s+(\\d{1,2})\\s*h(?:oras?)?(?:\\s*e\\s*(\\d{1,2})\\s*min)?", "i"));
+  return m ? m[1] + ":" + String(m[2] || "0").padStart(2, "0") : "";
+}
+function lerEditalCompleto(txt){
+  const bruto = String(txt || "").replace(/\r/g, "");
+  const linhas = bruto.split("\n");
+  const plano = bruto.replace(/\s+/g, " ");
+  const cab = linhas.slice(0, 40).join("\n");
+  const R = {};
+  // nome: sigla do órgão + ano do edital
+  const lEd = cab.match(/EDITAL\s+N[ºo°.]*\s*\d+[^\n]*/i);
+  let sigla = lEd && (lEd[0].match(/[–—-]\s*([A-Z][A-Z0-9]{1,11}(?:\/[A-Z]{2})?)\b/) || [])[1];
+  if (!sigla){
+    const sig = [...cab.matchAll(/\(([A-Z][A-Z0-9]{1,11})\)/g)].map(m => m[1]).filter(x => !/^SE|^SEC/.test(x));
+    sigla = sig[sig.length - 1];
+  }
+  const ano = ((lEd && lEd[0].match(/(20\d\d)/)) || cab.match(/\b(20\d\d)\b/) || [])[1];
+  if (sigla) R.nome = sigla + (ano ? " " + ano : "");
+  // UF: nome do estado no cabeçalho
+  const cabN = vtNorm(cab);
+  let pos = 1e9;
+  Object.keys(ED_UF).forEach(e => { const i = cabN.search(new RegExp("\\b" + e + "\\b")); if (i >= 0 && i < pos){ pos = i; R.uf = ED_UF[e]; } });
+  // cargo
+  const mc = cab.match(/\bCARGOS?\s+DE\s+([^\n]{3,90})/i);
+  if (mc) R.cargo = edTitulo(mc[1].replace(/\s+/g, " ").trim().replace(/[.;,]+$/, ""));
+  // banca: a que mais aparece
+  let melhor = 0;
+  ED_BANCAS.forEach(([nome, re]) => { const n = (plano.match(re) || []).length; if (n > melhor){ melhor = n; R.banca = nome; } });
+  // estilo: pelo que o edital diz das questões; só sem nada escrito vale o costume da banca
+  const multipla = /m[uú]ltipla\s+escolha|(?:cinco|quatro)\s+(?:op[cç][õo]es|alternativas)|op[cç][õo]es\s*\(\s*A\s*,\s*B/i.test(plano);
+  const certo = /certo\s+ou\s+errado|\bCERTO\b.{0,60}\bERRADO\b|julgamento\s+de\s+itens|itens\s+para\s+julgamento|julgue\s+os\s+itens/i.test(plano);
+  if (multipla && certo) R.estilo = "Misto";
+  else if (multipla) R.estilo = "Múltipla escolha";
+  else if (certo) R.estilo = "Certo/Errado";
+  else if (R.banca) R.estilo = R.banca === "Cebraspe" ? "Certo/Errado" : "Múltipla escolha";
+  // provas e tempos
+  R.temObj = /prova\s+objetiva/i.test(plano);
+  R.temDis = /prova\s+discursiva/i.test(plano);
+  R.tempoObj = edHoras(plano, "objetiva");
+  R.tempoDis = edHoras(plano, "discursiva");
+  // link: o endereço que mais aparece
+  const urls = {};
+  (plano.match(/https?:\/\/[^\s,;)]+/g) || []).forEach(u => { u = u.replace(/[.]+$/, ""); urls[u] = (urls[u] || 0) + 1; });
+  const uOrd = Object.keys(urls).sort((a, b) => urls[b] - urls[a]);
+  if (uOrd.length) R.link = uOrd[0];
+  // conteúdo programático: do título "OBJETOS DE AVALIAÇÃO"/"CONTEÚDO PROGRAMÁTICO" até o próximo ANEXO
+  const ehTit = l => l === l.toUpperCase() && /OBJETOS\s+DE\s+AVALIA|CONTE[ÚU]DOS?\s+PROGRAM[ÁA]TICOS?|CONHECIMENTOS\s+(?:B[ÁA]SICOS|GERAIS|ESPEC[ÍI]FICOS)/.test(l);
+  let ini = linhas.findIndex(l => ehTit(l.trim()));
+  if (ini >= 0){
+    let fim = linhas.findIndex((l, i) => i > ini && /^\s*ANEXO\b/.test(l));
+    if (fim < 0) fim = linhas.length;
+    R.conteudo = linhas.slice(ini + 1, fim).join("\n");
+  }
+  // quadro de provas: o trecho logo depois de "NÚMERO DE QUESTÕES/ITENS"
+  const iq = plano.search(/N[ÚU]MERO\s+DE\s+(?:QUEST[ÕO]ES|ITENS)/i);
+  if (iq >= 0) R.quadro = plano.slice(iq, iq + 2500);
+  // cronograma: o anexo que traz "CRONOGRAMA"
+  const ic = linhas.findIndex(l => /^\s*(?:ANEXO\b.*)?CRONOGRAMA/i.test(l.trim()) && l.trim() === l.trim().toUpperCase());
+  if (ic >= 0){
+    let fc = linhas.findIndex((l, i) => i > ic + 1 && /^\s*ANEXO\b/.test(l));
+    if (fc < 0) fc = Math.min(linhas.length, ic + 200);
+    R.crono = linhas.slice(ic + 1, fc).join("\n");
+  }
+  // verticalizado + nº de questões
+  if (R.conteudo){
+    const v = vertLer(R.conteudo);
+    if (v.disc.length){
+      R.vert = { texto: R.conteudo, titulo: v.titulo, disc: v.disc, marcas: {}, ver: VT_VER,
+                 em: new Date().toISOString().slice(0, 10) };
+      if (R.quadro){
+        R.vert.quadro = R.quadro;
+        R.vert.qtd = vtQuestoes(R.quadro, v.disc);
+        const qg = Object.values(R.vert.qtd.grupo), qd = Object.values(R.vert.qtd.disc);
+        const tot = (qg.length ? qg : qd).reduce((a, b) => a + b, 0);
+        if (tot) R.questoes = tot;
+      }
+      // matérias da sua lista que caem (objetiva) e as dos grupos da discursiva
+      const gav = vtGavetas(), mats = d => {
+        const out = new Set();
+        vtGavetasDe(d.nome, gav).forEach(g => g.mats.forEach(k => { const v2 = matVinculo(k); if (v2) out.add(v2); }));
+        // matéria da sua lista sem caderno de conteúdo (ex.: Direito Agrário): pelo nome
+        if (!out.size){
+          const pd = vtPalavrasNome(d.nome);
+          DB.materias.forEach(m => { const pm = vtPalavrasNome(m); if (pm.length && pm.every(w => pd.indexOf(w) >= 0)) out.add(m); });
+        }
+        return [...out];
+      };
+      const setO = new Set(), setD = new Set();
+      v.disc.forEach(d => mats(d).forEach(m => setO.add(m)));
+      const md = (R.quadro || "").match(/discursiva[^]{0,80}?Grupos?\s+((?:[IVX]+|\d+)(?:\s*(?:,|e)\s*(?:[IVX]+|\d+))*)/i);
+      if (md){
+        const gs = md[1].split(/\s*(?:,|e)\s*/).map(g => g.trim().toUpperCase());
+        v.disc.filter(d => d.grupo && gs.some(g => new RegExp("\\b" + g + "$").test(d.grupo.toUpperCase())))
+          .forEach(d => mats(d).forEach(m => setD.add(m)));
+      }
+      R.matO = DB.materias.filter(m => setO.has(m));
+      R.matD = DB.materias.filter(m => setD.has(m));
+    }
+  }
+  return R;
+}
+// põe no cronograma do concurso as datas achadas no texto do anexo; devolve quantas
+function cronoAplicarTexto(c, txt){
+  const validas = new Set(etapasDe(c).map(p => p.id));
+  const feitas = new Set(), dados = cronogramaDe(c.num);
+  cronoMapearEdital(txt).forEach(l => l.etapas.forEach(id => {
+    if (!validas.has(id) || feitas.has(id)) return;
+    const p = CRONO_PROVA.find(x => x.id === id);
+    if (p.tipo === "prova") c[p.campoData] = l.ini;
+    else dados[id] = { ini: l.ini, fim: p.tipo === "periodo" ? l.fim : "" };
+    feitas.add(id);
+  }));
+  return feitas.size;
+}
+// PDF ou TXT -> texto (o PDF é lido com o pdf.js, baixado só quando precisa)
+let edPdfJs = null;
+function edCarregarPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (edPdfJs) return edPdfJs;
+  edPdfJs = new Promise((ok, falhou) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      ok(window.pdfjsLib);
+    };
+    s.onerror = () => { edPdfJs = null; falhou(new Error("não consegui carregar o leitor de PDF (sem internet?)")); };
+    document.head.appendChild(s);
+  });
+  return edPdfJs;
+}
+async function edLerArquivo(arq){
+  if (!/\.pdf$/i.test(arq.name) && arq.type !== "application/pdf") return await arq.text();
+  const lib = await edCarregarPdfJs();
+  const pdf = await lib.getDocument({ data: await arq.arrayBuffer() }).promise;
+  let out = "";
+  for (let p = 1; p <= pdf.numPages; p++){
+    const pg = await pdf.getPage(p);
+    const tc = await pg.getTextContent();
+    let y = null;
+    tc.items.forEach(it => {
+      const yy = it.transform ? Math.round(it.transform[5]) : y;
+      if (y !== null && yy !== y && !out.endsWith("\n")) out += "\n";
+      out += it.str;
+      if (it.hasEOL) out += "\n";
+      y = yy;
+    });
+    out += "\n";
+  }
+  return out;
+}
+
 /* ===================== janela: novo concurso =====================
    Os campos do cadastro, na mesma ordem das colunas da tabela. Nenhum é
    obrigatório: em branco aqui é célula em branco lá, como no Excel.
@@ -22686,6 +23102,77 @@ function janelaNovoConcurso(){
   cx.appendChild(el("div","modalSub",
     "Responda o que souber agora. O que ficar em branco você preenche depois, direto na tabela. " +
     "As datas das provas são digitadas no 🗓 Cronograma da prova."));
+  // ---- preencher tudo a partir do edital (colado ou anexado) ----
+  let doEdital = null;
+  const edBox = el("div","edBox");
+  const edBt = el("button","btn azulzinho edAbrir","📋  Preencher pelo edital (colar ou anexar)");
+  edBox.appendChild(edBt);
+  const edPainel = el("div","edPainel");
+  edPainel.style.display = "none";
+  edPainel.appendChild(el("div","edDica",
+    "Cole o edital inteiro (Ctrl+A no PDF, Ctrl+C, Ctrl+V aqui) ou anexe o arquivo. O app preenche os campos abaixo, " +
+    "monta o edital verticalizado (com grupos e nº de questões) e o cronograma. Confira antes de criar."));
+  const edTa = document.createElement("textarea");
+  edTa.className = "edTxt"; edTa.placeholder = "Cole aqui o texto do edital...";
+  edPainel.appendChild(edTa);
+  const edLinha = el("div","edLinha");
+  const edArq = document.createElement("input");
+  edArq.type = "file"; edArq.accept = ".pdf,.txt,application/pdf,text/plain"; edArq.style.display = "none";
+  const edAnexar = el("button","btn","📎  Anexar PDF ou TXT");
+  edAnexar.onclick = () => edArq.click();
+  const edLer = el("button","btn azulzinho","🔎  Ler o edital");
+  edLinha.appendChild(edAnexar); edLinha.appendChild(edArq); edLinha.appendChild(edLer);
+  edPainel.appendChild(edLinha);
+  const edRes = el("div","edRes");
+  edPainel.appendChild(edRes);
+  edBox.appendChild(edPainel);
+  cx.appendChild(edBox);
+  edBt.onclick = () => { edPainel.style.display = edPainel.style.display === "none" ? "" : "none"; if (edPainel.style.display === "") edTa.focus(); };
+  edArq.onchange = async () => {
+    const f = edArq.files && edArq.files[0]; if (!f) return;
+    edRes.textContent = "Lendo " + f.name + "...";
+    try { edTa.value = await edLerArquivo(f); lerEd(); }
+    catch (e){ edRes.textContent = "Não consegui ler o arquivo: " + (e.message || e) + ". Tente colar o texto."; }
+    edArq.value = "";
+  };
+  edTa.addEventListener("paste", () => setTimeout(lerEd, 0));
+  edLer.onclick = () => lerEd();
+  function lerEd(){
+    const R = lerEditalCompleto(edTa.value);
+    const achou = [];
+    const por = (k, val, rot) => {
+      if (val == null || val === "") return;
+      const e = entradas[k];
+      if (e.tagName === "SELECT" && ![...e.options].some(o => o.value === val)){
+        const op = document.createElement("option"); op.value = val; op.textContent = val; e.appendChild(op);
+      }
+      e.value = val; achou.push(rot + ": " + val);
+    };
+    por("nome", R.nome, "Nome"); por("uf", R.uf, "UF"); por("cargo", R.cargo, "Cargo");
+    por("banca", R.banca, "Banca"); por("estilo", R.estilo, "Estilo");
+    if (R.temObj || R.temDis){ entradas.temObj.checked = !!R.temObj; entradas.temDis.checked = !!R.temDis; pintarProvas(); }
+    por("questoes", R.questoes, "Questões da objetiva");
+    por("tempoObj", R.tempoObj, "Tempo da objetiva"); por("tempoDis", R.tempoDis, "Tempo da discursiva");
+    doEdital = R;
+    edRes.innerHTML = "";
+    if (!edTa.value.trim()){ return; }
+    const ul = el("ul","edLista");
+    achou.forEach(a => ul.appendChild(el("li", null, a)));
+    if (R.link) ul.appendChild(el("li", null, "Link do edital: " + R.link));
+    if (R.vert){
+      const gs = [...new Set(R.vert.disc.map(d => d.grupo).filter(Boolean))];
+      ul.appendChild(el("li", null, "Edital verticalizado: " + R.vert.disc.length + " disciplinas, " +
+        R.vert.disc.reduce((t, d) => t + d.itens.length, 0) + " itens" + (gs.length ? " em " + gs.length + " grupos" : "")));
+    }
+    if (R.matO && R.matO.length) ul.appendChild(el("li", null, "Matérias da objetiva: " + R.matO.length +
+      (R.matD && R.matD.length ? " · da discursiva: " + R.matD.length : "")));
+    if (R.crono){
+      const n = cronoMapearEdital(R.crono).filter(l => l.etapas.length).length;
+      ul.appendChild(el("li", null, "Cronograma: " + n + " etapa(s) com data"));
+    }
+    edRes.appendChild(el("div","edResTit", ul.children.length ? "Encontrei no edital:" : "Não achei as informações no texto."));
+    edRes.appendChild(ul);
+  }
   const grade = el("div","modalGrade");
   const entradas = {};
   const linhas = {};
@@ -22744,7 +23231,7 @@ function janelaNovoConcurso(){
   const fechar = () => { document.body.removeChild(fundo); document.removeEventListener("keydown", tecla); };
   const tecla = ev => {
     if (ev.key === "Escape") fechar();
-    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON"
+    if (ev.key === "Enter" && ev.target.tagName !== "BUTTON" && ev.target.tagName !== "TEXTAREA"
         && !ev.target.isContentEditable) confirmar();
   };
   document.addEventListener("keydown", tecla);
@@ -22774,7 +23261,16 @@ function janelaNovoConcurso(){
       obs:"", matO:[], matD:[], corteObj:null, corteDis:null, qProva:null, nPecas:null
     };
     aplicarProvasDoConcurso(novo);
+    // o que veio do edital: link, matérias, verticalizado e cronograma
+    let nCrono = 0;
+    if (doEdital){
+      if (doEdital.link) novo.edital = doEdital.link;
+      if (doEdital.matO && novo.temObj) novo.matO = doEdital.matO.slice();
+      if (doEdital.matD && novo.temDis) novo.matD = doEdital.matD.slice();
+      if (doEdital.vert) novo.vert = doEdital.vert;
+    }
     DB.concursos.push(novo);
+    if (doEdital && doEdital.crono){ garantirCronogramas(); nCrono = cronoAplicarTexto(novo, doEdital.crono); }
     fechar(); salvar(); render();
   }
   criar.onclick = confirmar;
