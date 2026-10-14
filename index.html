@@ -22056,6 +22056,7 @@ function telaCadastro(){
    (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
    numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
    não quebram o texto no lugar errado.                              */
+const VT_VER = 2;           // versão do leitor: subiu, os editais já colados são relidos
 function vertLer(txt){
   const MAI = "A-ZÀ-ÖØ-Þ";
   const linhas = String(txt || "").replace(/\r/g, "").split("\n");
@@ -22077,12 +22078,14 @@ function vertLer(txt){
     .replace(/\s+/g, " ").trim();
   const disc = blocos.map(b => {
     const s = juntar(b.txt);
-    const re = /(^|[\s.;:])(\d{1,3}(?:\.\d{1,3})*)\.?\s+(?=[\p{L}(“"'«])/gu;
+    // número + espaço + texto, ou número grudado numa maiúscula ("7Lei nº...", comum em PDF)
+    const re = /(^|[\s.;:)])(\d{1,3}(?:\.\d{1,3})*)(?:\.?\s+(?=[\p{L}(“"'«])|(?=\p{Lu}))/gu;
     const cands = []; let m;
     while ((m = re.exec(s))){
-      cands.push({ ini: m.index + m[1].length, fim: m.index + m[0].length,
-                   n: m[2].split(".").map(Number) });
-      re.lastIndex = m.index + m[0].length - 1 > m.index ? m.index + m[0].length : m.index + 1;
+      const fim = m.index + m[0].length;
+      cands.push({ ini: m.index + m[1].length, fim, n: m[2].split(".").map(Number),
+                   mai: /\p{Lu}/u.test(s.charAt(fim)) });
+      re.lastIndex = fim > m.index ? fim : m.index + 1;
     }
     const segue = (a, b) => {           // b continua a numeração de a?
       if (!a) return b.length === 1 && b[0] === 1;
@@ -22092,8 +22095,22 @@ function vertLer(txt){
       for (let i = 0; i < b.length - 1; i++) if (b[i] !== a[i]) return false;
       return b[b.length - 1] === a[b.length - 1] + 1;            // irmão / tio
     };
+    // o edital pulou um número (erro de digitação): aceita o seguinte se começar com maiúscula
+    const pulou = (a, b) => {
+      if (!a || b.length > a.length) return false;
+      for (let i = 0; i < b.length - 1; i++) if (b[i] !== a[i]) return false;
+      return b[b.length - 1] === a[b.length - 1] + 2;
+    };
     const aceitos = []; let ant = null;
-    cands.forEach(c => { if (segue(ant, c.n)){ aceitos.push(c); ant = c.n; } });
+    cands.forEach((c, i) => {
+      let ok = segue(ant, c.n);
+      // só aceita o pulo se o número esperado não aparecer logo adiante
+      if (!ok && c.mai && pulou(ant, c.n)){
+        const esperado = ant.slice(0, c.n.length); esperado[c.n.length - 1]++;
+        ok = !cands.slice(i + 1, i + 40).some(x => x.n.join(".") === esperado.join("."));
+      }
+      if (ok){ aceitos.push(c); ant = c.n; }
+    });
     const itens = aceitos.map((c, i) => {
       const fim = i + 1 < aceitos.length ? aceitos[i + 1].ini : s.length;
       return { n: c.n.join("."), nivel: c.n.length,
@@ -22234,8 +22251,11 @@ function janelaVerticalizar(num){
       const r = ler();
       if (!r.disc.length){ alert("Não achei nenhum conteúdo para verticalizar."); return; }
       const marcas = (c.vert && c.vert.marcas) || {};
-      c.vert = { texto: ta.value, titulo: r.titulo, disc: r.disc, marcas,
+      const ant = c.vert || {};
+      c.vert = { texto: ta.value, titulo: r.titulo, disc: r.disc, marcas, ver: VT_VER,
                  em: new Date().toISOString().slice(0, 10) };
+      if (ant.rec) c.vert.rec = ant.rec;
+      if (ant.modo) c.vert.modo = ant.modo;
       salvar(); mostrar();
     };
     const bNao = el("button","btn", c.vert ? "Voltar" : "Cancelar");
@@ -22446,6 +22466,11 @@ function janelaVerticalizar(num){
     rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bOrg); rodape.appendChild(bSubs); rodape.appendChild(bTodas);
     const bF = el("button","btn azulzinho","Fechar"); bF.onclick = sair;
     rodape.appendChild(bF);
+  }
+  // verticalizado com uma versão antiga do leitor: lê de novo o mesmo texto (as marcações ficam)
+  if (c.vert && c.vert.texto && c.vert.ver !== VT_VER){
+    const r = vertLer(c.vert.texto);
+    if (r.disc.length){ c.vert.disc = r.disc; c.vert.titulo = r.titulo; c.vert.ver = VT_VER; salvar(); }
   }
   if (c.vert && c.vert.disc && c.vert.disc.length) mostrar(); else colar();
 }
