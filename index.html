@@ -362,6 +362,9 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtLink::before{content:"\1F4D6";font-size:10px}
 .vtLink:hover{background:#e3ecf9;border-color:#9fb8e0}
 .vtLinkN{font-weight:bold;white-space:nowrap}
+.vtLink.vtOutra{border-color:#ecd9a6;background:#fdf7e6;color:#7a5a12}
+.vtLink.vtOutra:hover{background:#faefcf;border-color:#d9bf75}
+.vtOutraRot{font-style:italic;white-space:nowrap}
 .vtTab tr.vtGrupo td{background:#eef3fb;padding:5px 8px;border-top:2px solid #c9d6ea}
 .vtTab tr.vtGrupo.vtSemSec td{background:#f4f4f4;border-top-color:#d8d8d8;color:#7a7a7a;
   font:italic bold 11.5px Arial,Helvetica,sans-serif}
@@ -22390,6 +22393,19 @@ const VT_ARVORE = {
   "tribleg:sec1": "Reforma Tributária|Imposto sobre Bens e Serviços - IBS|Contribuição sobre Bens e Serviços - CBS|Comitê Gestor do IBS|Imposto Seletivo - IS",
   "tribleg:sec3": "Imposto sobre Serviços - ISS",
   "tribleg:sec4": "Lei de Execução Fiscal|Execução fiscal|Exceção de pré-executividade|Embargos do executado|Direito Processual Tributário",
+  "pcivil:01": "Introdução: Teorias, Histórico, Natureza e Conceito do Processo Civil|Normas Fundamentais e Aplicação das Normas Processuais|" +
+    "Aplicação das Normas Processuais|Princípios Processuais Civis|Normas processuais civis|Lei processual civil no tempo e no espaço",
+  "pcivil:02": "Da Função Jurisdicional|Da Jurisdição|Da Ação|Condições da ação|Elementos da ação|" +
+    "Dos Limites da Jurisdição Nacional e da Cooperação Internacional|Da Competência Interna|Competência|Modificação da competência|Conexão e continência",
+  "pcivil:03": "Dos Sujeitos do Processo|Das Partes e dos Procuradores|Da Capacidade Processual|Dos Deveres das Partes e de seus Procuradores|" +
+    "Despesas, honorários advocatícios e multas|Gratuidade da justiça|Dos Procuradores|Da Sucessão das Partes e dos Procuradores|Do Litisconsórcio|" +
+    "Da Intervenção de Terceiros|Assistência|Denunciação da lide|Chamamento ao processo|Incidente de desconsideração da personalidade jurídica|Amicus curiae|" +
+    "Do Juiz e dos Auxiliares da Justiça|Dos Poderes, dos Deveres e da Responsabilidade do Juiz|Dos Impedimentos e da Suspeição|" +
+    "Dos Auxiliares da Justiça|Do Ministério Público|Da Advocacia Pública|Da Defensoria Pública",
+  "pcivil:04": "Dos Atos Processuais|Da Forma, do Tempo e do Lugar dos Atos Processuais|Da Forma dos Atos Processuais|Negócio jurídico processual|" +
+    "Do Tempo e Do Lugar dos Atos Processuais|Dos Prazos|Da Comunicação dos Atos Processuais|Da Citação|Das Cartas|Das Intimações|" +
+    "Das Nulidades|Da Distribuição e do Registro|Do Valor da Causa",
+  "pcivil:05": "Da Tutela Provisória|Tutela de urgência|Tutela antecipada|Tutela cautelar|Tutela de evidência|Estabilização da tutela",
   "emp:cap1": "Direito Empresarial: Conceito, Autonomia, Fontes, Princípios, Histórico|Origem; evolução histórica; autonomia; fontes; características",
   "emp:cap2": "Direito de Empresa|Do Empresário|Do Empresário: da Caracterização e da Inscrição|Do Empresário: da Capacidade|Do Estabelecimento|Dos Institutos Complementares|Do Registro|Do Nome Empresarial|Dos Prepostos|Da Escrituração|Estabelecimento empresarial",
   "emp:cap3": "Da Sociedade|Sociedade: Conceito, Classificação e Disposições Gerais|Sociedades Não Personificadas|Sociedade em Comum|Sociedade em Conta de Participação|Sociedade Personificada|Sociedade Simples|Sociedade em Nome Coletivo|Sociedade em Comandita Simples|Sociedade Cooperativa|Da Sociedade Dependente de Autorização - Nacional e Estrangeira|Operações Societárias|Sociedades Coligadas, Controladas, Filiadas|Teoria geral do direito societário|Responsabilidade dos sócios",
@@ -22469,6 +22485,31 @@ function vtCobreTudo(texto, k, id){
   const s = MATS[k] && MATS[k].secoes.find(x => x.id === id);
   const pt = [...new Set(vtPalavras(texto))];
   return !!(s && pt.length && vtAssuntos(k, s).some(f => { const pf = vtPalavras(f); return pt.every(w => pf.indexOf(w) >= 0); }));
+}
+/* tópico que é uma lei cujo conteúdo está noutra matéria (ex.: "Lei 11.343/2006" em
+   Direito Penal, mas a Lei de Drogas está em Legislação Penal): devolve a seção de lá.
+   Só para lei (pelo número ou pelo nome: "Lei Maria da Penha", "Estatuto do Desarmamento"). */
+function vtOutraMat(texto, matsD){
+  // "... e altera a Lei nº 6.404" não quer dizer que o tópico é a 6.404
+  texto = String(texto).split(/\b(?:e\s+)?alter(?:a|ou|am|aram)\b/i)[0];
+  const leis = vtLeis(texto);
+  const outras = MAT_ORDEM.filter(k => MATS[k] && (matsD || []).indexOf(k) < 0);
+  if (!outras.length) return null;
+  if (leis.length){
+    if (matsD && matsD.length && vtSecaoDe1(texto, matsD)) return null;   // a própria matéria tem
+    return vtSecaoDe1(texto, outras);
+  }
+  // sem número: só se o tópico for o nome de uma lei e couber inteiro numa seção de lá
+  const nome = /(lei|estatuto|c[oó]digo|decreto)/i.exec(texto);
+  if (!nome || String(texto).length > 90 || new Set(vtPalavras(texto)).size < 2) return null;
+  const doNome = String(texto).slice(nome.index).split(/[.;:(]/)[0];
+  if (new Set(vtPalavras(doNome)).size < 2) return null;
+  if (matsD && matsD.length){
+    const p = vtSecaoDe1(doNome, matsD);
+    if (p && vtCobreTudo(doNome, p.k, p.id)) return null;
+  }
+  const r = vtSecaoDe1(doNome, outras);
+  return r && vtCobreTudo(doNome, r.k, r.id) ? r : null;
 }
 // quanto o subtópico combina com uma seção (sem exigir mínimo): 0 = nada em comum
 function vtNotaNaSecao(texto, k, id){
@@ -22842,6 +22883,20 @@ function janelaVerticalizar(num){
             lk.appendChild(el("span","vtLinkT", sec.t));
             lk.title = "Abrir no Caderno de conteúdo: " + (M2.pai || M2.rot) + "  ·  " + sec.pos + ". " + sec.t;
             lk.onclick = () => irPara(sec.k, sec.id);
+            tdA.appendChild(lk);
+          }
+        }
+        // lei que está noutra matéria: aviso + link para lá
+        {
+          const ou = vtOutraMat(it.t, matsD);
+          if (ou){
+            const M3 = MATS[ou.k];
+            const lk = el("button","vtLink vtOutra");
+            lk.appendChild(el("span","vtOutraRot","Está em outra matéria:"));
+            lk.appendChild(el("span","vtLinkN", (M3.pai || M3.rot) + (M3.sub ? "  ·  " + M3.sub.replace(/^\d+\s*-\s*/, "") : "") + "  ·  " + ou.pos + "."));
+            lk.appendChild(el("span","vtLinkT", ou.t));
+            lk.title = "Abrir no Caderno de conteúdo: " + (M3.pai || M3.rot) + "  ·  " + ou.pos + ". " + ou.t;
+            lk.onclick = () => irPara(ou.k, ou.id);
             tdA.appendChild(lk);
           }
         }
