@@ -335,6 +335,15 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtLink::before{content:"\1F4D6";font-size:10px}
 .vtLink:hover{background:#e3ecf9;border-color:#9fb8e0}
 .vtLinkN{font-weight:bold;white-space:nowrap}
+.vtTab tr.vtGrupo td{background:#eef3fb;padding:5px 8px;border-top:2px solid #c9d6ea}
+.vtTab tr.vtGrupo.vtSemSec td{background:#f4f4f4;border-top-color:#d8d8d8;color:#7a7a7a;
+  font:italic bold 11.5px Arial,Helvetica,sans-serif}
+.vtGrupoBt{display:flex;align-items:baseline;gap:6px;max-width:100%;border:0;background:none;padding:0;
+  cursor:pointer;color:#1F3864;font:bold 12px Arial,Helvetica,sans-serif;text-align:left}
+.vtGrupoBt::before{content:"\1F4D6";font-size:11px}
+.vtGrupoBt:hover .vtGrupoT{text-decoration:underline}
+.vtGrupoN{white-space:nowrap;color:#2F5597}
+.vtGrupoT{min-width:0}
 .vtLinkT{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .vtSub{height:16px;padding:0;border:0;background:none;cursor:pointer;color:#5a6a80;
   font-size:11px;line-height:16px;border-radius:3px;transition:transform .15s}
@@ -352,6 +361,10 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtCk{width:15px;height:15px;cursor:pointer;margin:0}
 .vtCk.vtT{accent-color:#2f7d4f} .vtCk.vtQ{accent-color:#2F5597} .vtCk.vtR{accent-color:#b7791f}
 .modal.vtModal .modalRodape{flex-wrap:wrap}
+.vtOrg{display:inline-flex;align-items:center;gap:5px;font:bold 11px Arial,Helvetica,sans-serif;color:#1F3864}
+.vtOrg select{max-width:250px;border:1px solid #3d5c82;border-radius:3px;padding:4px 6px;font:12px Arial,Helvetica,sans-serif;
+  background:#25405f;color:#dce6f2;cursor:pointer}
+.vtOrg.on select{background:#3a8fc4;border-color:#3a8fc4;color:#fff}
 @media(max-width:600px){
   .vtBarras{grid-template-columns:1fr}
   .vtN2 td.vtA{padding-left:12px} .vtN3 td.vtA{padding-left:22px} .vtN4 td.vtA{padding-left:30px}
@@ -22133,9 +22146,20 @@ const VT_VAZIAS = new Set(("de da do das dos e em a o as os no na nos nas para p
 function vtNorm(s){
   return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
+// singular/plural no mesmo radical: constitucionais → constitucional, ações → ação, bens → bem...
+function vtRaiz(w){
+  if (w.length <= 4) return w;
+  if (/ais$/.test(w)) return w.slice(0, -2) + "l";
+  if (/eis$/.test(w)) return w.slice(0, -2) + "l";
+  if (/(oes|aes)$/.test(w)) return w.slice(0, -3) + "ao";
+  if (/ns$/.test(w)) return w.slice(0, -2) + "m";
+  if (/s$/.test(w)) return w.slice(0, -1);
+  return w;
+}
 function vtPalavras(s){
   return vtNorm(s).replace(/^\s*\d+\s*-\s*/, "").split(/[^a-z0-9]+/)
-    .filter(w => w.length > 2 && !VT_VAZIAS.has(w) && !/^\d+$/.test(w));
+    .filter(w => w.length > 2 && !VT_VAZIAS.has(w) && !/^\d+$/.test(w))
+    .map(vtRaiz).filter(w => !VT_VAZIAS.has(w));
 }
 // números de lei: 11.340, 9.605, 3.688 (sem o ano)
 function vtLeis(s){
@@ -22172,14 +22196,94 @@ function vtGavetasDe(nomeDisc, gav){
   }
   return achadas;
 }
-/* a seção que trata do tópico: primeiro pelo número da lei, depois pelas palavras.
-   Palavra que aparece no título de várias seções (crimes, contra, pública...) vale pouco. */
+/* O que cada seção do conteúdo cobre "por trás" (a árvore de assuntos de onde o
+   material foi mastigado). Chave "matéria:seção"; assuntos separados por "|".
+   Um tópico do edital que case com qualquer desses assuntos vai para a seção. */
+const VT_ARVORE = {
+  "const:cap-0": "Teoria do Direito Constitucional|Teoria Geral do Direito Constitucional|Direito Constitucional: Conceito e Fontes. Estado, Povo, Território|" +
+    "Formas de Estado e Governo, Sistemas de Governo, Separação de Poderes. Freio e Contrapesos|Constitucionalismo e Neoconstitucionalismo|" +
+    "Princípios Constitucionais Sensíveis, Estabelecidos e Extensíveis|Histórico das Constituições no Brasil|" +
+    "Constituição: Conceito, Estrutura, Supremacia e Classificação|Eficácia das Normas Constitucionais|" +
+    "Poder Constituinte (Originário, Derivado, Reformador, Revisor, Decorrente)|" +
+    "Aplicação das Normas Constitucionais no Tempo (Recepção, Repristinação, Desconstitucionalização)|" +
+    "Métodos e Princípios de Interpretação das Normas Constitucionais|Simetria Constitucional",
+  "const:cap-1": "Dos Princípios Fundamentais da Constituição",
+  "const:cap-2": "Dos Direitos e Garantias Fundamentais|Características (Direitos Fundamentais)|Gerações de Direitos Fundamentais|" +
+    "Dos Direitos e Deveres Individuais e Coletivos|Remédios Constitucionais|Habeas Corpus|Mandado de Segurança|Mandado de Injunção|" +
+    "Habeas Data|Ação Popular|Dos Direitos Sociais|Direitos Sociais e dos Trabalhadores|Direitos Coletivos dos Trabalhadores|" +
+    "Da Nacionalidade|Espécies de Nacionalidade (Brasileiros Natos e Naturalizados)|Distinções Constitucionais entre Brasileiros Natos e Naturalizados|" +
+    "Perda da Nacionalidade|Extradição, Deportação, Expulsão e Banimento|Dos Símbolos e Idioma da República|Direitos Políticos|" +
+    "Soberania Popular (Voto, Plebiscito, Referendo, Iniciativa Popular), Alistamento e Elegibilidade|Inelegibilidades|" +
+    "Perda e Suspensão dos Direitos Políticos|Partidos Políticos",
+  "const:cap-3": "Da Organização do Estado|Da Organização Político-Administrativa|" +
+    "União: Bens e Competências Exclusivas, Privativas, Comuns e Concorrentes|Estados Federados - Organização, Competências, Bens|" +
+    "Municípios - Organização e Competências|Do Distrito Federal e dos Territórios|Intervenção Federal e Estadual|" +
+    "Administração Pública|Disposições Gerais (Administração Pública)|Dos Servidores Públicos|" +
+    "Dos Militares dos Estados, do Distrito Federal e dos Territórios|Das Regiões",
+  "const:cap-4": "Da Organização dos Poderes|Do Poder Legislativo|Do Congresso Nacional|Das Atribuições do Congresso Nacional|" +
+    "Da Câmara dos Deputados|Do Senado Federal|Dos Deputados e Senadores|Das Reuniões|" +
+    "Das Comissões Parlamentares - Permanentes e Temporárias|Comissões Parlamentares de Inquérito|Processo Legislativo|" +
+    "Da Emenda à Constituição|Leis Ordinárias e Complementares|Medidas Provisórias|Leis Delegadas|Resoluções e Decretos Legislativos|" +
+    "Fases do Processo Legislativo (Iniciativa, Discussão, Voto, Veto, Sanção, Promulgação e Publicação)|" +
+    "Da Fiscalização Contábil, Financeira e Orçamentária|Competências para Fiscalização e Tribunal de Contas da União|" +
+    "Sistema de Controle Interno|Tribunais de Contas Estaduais, Distrital e Municipais",
+  "const:cap-5": "Do Poder Executivo|Do Presidente e Vice Presidente da República|Das Atribuições do Presidente da República|" +
+    "Da Responsabilidade do Presidente da República|Dos Ministros de Estado|Do Conselho da República e Conselho da Defesa Nacional",
+  "const:cap-6": "Do Poder Judiciário|Das Disposições Gerais (Poder Judiciário)|Órgãos do Poder Judiciário|Do Estatuto da Magistratura|" +
+    "Do Quinto Constitucional|Das Garantias e Vedações (Poder Judiciário)|Competências Privativas (Poder Judiciário)|" +
+    "Reserva de Plenário|Juizados Especiais e Justiça de Paz|Autonomia Administrativa e Financeira (Poder Judiciário)|Dos Precatórios|" +
+    "Do Supremo Tribunal Federal - STF|Das Súmulas Vinculantes|Do Conselho Nacional de Justiça - CNJ|Do Superior Tribunal de Justiça - STJ|" +
+    "Dos Tribunais Regionais Federais e Juízes Federais|Dos Tribunais e Juízes do Trabalho|Dos Tribunais e Juízes Eleitorais|" +
+    "Dos Tribunais e Juízes Militares|Dos Tribunais e Juízes dos Estados",
+  "const:cap-7": "Funções Essenciais à Justiça|Ministério Público|Princípios Institucionais (Ministério Público)|" +
+    "Funções Institucionais (Ministério Público)|Composição do Ministério Público|Garantias e Vedações (Ministério Público)|" +
+    "Ministério Público junto aos Tribunais de Contas|Conselho Nacional do Ministério Público - CNMP|" +
+    "Ministério Público dos Estados e Distrito Federal e Territórios|Da Advocacia Pública|Advocacia Privada e Defensoria Pública",
+  "const:cap-8": "Defesa do Estado e das Instituições Democráticas|Estado de Defesa e de Sítio|Forças Armadas|Segurança Pública",
+  "const:cap-9": "Tributação e Orçamento|Sistema Tributário Nacional|Dos Princípios Gerais (Sistema Tributário Nacional)|" +
+    "Limitações do Poder de Tributar|Dos Impostos da União|Dos Impostos dos Estados e Distrito Federal|Dos Impostos dos Municípios|" +
+    "Do Imposto de Competência Compartilhada entre Estados, Distrito Federal e Municípios|Da Repartição das Receitas Tributárias|" +
+    "Finanças Públicas|Normas Gerais (Finanças Públicas)|Dos Orçamentos (Finanças Públicas)",
+  "const:cap-10": "Ordem Social|Disposição Geral da Ordem Social|Seguridade Social|Disposições Gerais (Seguridade Social)|Da Saúde|" +
+    "Da Previdência Social|Da Assistência Social|Da Educação, da Cultura e do Desporto|Da Ciência e Tecnologia|Da Comunicação Social|" +
+    "Do Meio Ambiente|Da Família, da Criança, do Adolescente e do Idoso|Dos Índios",
+  "const:cap-11": "Controle de Constitucionalidade|Introdução, Pressupostos e Tipos de Inconstitucionalidade|" +
+    "Controle de Constitucionalidade no Mundo e Histórico do Controle de Constitucionalidade no Brasil|Formas de Controle de Constitucionalidade|" +
+    "Formas de Controle: Sistemas, Momentos, Modelos e Vias de Controle|Controle Difuso (Incidental ou Incidenter Tantum)|" +
+    "Ações de Controle Concentrado de Constitucionalidade|Ação Direta de Inconstitucionalidade (ADI)|" +
+    "Ação Direta de Inconstitucionalidade por Omissão (ADI por Omissão)|Ação Declaratória de Constitucionalidade (ADC)|" +
+    "Arguição de Descumprimento de Preceito Fundamental (ADPF)|Controle de Constitucionalidade pelos Tribunais de Justiça dos Estados"
+};
+// o que a seção cobre: o título dela + os assuntos da árvore (sem os "(arts. 18 a 43 da CF/1988)")
+function vtAssuntos(k, s){
+  const arv = VT_ARVORE[k + ":" + s.id];
+  return [s.t].concat(arv ? arv.split("|") : [])
+    .map(x => x.replace(/\((?:arts?\.|art\b)[^)]*\)/gi, ""));
+}
+/* a seção que trata do tópico: primeiro pelo número da lei, depois pelas palavras
+   (do título e dos assuntos que ela cobre). Palavra comum a várias seções vale pouco. */
 function vtSecaoDe(texto, mats){
-  const leis = vtLeis(texto), pt = vtPalavras(texto);
+  const r = vtSecaoDe1(texto, mats);
+  if (r) return r;
+  // tópico longo ("Poder Legislativo: conceito, fundamento..."; "a; b; c"): tenta pedaço a pedaço
+  const pedacos = String(texto).split(/[;:]/).map(x => x.trim()).filter(x => x && x !== texto);
+  for (const p of pedacos){ const q = vtSecaoDe1(p, mats); if (q) return q; }
+  return null;
+}
+// a seção do tópico de cima também fala deste subtópico? (alguma palavra em comum)
+function vtSecaoFala(texto, k, id){
+  const s = MATS[k] && MATS[k].secoes.find(x => x.id === id);
+  if (!s) return false;
+  const pt = vtPalavras(texto);
+  return vtAssuntos(k, s).some(f => vtPalavras(f).some(w => pt.indexOf(w) >= 0));
+}
+function vtSecaoDe1(texto, mats){
+  const leis = vtLeis(texto), pt = [...new Set(vtPalavras(texto))];
   const secs = [];
-  mats.forEach(k => MATS[k].secoes.forEach((s, i) => secs.push({ k, s, pos: i + 1, ps: vtPalavras(s.t) })));
+  mats.forEach(k => MATS[k].secoes.forEach((s, i) => secs.push({ k, s, pos: i + 1,
+    frases: vtAssuntos(k, s).map(f => [...new Set(vtPalavras(f))]).filter(f => f.length) })));
   const freq = {};
-  secs.forEach(x => new Set(x.ps).forEach(w => freq[w] = (freq[w] || 0) + 1));
+  secs.forEach(x => new Set([].concat(...x.frases)).forEach(w => freq[w] = (freq[w] || 0) + 1));
   const peso = w => freq[w] >= 3 ? .25 : freq[w] === 2 ? .6 : 1;
   let melhor = null, nota = 0;
   secs.forEach(x => {
@@ -22189,17 +22293,23 @@ function vtSecaoDe(texto, mats){
       if (!vtLeis(x.s.t).some(l => leis.indexOf(l) >= 0)) return;
       n = 10;
     } else {
-      const comuns = pt.filter((w, j) => pt.indexOf(w) === j && x.ps.indexOf(w) >= 0);
-      n = comuns.reduce((t, w) => t + peso(w), 0);
-      const cobre = n / Math.max(1, x.ps.reduce((t, w) => t + peso(w), 0));
-      const doTopico = comuns.length / Math.max(1, new Set(pt).size);
-      if (n < 1 || cobre < .5 || doTopico < .4) return;
+      x.frases.forEach(f => {
+        const comuns = pt.filter(w => f.indexOf(w) >= 0);
+        if (!comuns.length) return;
+        const soma = comuns.reduce((t, w) => t + peso(w), 0);
+        const cobreF = soma / Math.max(.01, f.reduce((t, w) => t + peso(w), 0));
+        const cobreT = comuns.length / Math.max(1, pt.length);
+        // casa se cobre boa parte do assunto e do tópico, ou o tópico inteiro cabe no assunto
+        if (!((cobreF >= .5 && cobreT >= .4) || (cobreT === 1 && cobreF >= .2))) return;
+        const v = soma + cobreF + cobreT;
+        if (v > n) n = v;
+      });
+      if (!n) return;
     }
     if (n > nota){ nota = n; melhor = { k: x.k, id: x.s.id, pos: x.pos, t: x.s.t }; }
   });
   return melhor;
 }
-
 const VT_COLS = [["T","Teoria","Teoria estudada"],["Q","Questões","Questões feitas"],["R","Revisão","Revisão feita"]];
 const vtChave = (d, it, i) => d.nome + "|" + (it.n || "#" + i);
 function vertTotal(c){
@@ -22308,7 +22418,13 @@ function janelaVerticalizar(num){
     }
     // disciplinas
     // na ordem do edital ou na do Caderno de conteúdo (com as gavetas de lá)
-    const peloCont = V.modo === "conteudo";
+    // a última escolha vale para todos os concursos (e fica salva com os seus dados)
+    //   "edital"   → ordem do edital
+    //   "materias" → matérias na ordem do conteúdo, tópicos na ordem do edital, com a seção ao lado
+    //   "conteudo" → matérias e tópicos na ordem do conteúdo (agrupados por seção)
+    const modo = V.modo || DB.vertModo || "edital";
+    const peloCont = modo === "conteudo" || modo === "materias";
+    const porSecao = modo === "conteudo";
     let lista = V.disc.map((d, i) => ({ d, i, gav: [] }));
     if (peloCont){
       const gav = vtGavetas();
@@ -22348,13 +22464,65 @@ function janelaVerticalizar(num){
       VT_COLS.forEach(([k, rot, dica]) => { const h = el("th","vtThC", k); h.title = dica; th.appendChild(h); });
       t.appendChild(th);
       const linhas = [];
-      d.itens.forEach((it, i) => {
+      /* pelo conteúdo: cada tópico vai para a seção que trata dele (sem seção própria,
+         segue a do tópico de cima), as seções na ordem do conteúdo e, no fim, o que
+         não tem no conteúdo. Pelo edital: a ordem do próprio edital. */
+      let ordem = d.itens.map((it, i) => ({ it, i, g: "" }));
+      const grupos = {};
+      if (porSecao && matsD.length){
+        const doN = {};
+        ordem.forEach(x => {
+          // a seção do tópico de cima (5 para o 5.3, 5.3 para o 5.3.1...)
+          let doPai = "";
+          if (x.it.n){
+            const pt = x.it.n.split(".");
+            for (let j = pt.length - 1; j > 0 && !doPai; j--) doPai = doN[pt.slice(0, j).join(".")] || "";
+          }
+          let ef = "";
+          // o subtópico fica com o tópico de cima se a seção dele também trata do assunto
+          if (doPai){
+            const c = doPai.indexOf(":");
+            if (vtSecaoFala(x.it.t, doPai.slice(0, c), doPai.slice(c + 1))) ef = doPai;
+          }
+          if (!ef){
+            const sec = vtSecaoDe(x.it.t, matsD);
+            ef = sec ? sec.k + ":" + sec.id : doPai;
+          }
+          if (x.it.n) doN[x.it.n] = ef;
+          x.g = ef;
+          if (ef && !grupos[ef]){
+            const [k, id] = [ef.slice(0, ef.indexOf(":")), ef.slice(ef.indexOf(":") + 1)];
+            const pos = MATS[k].secoes.findIndex(s => s.id === id) + 1;
+            grupos[ef] = { k, id, pos, t: MATS[k].secoes[pos - 1].t, ord: MAT_ORDEM.indexOf(k) * 1000 + pos };
+          }
+        });
+        ordem.sort((a, b) => (a.g ? grupos[a.g].ord : 1e9) - (b.g ? grupos[b.g].ord : 1e9) || a.i - b.i);
+      }
+      let grupoAnt = null;
+      ordem.forEach(({ it, i, g }, oi) => {
+        if (porSecao && matsD.length && g !== grupoAnt){
+          grupoAnt = g;
+          const trG = el("tr","vtGrupo" + (g ? "" : " vtSemSec"));
+          const tdG = el("td"); tdG.colSpan = 1 + VT_COLS.length;
+          if (g){
+            const G = grupos[g], M2 = MATS[G.k];
+            const bG = el("button","vtGrupoBt");
+            bG.appendChild(el("span","vtGrupoN", (M2.sub ? M2.sub.replace(/^\d+\s*-\s*/, "") + "  ·  " : "") + G.pos + "."));
+            bG.appendChild(el("span","vtGrupoT", G.t));
+            bG.title = "Abrir no Caderno de conteúdo: " + (M2.pai || M2.rot) + "  ·  " + G.pos + ". " + G.t;
+            bG.onclick = () => irPara(G.k, G.id);
+            tdG.appendChild(bG);
+          } else tdG.appendChild(el("span","vtGrupoT","Sem correspondência no Caderno de conteúdo"));
+          trG.appendChild(tdG);
+          t.appendChild(trG);
+        }
         const ch = vtChave(d, it, i);
         const tr = el("tr","vtN" + Math.min(it.nivel, 4));
         const tdA = el("td","vtA");
         const lin = el("div","vtLin");
-        // item com subtópicos ganha a setinha de recolher
-        const prox = d.itens[i + 1];
+        // item com subtópicos (logo abaixo, no mesmo grupo) ganha a setinha de recolher
+        const seg = ordem[oi + 1];
+        const prox = seg && seg.g === g ? seg.it : null;
         const temFilho = !!(it.n && prox && prox.n && prox.n.indexOf(it.n + ".") === 0);
         if (temFilho){
           const bS = el("button","vtSub" + (REC[ch] ? " fechado" : ""), "▾");
@@ -22367,11 +22535,12 @@ function janelaVerticalizar(num){
           };
           lin.appendChild(bS);
         } else lin.appendChild(el("span","vtSubVazio"));
-        linhas.push({ tr, it, ch });
+        linhas.push({ tr, it, ch, g });
         if (it.n) lin.appendChild(el("b","vtNum", it.n));
         lin.appendChild(el("span","vtTx", it.t));
         tdA.appendChild(lin);
-        if (peloCont && matsD.length){
+        // ordem do edital por matéria: a seção do conteúdo aparece embaixo do tópico
+        if (modo === "materias" && matsD.length){
           const sec = vtSecaoDe(it.t, matsD);
           const chaveSec = sec ? sec.k + ":" + sec.id : "";
           const partes = (it.n || "").split(".");
@@ -22408,10 +22577,10 @@ function janelaVerticalizar(num){
       });
       // esconde quem tem algum "pai" recolhido (5.3.1 tem os pais 5 e 5.3)
       function visDisc(){
-        const fech = linhas.filter(x => REC[x.ch] && x.it.n).map(x => x.it.n + ".");
+        const fech = linhas.filter(x => REC[x.ch] && x.it.n).map(x => [x.it.n + ".", x.g]);
         linhas.forEach(x => {
           const n = x.it.n;
-          x.tr.style.display = n && fech.some(f => n.indexOf(f) === 0) ? "none" : "";
+          x.tr.style.display = n && fech.some(([f, g]) => g === x.g && n.indexOf(f) === 0) ? "none" : "";
         });
       }
       visDisc();
@@ -22445,16 +22614,22 @@ function janelaVerticalizar(num){
       visiveis.forEach(x => x.visDisc());
       rotSubs(); salvar();
     };
-    const bOrg = el("button","btn" + (peloCont ? " azulzinho" : ""),
-      peloCont ? "✓ Organizado pelo conteúdo" : "Organizar conforme o conteúdo");
-    bOrg.title = peloCont
-      ? "Voltar à ordem do edital"
-      : "Põe as disciplinas na ordem e com o nome das matérias do Caderno de conteúdo " +
-        "e liga cada tópico à seção de lá que trata dele";
-    bOrg.onclick = () => {
-      if (peloCont) delete V.modo; else V.modo = "conteudo";
-      salvar(); mostrar();
-    };
+    // como organizar: a escolha vale para todos os concursos e fica salva
+    const bOrg = el("label","vtOrg" + (peloCont ? " on" : ""));
+    bOrg.appendChild(el("span", null, "Organizar:"));
+    const selOrg = document.createElement("select");
+    [["edital","Ordem do edital"],
+     ["materias","Pelas matérias do conteúdo"],
+     ["conteudo","Pelas matérias e seções do conteúdo"]].forEach(([v, r]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = r; selOrg.appendChild(o);
+    });
+    selOrg.value = modo;
+    selOrg.title = "Ordem do edital: como veio no edital.\n" +
+      "Matérias do conteúdo: as disciplinas na ordem e com o nome das matérias do conteúdo; " +
+      "os tópicos na ordem do edital, com a seção ao lado.\n" +
+      "Conteúdo: matérias e tópicos na ordem do conteúdo, agrupados por seção; o que não tem lá vai para o fim.";
+    selOrg.onchange = () => { V.modo = DB.vertModo = selOrg.value; salvar(); mostrar(); };
+    bOrg.appendChild(selOrg);
     const bCol = el("button","btn","✎  Colar outro texto");
     bCol.onclick = colar;
     const bApagar = el("button","btn","Apagar");
