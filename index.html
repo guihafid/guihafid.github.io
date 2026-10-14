@@ -291,6 +291,60 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .mini.temCrono{background:#D8EDEB;border-color:#1F6F6B}
 .mini.temCrono:hover{background:#c3e4e1}
 /* o 📄 do edital fica à esquerda do 🗓; ganha cor quando o link já foi colado */
+.mini.temVert{background:#EFE7FB;border-color:#6B3FA0;color:#4b2a78}
+.mini.temVert:hover{background:#e3d6f7}
+/* edital verticalizado */
+.modal.vtModal{max-width:880px;width:96vw;display:flex;flex-direction:column;max-height:calc(100vh - 80px)}
+.vtCorpo{padding:12px 14px;overflow-y:auto;flex:1;min-height:0}
+.vtDica{font-size:12px;color:#4a5a70;line-height:17px;margin-bottom:8px}
+.vtTxt{box-sizing:border-box;width:100%;height:46vh;min-height:200px;resize:vertical;padding:9px 10px;
+  font:12.5px/18px Arial,Helvetica,sans-serif;color:#1F3864;border:1px solid #c9d4e3;border-radius:5px;outline:none}
+.vtTxt:focus{border-color:var(--azulMedio);box-shadow:0 0 0 2px rgba(47,85,151,.15)}
+.vtAviso{font-size:12px;font-weight:bold;color:#1f6f4a;margin-top:6px;min-height:16px}
+.vtResumo{position:sticky;top:-12px;z-index:2;background:#fff;margin:-12px -14px 10px;padding:10px 14px 8px;
+  border-bottom:1px solid #e3e8f0}
+.vtTitulo{font-size:12px;font-weight:bold;color:#5a6a80;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+.vtBarras{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 14px}
+.vtBarra{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;font-size:11.5px}
+.vtBRot{font-weight:bold;color:#1F3864}
+.vtBNum{grid-column:1/-1;color:#5a6a80;font-size:10.5px}
+.vtBTrilho{height:8px;background:#e8edf4;border-radius:5px;overflow:hidden}
+.vtBFeito{display:block;height:100%;border-radius:5px;transition:width .2s}
+.vtT .vtBFeito{background:#2f7d4f} .vtQ .vtBFeito{background:#2F5597} .vtR .vtBFeito{background:#b7791f}
+.vtDisc{border:1px solid #d7dde7;border-radius:7px;margin-bottom:10px;overflow:hidden}
+.vtCab{display:flex;align-items:center;gap:8px;width:100%;padding:8px 11px;border:0;cursor:pointer;
+  background:var(--azulEscuro);color:#fff;font:bold 12.5px Arial,Helvetica,sans-serif;text-align:left}
+.vtSeta{transition:transform .15s;font-size:11px}
+.vtDisc.fechada .vtSeta{transform:rotate(-90deg)}
+.vtDisc.fechada .vtTab{display:none}
+.vtNomeD{flex:1}
+.vtCont{--p:0%;font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;
+  background:linear-gradient(90deg,#2f7d4f var(--p),rgba(255,255,255,.18) var(--p))}
+.vtTab{width:100%;border-collapse:collapse;font-size:12.5px}
+.vtTab th{background:#eef2f8;color:#5a6a80;font-size:10.5px;padding:4px 6px;text-align:left;border-bottom:1px solid #d7dde7}
+.vtTab th.vtThC{width:34px;text-align:center}
+.vtTab td{padding:5px 6px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#1F3864;line-height:16px}
+.vtTab tr:last-child td{border-bottom:0}
+.vtTab td.vtC{text-align:center;vertical-align:middle}
+.vtLin{display:flex;gap:7px;align-items:baseline}
+.vtA .vtNum{flex:0 0 auto;min-width:26px;color:#2F5597}
+.vtTx{flex:1;min-width:0}
+.vtN1 td.vtA{font-weight:bold}
+.vtN1 td.vtA .vtNum{color:#1F3864}
+.vtN2 td.vtA{padding-left:22px}
+.vtN3 td.vtA{padding-left:40px}
+.vtN4 td.vtA{padding-left:58px}
+.vtTab tr.vtFeito td.vtA{color:#2f7d4f}
+.vtTab tr:hover td{background:#f7f9fc}
+.vtCk{width:15px;height:15px;cursor:pointer;margin:0}
+.vtCk.vtT{accent-color:#2f7d4f} .vtCk.vtQ{accent-color:#2F5597} .vtCk.vtR{accent-color:#b7791f}
+.modal.vtModal .modalRodape{flex-wrap:wrap}
+@media(max-width:600px){
+  .vtBarras{grid-template-columns:1fr}
+  .vtN2 td.vtA{padding-left:12px} .vtN3 td.vtA{padding-left:22px} .vtN4 td.vtA{padding-left:30px}
+  .vtTab th.vtThC{width:28px}
+  .modal.vtModal .modalNota{flex:1 1 100%}
+}
 .mini.temEdital{background:#E7EEFB;border-color:#2F5597}
 .mini.temEdital:hover{background:#d7e3f8}
 /* faixa do link do edital, no fim da janela do cronograma */
@@ -2628,6 +2682,44 @@ table.g td.infoCel:hover .balaoInfo{display:block}
 /* --- P) faixa de atencao com triangulo (identificacao criminal) --- */
 .mat_lep .fxP{margin:16px 0;background:#FBFBFB;border-top:1px solid #E2E2E2;
  border-bottom:1px solid #E2E2E2;padding:11px 14px;display:flex;gap:11px;align-items:flex-start;}
+/* esquema da identifica\u00e7\u00e3o criminal (Lei 12.037/2009, art. 3\u00ba) */
+.mat_lep .idc-esq{margin:14px 0 18px;font-family:inherit;color:#2d2a26;text-align:left}
+.mat_lep .idc-raiz{width:max-content;max-width:92%;margin:0 auto;padding:10px 26px;text-align:center;
+  background:#f1efe9;border:1px solid #c9c4b8;border-radius:9px}
+.mat_lep .idc-raiz b{display:block;font-size:15.5px;font-weight:600}
+.mat_lep .idc-raiz span{display:block;font-size:12.5px;color:#6b665d;margin-top:2px}
+.mat_lep .idc-ramos{position:relative;height:42px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mat_lep .idc-ramos::before{content:"";position:absolute;left:50%;top:0;height:20px;border-left:1.5px solid #8d8a84}
+.mat_lep .idc-ramos::after{content:"";position:absolute;top:20px;left:calc((100% - 40px)/6);
+  right:calc((100% - 40px)/6);border-top:1.5px solid #8d8a84}
+.mat_lep .idc-ramos i{position:relative}
+.mat_lep .idc-ramos i::before{content:"";position:absolute;left:50%;top:20px;height:16px;border-left:1.5px solid #8d8a84}
+.mat_lep .idc-ramos i::after{content:"";position:absolute;left:calc(50% - 4.5px);top:33px;
+  border:5px solid transparent;border-top:7px solid #8d8a84;border-bottom:0}
+.mat_lep .idc-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+.mat_lep .idc-col{display:flex;flex-direction:column;gap:8px}
+.mat_lep .idc-cab{padding:9px 10px;text-align:center;border-radius:8px;border:1px solid;margin-bottom:8px}
+.mat_lep .idc-cab b{display:block;font-size:15px;font-weight:600}
+.mat_lep .idc-cab span{display:block;font-size:12.5px;margin-top:2px}
+.mat_lep .idc-verde{background:#e3f4ec;border-color:#5fb592;color:#17573c}
+.mat_lep .idc-verde span{color:#1f6e4c}
+.mat_lep .idc-coral{background:#fbebe6;border-color:#e2a693;color:#8f3418}
+.mat_lep .idc-coral span{color:#a8452a}
+.mat_lep .idc-it{padding:8px 12px;font-size:13px;background:#fbfaf8;border:1px solid #e4e1db;border-radius:7px}
+.mat_lep .idc-it.idc-c{text-align:center}
+.mat_lep .idc-it.idc-dest{background:#fbebe6;border-color:#e2a693;color:#a1391c}
+.mat_lep .idc-raiz,.mat_lep .idc-raiz *,.mat_lep .idc-cab,.mat_lep .idc-cab *,
+.mat_lep .idc-it.idc-c{text-align:center!important}
+.mat_lep .idc-it:not(.idc-c){text-align:left!important}
+@media(max-width:640px){
+  .mat_lep .idc-ramos{height:26px;display:block}
+  .mat_lep .idc-ramos::before{height:16px}
+  .mat_lep .idc-ramos::after{left:calc(50% - 4.5px);right:auto;top:15px;border:5px solid transparent;
+    border-top:7px solid #8d8a84;border-bottom:0}
+  .mat_lep .idc-ramos i{display:none}
+  .mat_lep .idc-cols{grid-template-columns:1fr;gap:16px}
+  .mat_lep .idc-raiz{max-width:100%;box-sizing:border-box}
+}
 .mat_lep .fxP .fp-ic{flex:0 0 auto;width:26px;}
 .mat_lep .fxP .fp-ic svg{width:26px;height:26px;display:block;}
 .mat_lep .fxP p{margin:0;text-align:justify !important;line-height:1.6;font-size:13.5px;}
@@ -19735,6 +19827,8 @@ function garantirCadernos(){
   if (!Array.isArray(DB.secExcluidas)) DB.secExcluidas = [];
   // a ordem que voc\u00ea deu \u00e0s se\u00e7\u00f5es de cada mat\u00e9ria: { mat\u00e9ria: [ids] }
   if (!DB.secOrdem || typeof DB.secOrdem !== "object" || Array.isArray(DB.secOrdem)) DB.secOrdem = {};
+  // o n\u00famero que cada se\u00e7\u00e3o oculta tinha: { "mat\u00e9ria:se\u00e7\u00e3o": n\u00famero }
+  if (!DB.secPosOculta || typeof DB.secPosOculta !== "object" || Array.isArray(DB.secPosOculta)) DB.secPosOculta = {};
   // o que voce reescreveu nos materiais: uma chave por secao
   if (!DB.crimEdit || typeof DB.crimEdit !== "object") DB.crimEdit = {};
   Object.keys(DB.crimEdit).forEach(k => {
@@ -21855,6 +21949,14 @@ function telaCadastro(){
     tr.appendChild(tdSePro(temDiscursiva(c), () => tdEdit(c.tempoDis, v => c.tempoDis = v)));
     tr.appendChild(tdEdit(c.obs, v => c.obs = v));
     const tdX = el("td");
+    // edital verticalizado: cola o conteúdo programático e vira lista de estudo
+    const nVt = vertTotal(c);
+    const bVt = el("button","mini" + (nVt ? " temVert" : ""),"\u2630");
+    bVt.title = nVt ? "Edital verticalizado de " + (c.nome || "este concurso") + " (" + nVt + " itens)"
+                    : "Verticalizar o edital: cole o conte\u00fado program\u00e1tico";
+    bVt.onclick = () => janelaVerticalizar(c.num);
+    bVt.style.marginRight = "5px";
+    tdX.appendChild(bVt);
     // edital do concurso, à esquerda do cronograma
     const bEd = el("button","mini" + (c.edital ? " temEdital" : ""),"📄");
     bEd.title = c.edital
@@ -21933,6 +22035,236 @@ function telaCadastro(){
     tm.tbody.appendChild(trT);
     tela.appendChild(tm);
   });
+}
+
+/* ===================== edital verticalizado =====================
+   Cola o conteúdo programático do edital e o app separa por disciplina
+   (cabeçalho em MAIÚSCULAS terminado em dois-pontos) e por item numerado
+   (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
+   numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
+   não quebram o texto no lugar errado.                              */
+function vertLer(txt){
+  const MAI = "A-ZÀ-ÖØ-Þ";
+  const linhas = String(txt || "").replace(/\r/g, "").split("\n");
+  // 1) acha os cabeçalhos de disciplina no começo das linhas
+  const reCab = new RegExp("^\\s*([" + MAI + "][" + MAI + "\\s,/()\\-–—&ºª.]{2,}?)\\s*:\\s*(.*)$");
+  const blocos = []; let titulo = []; let atual = null;
+  linhas.forEach(l => {
+    const m = l.match(reCab);
+    const nome = m ? m[1].replace(/\s+/g, " ").trim() : "";
+    if (m && /[A-ZÀ-Þ]{3}/.test(nome) && nome === nome.toUpperCase() && !/CARGO\b/.test(nome)){
+      atual = { nome, txt:[m[2]] }; blocos.push(atual);
+    } else if (atual) atual.txt.push(l);
+    else titulo.push(l);
+  });
+  if (!blocos.length){ blocos.push({ nome:"Conteúdo", txt:titulo }); titulo = []; }
+  // 2) em cada disciplina, junta as linhas e corta nos números que continuam a sequência
+  const juntar = a => a.join("\n")
+    .replace(/(\p{L})-\n(\p{Ll})/gu, "$1$2")       // palavra partida no fim da linha
+    .replace(/\s+/g, " ").trim();
+  const disc = blocos.map(b => {
+    const s = juntar(b.txt);
+    const re = /(^|[\s.;:])(\d{1,3}(?:\.\d{1,3})*)\.?\s+(?=[\p{L}(“"'«])/gu;
+    const cands = []; let m;
+    while ((m = re.exec(s))){
+      cands.push({ ini: m.index + m[1].length, fim: m.index + m[0].length,
+                   n: m[2].split(".").map(Number) });
+      re.lastIndex = m.index + m[0].length - 1 > m.index ? m.index + m[0].length : m.index + 1;
+    }
+    const segue = (a, b) => {           // b continua a numeração de a?
+      if (!a) return b.length === 1 && b[0] === 1;
+      if (b.length === a.length + 1 && b[b.length - 1] === 1 &&
+          a.every((x, i) => x === b[i])) return true;             // primeiro filho
+      if (b.length > a.length) return false;
+      for (let i = 0; i < b.length - 1; i++) if (b[i] !== a[i]) return false;
+      return b[b.length - 1] === a[b.length - 1] + 1;            // irmão / tio
+    };
+    const aceitos = []; let ant = null;
+    cands.forEach(c => { if (segue(ant, c.n)){ aceitos.push(c); ant = c.n; } });
+    const itens = aceitos.map((c, i) => {
+      const fim = i + 1 < aceitos.length ? aceitos[i + 1].ini : s.length;
+      return { n: c.n.join("."), nivel: c.n.length,
+               t: s.slice(c.fim, fim).trim().replace(/[\s.;]+$/, "") };
+    });
+    // texto antes do item 1 (ou disciplina sem numeração) vira item único
+    const antes = aceitos.length ? s.slice(0, aceitos[0].ini).trim() : s;
+    if (antes) itens.unshift({ n:"", nivel:1, t: antes.replace(/[\s.;]+$/, "") });
+    return { nome: b.nome, itens };
+  }).filter(d => d.itens.length);
+  return { titulo: juntar(titulo), disc };
+}
+
+const VT_COLS = [["T","Teoria","Teoria estudada"],["Q","Questões","Questões feitas"],["R","Revisão","Revisão feita"]];
+const vtChave = (d, it, i) => d.nome + "|" + (it.n || "#" + i);
+function vertTotal(c){
+  return c && c.vert && c.vert.disc ? c.vert.disc.reduce((t, d) => t + d.itens.length, 0) : 0;
+}
+function janelaVerticalizar(num){
+  const c = DB.concursos.find(x => x.num === num);
+  if (!c) return;
+  const fundo = el("div","modalFundo");
+  const cx = el("div","modal vtModal");
+  const nomeC = (c.nome || "Concurso " + c.num) + (c.cargo ? " — " + c.cargo : "");
+  cx.appendChild(el("div","modalTit","Edital verticalizado  —  " + nomeC));
+  const corpo = el("div","vtCorpo");
+  cx.appendChild(corpo);
+  const rodape = el("div","modalRodape");
+  cx.appendChild(rodape);
+  fundo.appendChild(cx); document.body.appendChild(fundo);
+  const fechados = new Set();
+  function sair(){ if (fundo.parentNode) document.body.removeChild(fundo);
+    document.removeEventListener("keydown", tecla); render(); }
+  const tecla = e => { if (e.key === "Escape" && !e.defaultPrevented) sair(); };
+  document.addEventListener("keydown", tecla);
+  fundo.onclick = e => { if (e.target === fundo) sair(); };
+
+  function colar(){
+    corpo.innerHTML = ""; rodape.innerHTML = "";
+    corpo.appendChild(el("div","vtDica",
+      "Cole abaixo o conteúdo programático do edital (do PDF ou do site), com as " +
+      "disciplinas em MAIÚSCULAS seguidas de dois-pontos — ex.: “DIREITO PENAL: 1 Princípios... " +
+      "2 ...”. O app separa cada disciplina e cada item numerado (1, 1.1, 5.3.1...) numa lista " +
+      "para você marcar teoria, questões e revisão."));
+    const ta = document.createElement("textarea");
+    ta.className = "vtTxt";
+    ta.placeholder = "DIREITO CONSTITUCIONAL: 1 Direito constitucional. 1.1 Noções gerais...\nDIREITO ADMINISTRATIVO: 1 Conceito e fontes...";
+    if (c.vert && c.vert.texto) ta.value = c.vert.texto;
+    corpo.appendChild(ta);
+    const aviso = el("div","vtAviso");
+    corpo.appendChild(aviso);
+    const ler = () => {
+      const r = vertLer(ta.value);
+      const n = r.disc.reduce((t, d) => t + d.itens.length, 0);
+      aviso.textContent = ta.value.trim()
+        ? r.disc.length + " disciplina(s) e " + n + " item(ns) encontrados."
+        : "";
+      return r;
+    };
+    ta.addEventListener("input", ler);
+    ta.addEventListener("paste", () => setTimeout(ler, 0));
+    const bOk = el("button","btn azulzinho","☰  Verticalizar");
+    bOk.onclick = () => {
+      const r = ler();
+      if (!r.disc.length){ alert("Não achei nenhum conteúdo para verticalizar."); return; }
+      const marcas = (c.vert && c.vert.marcas) || {};
+      c.vert = { texto: ta.value, titulo: r.titulo, disc: r.disc, marcas,
+                 em: new Date().toISOString().slice(0, 10) };
+      salvar(); mostrar();
+    };
+    const bNao = el("button","btn", c.vert ? "Voltar" : "Cancelar");
+    bNao.onclick = () => c.vert ? mostrar() : sair();
+    rodape.appendChild(el("span","modalNota", c.vert
+      ? "Ao verticalizar de novo, o que você já marcou nos mesmos itens continua marcado."
+      : ""));
+    rodape.appendChild(bNao); rodape.appendChild(bOk);
+    setTimeout(() => ta.focus(), 30);
+  }
+
+  function mostrar(){
+    corpo.innerHTML = ""; rodape.innerHTML = "";
+    const V = c.vert, M = V.marcas = V.marcas || {};
+    const total = vertTotal(c);
+    // resumo geral
+    const res = el("div","vtResumo");
+    if (V.titulo) res.appendChild(el("div","vtTitulo", V.titulo));
+    const barras = el("div","vtBarras");
+    res.appendChild(barras);
+    corpo.appendChild(res);
+    const contDisc = [];
+    function pct(d, col){
+      const lst = d ? [d] : V.disc;
+      let feitos = 0, n = 0;
+      lst.forEach(dd => dd.itens.forEach((it, i) => { n++; if ((M[vtChave(dd, it, i)] || {})[col]) feitos++; }));
+      return { feitos, n, p: n ? Math.round(feitos * 100 / n) : 0 };
+    }
+    function pintarBarras(){
+      barras.innerHTML = "";
+      VT_COLS.forEach(([k, rot]) => {
+        const r = pct(null, k);
+        const b = el("div","vtBarra vt" + k);
+        b.appendChild(el("span","vtBRot", rot));
+        const tr = el("span","vtBTrilho"); const f = el("span","vtBFeito");
+        f.style.width = r.p + "%"; tr.appendChild(f); b.appendChild(tr);
+        b.appendChild(el("span","vtBNum", r.feitos + "/" + r.n + "  ·  " + r.p + "%"));
+        barras.appendChild(b);
+      });
+      contDisc.forEach(([d, alvo]) => {
+        const r = pct(d, "T");
+        alvo.textContent = r.feitos + "/" + r.n;
+        alvo.title = "Teoria: " + r.p + "%";
+        alvo.style.setProperty("--p", r.p + "%");
+      });
+    }
+    // disciplinas
+    V.disc.forEach((d, di) => {
+      const bl = el("div","vtDisc" + (fechados.has(di) ? " fechada" : ""));
+      const cab = el("button","vtCab");
+      cab.appendChild(el("span","vtSeta","▾"));
+      cab.appendChild(el("span","vtNomeD", d.nome));
+      const cont = el("span","vtCont");
+      contDisc.push([d, cont]);
+      cab.appendChild(cont);
+      cab.onclick = () => { bl.classList.toggle("fechada");
+        if (bl.classList.contains("fechada")) fechados.add(di); else fechados.delete(di); };
+      bl.appendChild(cab);
+      const t = el("table","vtTab");
+      const th = el("tr");
+      th.appendChild(el("th","vtThA","Assunto"));
+      VT_COLS.forEach(([k, rot, dica]) => { const h = el("th","vtThC", k); h.title = dica; th.appendChild(h); });
+      t.appendChild(th);
+      d.itens.forEach((it, i) => {
+        const ch = vtChave(d, it, i);
+        const tr = el("tr","vtN" + Math.min(it.nivel, 4));
+        const tdA = el("td","vtA");
+        const lin = el("div","vtLin");
+        if (it.n) lin.appendChild(el("b","vtNum", it.n));
+        lin.appendChild(el("span","vtTx", it.t));
+        tdA.appendChild(lin);
+        tr.appendChild(tdA);
+        VT_COLS.forEach(([k, rot, dica]) => {
+          const td = el("td","vtC");
+          const ck = document.createElement("input");
+          ck.type = "checkbox"; ck.className = "vtCk vt" + k; ck.title = dica;
+          ck.checked = !!(M[ch] || {})[k];
+          ck.onchange = () => {
+            const reg = M[ch] = M[ch] || {};
+            if (ck.checked) reg[k] = 1; else delete reg[k];
+            if (!Object.keys(reg).length) delete M[ch];
+            tr.classList.toggle("vtFeito", !!(M[ch] || {}).T);
+            salvar(); pintarBarras();
+          };
+          td.appendChild(ck); tr.appendChild(td);
+        });
+        if ((M[ch] || {}).T) tr.classList.add("vtFeito");
+        t.appendChild(tr);
+      });
+      bl.appendChild(t);
+      corpo.appendChild(bl);
+    });
+    pintarBarras();
+    // rodapé
+    const bTodas = el("button","btn","Recolher tudo");
+    bTodas.onclick = () => {
+      const abrir = fechados.size === V.disc.length;
+      V.disc.forEach((d, i) => abrir ? fechados.delete(i) : fechados.add(i));
+      corpo.querySelectorAll(".vtDisc").forEach(x => x.classList.toggle("fechada", !abrir));
+      bTodas.textContent = abrir ? "Recolher tudo" : "Abrir tudo";
+    };
+    const bCol = el("button","btn","✎  Colar outro texto");
+    bCol.onclick = colar;
+    const bApagar = el("button","btn","Apagar");
+    bApagar.title = "Apagar o edital verticalizado deste concurso";
+    bApagar.onclick = () => {
+      if (!confirm("Apagar o edital verticalizado de " + nomeC + "?\nAs marcações feitas nele também se perdem.")) return;
+      delete c.vert; salvar(); colar();
+    };
+    rodape.appendChild(el("span","modalNota", total + " itens em " + V.disc.length +
+      " disciplina(s)" + (V.em ? "  ·  verticalizado em " + dataBR(V.em) : "")));
+    rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bTodas);
+    const bF = el("button","btn azulzinho","Fechar"); bF.onclick = sair;
+    rodape.appendChild(bF);
+  }
+  if (c.vert && c.vert.disc && c.vert.disc.length) mostrar(); else colar();
 }
 
 /* ===================== janela: novo concurso =====================
@@ -30913,6 +31245,8 @@ function janelaSecoes(gaveta, soEsta){
           const bO = el("button","mini","\u{1F441}");
           bO.title = "Ocultar esta se\u00e7\u00e3o";
           bO.onclick = () => {
+            // guarda o n\u00famero que ela tinha, para voltar ao mesmo lugar
+            DB.secPosOculta[k + ":" + s.id] = i + 1;
             secTirarDaOrdem(k, s.id);
             DB.secOcultas.push(k + ":" + s.id);
             if (abaAtual === "mat_" + k + "_" + s.id) abaAtual = "mat_" + k;
@@ -30963,11 +31297,13 @@ function janelaSecoes(gaveta, soEsta){
         bV.title = "Trazer esta se\u00e7\u00e3o de volta";
         bV.onclick = () => {
           DB[onde] = DB[onde].filter(x => x !== chave);
-          // volta no fim da lista
+          // volta ao n\u00famero que tinha antes de sair (sem registro, vai para o fim)
           if (MATS[k]){
-            const ids = MATS[k].secoes.map(x => x.id).filter(x => x !== id);
-            ids.push(id); DB.secOrdem[k] = ids;
+            const pos = DB.secPosOculta[chave];
+            recarregarMaterias();
+            secMoverPara(k, id, pos || MATS[k].secoes.length);
           }
+          delete DB.secPosOculta[chave];
           salvar(); recarregarMaterias(); pintar(); render();
         };
         L.appendChild(bV);
@@ -36479,6 +36815,34 @@ details.qf .qf-r b.no{color:#b3261e}
 <script type="text/plain" id="matS_lep_12037">
 <div class="sec roxo"><div class="num">33</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12037.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 12.037/2009 — Identificação Criminal (CPP)</a></h2></div>
 <p class="lead"><a href="https://www.tecconcursos.com.br/aulas/materias/172/assuntos/3042">Material de apoio (Tec Concursos)</a></p>
+<div class="idc-esq" role="figure" aria-label="Esquema das exceções do art. 3º da Lei 12.037/2009">
+<div class="idc-raiz"><b>Art. 1º: regra é não identificar</b><span>Exceções no art. 3º</span></div>
+<div class="idc-ramos" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="idc-cols">
+<div class="idc-col">
+<div class="idc-cab idc-verde"><b>Falha no documento</b><span>Sem ordem judicial</span></div>
+<div class="idc-it">I · Rasura ou falsificação</div>
+<div class="idc-it">II · Documento insuficiente</div>
+<div class="idc-it">III · Docs conflitantes</div>
+<div class="idc-it">V · Uso de outros nomes</div>
+<div class="idc-it">VI · Desgaste, tempo, local</div>
+</div>
+<div class="idc-col">
+<div class="idc-cab idc-coral"><b>IV · Ordem judicial</b><span>Essencial à investigação</span></div>
+<div class="idc-it idc-c">Juiz decide de ofício</div>
+<div class="idc-it idc-c">Ou: delegado, MP, defesa</div>
+<div class="idc-it idc-c idc-dest">Coleta de DNA obrigatória</div>
+</div>
+<div class="idc-col">
+<div class="idc-cab idc-coral"><b>VII · Denúncia</b><span>Recebida pelo juiz</span></div>
+<div class="idc-it">a) Grave violência à pessoa</div>
+<div class="idc-it">b) Crime sexual / vulnerável</div>
+<div class="idc-it">c) ECA arts. 240 a 241-C</div>
+<div class="idc-it">d) Orcrim armada</div>
+<div class="idc-it idc-c idc-dest">DNA obrigatório + flagrante</div>
+</div>
+</div>
+</div>
 <div class="fxP" role="note">
 <div class="fp-ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5 45 42H3L24 5Z" fill="#F2C200" stroke="#8A6D00" stroke-width="2.4" stroke-linejoin="round"/><rect x="21.8" y="18" width="4.4" height="12" rx="2" fill="#3A2E00"/><circle cx="24" cy="35" r="2.4" fill="#3A2E00"/></svg></div>
 <p><span class="fp-rot">ATENÇÃO!</span> Os <b>presos provisórios e definitivos</b> poderão ter colhidos os seus registros biométricos, de impressões digitais, de íris, face e voz, <b>caso não tenham sido colhidos por ocasião da identificação criminal!</b></p>
@@ -41494,7 +41858,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </ul>
 <h4 class="subsub" style="text-align:left;">4. Princípio da Justeza ou da Conformidade Funcional/Correção Funcional/Exatidão Funcional</h4>
 <ul class="dash">
-<li>Estabelece que o <b>intérprete constitucional</b> (no Brasil, o <b>STF</b>) deve exercer suas funções de forma <b>contida e cuidadosa</b>, para não subverter o <b>esquema de separação de poderes</b> desenhado na Constituição.</li>
+<li>Estabelece que o <b>intérprete constitucional</b> deve exercer suas funções de forma <b>contida e cuidadosa</b>, para não subverter o <b>esquema de separação de poderes</b> desenhado na Constituição.</li>
 </ul>
 <h4 class="subsub" style="text-align:left;">5. Princípio da Concordância Prática ou Harmonização</h4>
 <ul class="dash">
