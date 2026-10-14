@@ -327,6 +327,11 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .vtTab tr:last-child td{border-bottom:0}
 .vtTab td.vtC{text-align:center;vertical-align:middle}
 .vtLin{display:flex;gap:7px;align-items:baseline}
+.vtSub,.vtSubVazio{flex:0 0 16px;width:16px}
+.vtSub{height:16px;padding:0;border:0;background:none;cursor:pointer;color:#5a6a80;
+  font-size:11px;line-height:16px;border-radius:3px;transition:transform .15s}
+.vtSub:hover{background:#e3e9f3;color:#1F3864}
+.vtSub.fechado{transform:rotate(-90deg);color:#2F5597}
 .vtA .vtNum{flex:0 0 auto;min-width:26px;color:#2F5597}
 .vtTx{flex:1;min-width:0}
 .vtN1 td.vtA{font-weight:bold}
@@ -22163,6 +22168,8 @@ function janelaVerticalizar(num){
   function mostrar(){
     corpo.innerHTML = ""; rodape.innerHTML = "";
     const V = c.vert, M = V.marcas = V.marcas || {};
+    const REC = V.rec = V.rec || {};          // itens com os subtópicos recolhidos
+    const visiveis = [];
     const total = vertTotal(c);
     // resumo geral
     const res = el("div","vtResumo");
@@ -22212,11 +22219,27 @@ function janelaVerticalizar(num){
       th.appendChild(el("th","vtThA","Assunto"));
       VT_COLS.forEach(([k, rot, dica]) => { const h = el("th","vtThC", k); h.title = dica; th.appendChild(h); });
       t.appendChild(th);
+      const linhas = [];
       d.itens.forEach((it, i) => {
         const ch = vtChave(d, it, i);
         const tr = el("tr","vtN" + Math.min(it.nivel, 4));
         const tdA = el("td","vtA");
         const lin = el("div","vtLin");
+        // item com subtópicos ganha a setinha de recolher
+        const prox = d.itens[i + 1];
+        const temFilho = !!(it.n && prox && prox.n && prox.n.indexOf(it.n + ".") === 0);
+        if (temFilho){
+          const bS = el("button","vtSub" + (REC[ch] ? " fechado" : ""), "▾");
+          bS.title = "Recolher / mostrar os subtópicos de " + it.n;
+          bS.onclick = () => {
+            if (REC[ch]) delete REC[ch]; else REC[ch] = 1;
+            bS.classList.toggle("fechado", !!REC[ch]);
+            salvar(); visDisc();
+            corpo.dispatchEvent(new Event("vtRec"));
+          };
+          lin.appendChild(bS);
+        } else lin.appendChild(el("span","vtSubVazio"));
+        linhas.push({ tr, it, ch });
         if (it.n) lin.appendChild(el("b","vtNum", it.n));
         lin.appendChild(el("span","vtTx", it.t));
         tdA.appendChild(lin);
@@ -22238,6 +22261,16 @@ function janelaVerticalizar(num){
         if ((M[ch] || {}).T) tr.classList.add("vtFeito");
         t.appendChild(tr);
       });
+      // esconde quem tem algum "pai" recolhido (5.3.1 tem os pais 5 e 5.3)
+      function visDisc(){
+        const fech = linhas.filter(x => REC[x.ch] && x.it.n).map(x => x.it.n + ".");
+        linhas.forEach(x => {
+          const n = x.it.n;
+          x.tr.style.display = n && fech.some(f => n.indexOf(f) === 0) ? "none" : "";
+        });
+      }
+      visDisc();
+      visiveis.push({ linhas, visDisc });
       bl.appendChild(t);
       corpo.appendChild(bl);
     });
@@ -22250,6 +22283,23 @@ function janelaVerticalizar(num){
       corpo.querySelectorAll(".vtDisc").forEach(x => x.classList.toggle("fechada", !abrir));
       bTodas.textContent = abrir ? "Recolher tudo" : "Abrir tudo";
     };
+    const bSubs = el("button","btn");
+    const algumRec = () => Object.keys(REC).length > 0;
+    const rotSubs = () => { bSubs.textContent = algumRec() ? "Mostrar subtópicos" : "Recolher subtópicos"; };
+    rotSubs();
+    corpo.addEventListener("vtRec", rotSubs);
+    bSubs.title = "Mostrar só os tópicos principais (1, 2, 3...) ou abrir todos os subtópicos";
+    bSubs.onclick = () => {
+      const fechar = !algumRec();
+      Object.keys(REC).forEach(k => delete REC[k]);
+      if (fechar) V.disc.forEach(d => d.itens.forEach((it, i) => {
+        const prox = d.itens[i + 1];
+        if (it.n && prox && prox.n && prox.n.indexOf(it.n + ".") === 0) REC[vtChave(d, it, i)] = 1;
+      }));
+      corpo.querySelectorAll(".vtSub").forEach(b => b.classList.toggle("fechado", fechar));
+      visiveis.forEach(x => x.visDisc());
+      rotSubs(); salvar();
+    };
     const bCol = el("button","btn","✎  Colar outro texto");
     bCol.onclick = colar;
     const bApagar = el("button","btn","Apagar");
@@ -22260,7 +22310,7 @@ function janelaVerticalizar(num){
     };
     rodape.appendChild(el("span","modalNota", total + " itens em " + V.disc.length +
       " disciplina(s)" + (V.em ? "  ·  verticalizado em " + dataBR(V.em) : "")));
-    rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bTodas);
+    rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bSubs); rodape.appendChild(bTodas);
     const bF = el("button","btn azulzinho","Fechar"); bF.onclick = sair;
     rodape.appendChild(bF);
   }
