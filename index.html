@@ -2357,6 +2357,8 @@ table.g td.infoCel:hover .balaoInfo{display:block}
 .mat_lep .b-verde .bt{color:#1f6d27;}
 .mat_lep .b-verm{background:var(--verm-claro);border-color:var(--verm-borda);}
 .mat_lep .b-verm .bt{color:#a5281c;}
+.mat_lep .b-roxo{background:#f3ecfa;border-color:#cbb3e6;}
+.mat_lep .b-roxo .bt{color:#5a2e92;}
 .mat_lep .balloon p{margin:6px 0;}
 .mat_lep .balloon>ul:first-of-type{margin-top:4px;}
 /* dentro do balão: nível 1 sem marcador */
@@ -29543,7 +29545,12 @@ let MATS = {
     { id:"9434", c:"c-amar", cl:"card", t:"Lei n\u00ba 9.434/1997 \u2014 Remo\u00e7\u00e3o de \u00d3rg\u00e3os, Tecidos e Partes do Corpo Humano" },
     { id:"12015", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.015/2009 \u2014 Corrup\u00e7\u00e3o de Menores" },
     { id:"12694", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.694/2012 \u2014 Processo e julgamento colegiado em primeiro grau de jurisdi\u00e7\u00e3o de crimes praticados por organiza\u00e7\u00f5es criminosas" },
-    { id:"8176", c:"c-verde", cl:"card", t:"Lei n\u00ba 8.176/1991 \u2014 Crimes contra a ordem econ\u00f4mica" }
+    { id:"8176", c:"c-verde", cl:"card", t:"Lei n\u00ba 8.176/1991 \u2014 Crimes contra a ordem econ\u00f4mica" },
+    { id:"12984", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.984/2014 \u2014 Discrimina\u00e7\u00e3o contra portador de HIV e doente de AIDS" },
+    { id:"6766", c:"c-azul", cl:"card", t:"Lei n\u00ba 6.766/1979 \u2014 Parcelamento do solo urbano" },
+    { id:"9263", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.263/1996 \u2014 Planejamento familiar (crimes)" },
+    { id:"dl201b", c:"c-roxo", cl:"card", t:"Decreto-Lei n\u00ba 201/1967 \u2014 Responsabilidade dos Prefeitos e Vereadores" },
+    { id:"6385", c:"c-azul", cl:"card", t:"Lei n\u00ba 6.385/1976 \u2014 Disp\u00f5e sobre o mercado de valores mobili\u00e1rios e cria a Comiss\u00e3o de Valores Mobili\u00e1rios" }
   ]},
   med: {
     rot:"02 - MEDICINA LEGAL", cls:"med", est:"mat_med", secoes:[
@@ -37641,6 +37648,114 @@ details.qf .qf-r b.no{color:#b3261e}
 
 <script type="text/plain" id="matS_lep_8176">
 <div class="sec verde"><div class="num">52</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l8176.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 8.176/1991 — Crimes contra a ordem econômica</a></h2></div>
+</script>
+
+<script type="text/plain" id="matS_lep_12984">
+<div class="sec verm"><div class="num">53</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12984.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 12.984/2014 — Discriminação contra portador de HIV e doente de AIDS</a></h2></div>
+<div class="balloon b-verm"><div class="bt">Art. 1º — Crime de Discriminação contra Portador de HIV ou Doente de AIDS</div>
+<ul class="plain"><li>Constitui crime punível com <b>reclusão, de 1 a 4 anos, e multa</b>, as seguintes condutas discriminatórias contra o portador do HIV e o doente de AIDS, em razão de sua condição:</li></ul>
+<div class="sub2">Condutas Típicas</div><ul class="dash">
+<li>I – <b>Recusar, procrastinar, cancelar ou segregar inscrição</b>, ou impedir que permaneça como aluno em creche ou estabelecimento de ensino de qualquer curso ou grau, público ou privado.</li>
+<li>II – <b>Negar emprego ou trabalho.</b></li>
+<li>III – <b>Exonerar ou demitir</b> de cargo ou emprego.</li>
+<li>IV – <b>Segregar</b> no ambiente de trabalho ou escolar.</li>
+<li>V – <b>Divulgar a condição</b> de portador do HIV ou de doente de AIDS, com o intuito de ofender-lhe a dignidade.</li>
+<li>VI – <b>Recusar ou retardar atendimento de saúde.</b></li>
+</ul>
+</div>
+</script>
+
+<script type="text/plain" id="matS_lep_6766">
+<div class="sec azul"><div class="num">54</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l6766.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 6.766/1979 — Parcelamento do solo urbano</a></h2></div>
+<div class="balloon b-roxo"><div class="bt">Art. 50 — Condutas típicas (caput)</div>
+<p style="margin:0 0 8px;font-size:13px;color:#5a2e92"><b>Reclusão 1 a 4 anos · Multa 5 a 50× salário mínimo</b></p>
+<div class="cell cell-verde" style="margin:6px 0"><div class="ch">I — Loteamento ou desmembramento irregular</div><p>Iniciar/efetuar sem autorização do órgão competente, ou em desacordo com a lei / normas de DF, Estados, Municípios</p></div>
+<div class="cell cell-verde" style="margin:6px 0"><div class="ch">II — Descumprimento da licença</div><p>Iniciar/efetuar sem observar determinações do ato de licença</p></div>
+<div class="cell cell-verde" style="margin:6px 0"><div class="ch">III — Fraude informacional</div><p>Afirmação falsa sobre a legalidade do parcelamento, ou ocultação fraudulenta de fato relevante ao público / interessados</p></div>
+<div class="cell cell-verm" style="margin:6px 0"><div class="ch">Parágrafo único — Forma qualificada</div><p><b>Reclusão 1 a 5 anos · Multa 10 a 100× salário mínimo</b></p><p><b>I — Comercialização irregular:</b> Venda, promessa, reserva de lote em parcelamento não registrado</p><p><b>II — Irregularidade dominial:</b> Sem título legítimo de propriedade ou omissão fraudulenta (ressalva art. 18 §§4º e 5º · salvo crime mais grave)</p></div>
+</div>
+<div class="balloon b-azul"><div class="bt">Art. 51 — Concurso de pessoas</div><ul class="plain"><li>Quem concorre para os crimes do art. 50 incide nas mesmas penas</li><li>Especialmente: mandatário do loteador · diretor · gerente de sociedade</li><li>Parágrafo único: vetado</li></ul></div>
+<div class="balloon b-azul" style="background:#fdf3e6;border-color:#f0d9b0"><div class="bt" style="color:#8a6d1a">Art. 52 — Crime registral</div>
+<p style="margin:0 0 8px;font-size:13px;color:#8a6d1a"><b>Detenção 1 a 2 anos · Multa 5 a 50× salário mínimo</b> (sem prejuízo das sanções administrativas cabíveis)</p>
+<div class="cgrid">
+<div class="cell cell-cinza"><div class="ch">Registrar parcelamento</div><p>Loteamento ou desmembramento não aprovado pelos órgãos competentes</p></div>
+<div class="cell cell-cinza"><div class="ch">Registrar contratos</div><p>Compromisso de compra e venda, cessão / promessa de cessão de direitos, em parc. não registrado</p></div>
+</div>
+</div>
+</script>
+
+<script type="text/plain" id="matS_lep_9263">
+<div class="sec verde"><div class="num">55</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l9263.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 9.263/1996 — Planejamento familiar (crimes)</a></h2></div>
+<p class="lead">DOS CRIMES E DAS PENALIDADES – Lei de Esterilização</p>
+<div class="balloon b-verm"><div class="bt">Art. 15 – Esterilização cirúrgica irregular</div>
+<div class="sub2">Conduta</div><ul class="dash"><li>Realizar esterilização cirúrgica em desacordo com o art. 10 da Lei.</li></ul>
+<div class="note">Art. 10 - A esterilização voluntária somente é permitida em homens e mulheres com <b>capacidade civil plena e maiores de 21 anos de idade ou, pelo menos, com 2 filhos vivos</b>.</div>
+<div class="sub2">Pena</div><ul class="dash"><li>Reclusão: <b>2 a 8 anos</b>.</li><li>Multa.</li><li>Se a prática não constituir crime mais grave.</li></ul>
+<div class="sub2">Parágrafo único – Aumento de pena (1/3)</div>
+<ul class="dash">
+<li><b>I</b> – Durante parto ou aborto:<ul class="dash"><li>Salvo exceção do art. 10, II.</li></ul></li>
+<li><b>II</b> – Com manifestação de vontade prejudicada:<ul class="dash"><li>Álcool.</li><li>Drogas.</li><li>Estados emocionais alterados.</li><li>Incapacidade mental temporária ou permanente.</li></ul></li>
+<li><b>III</b> – Por meio de:<ul class="dash"><li>Histerectomia.</li><li>Ooforectomia.</li></ul></li>
+<li><b>IV</b> – Em pessoa absolutamente incapaz:<ul class="dash"><li>Sem autorização judicial.</li></ul></li>
+<li><b>V</b> – Por cesariana:<ul class="dash"><li>Indicada exclusivamente para esterilização.</li></ul></li>
+</ul>
+</div>
+<div class="balloon b-azul"><div class="bt">Art. 16 – Omissão de notificação</div><ul class="plain"><li><b>Conduta:</b> Médico deixa de notificar à autoridade sanitária as esterilizações realizadas.</li><li><b>Pena:</b> Detenção 6 meses a 2 anos + Multa.</li></ul></div>
+<div class="balloon b-azul"><div class="bt">Art. 17 – Induzimento ou instigação</div><ul class="plain"><li><b>Conduta:</b> Induzir ou instigar dolosamente a esterilização cirúrgica.</li><li><b>Pena:</b> Reclusão 1 a 2 anos.</li><li><b>Parágrafo único:</b> Se cometido contra a coletividade ➜ configura genocídio (aplicação da Lei nº 2.889/1956).</li></ul></div>
+<div class="balloon b-azul"><div class="bt">Art. 18 – Exigência de atestado</div><ul class="plain"><li><b>Conduta:</b> Exigir atestado de esterilização para qualquer finalidade.</li><li><b>Pena:</b> Reclusão 1 a 2 anos + Multa.</li></ul></div>
+<div class="balloon b-azul"><div class="bt">Art. 19 – Responsabilidade dos gestores</div><ul class="plain"><li>Aplica-se aos gestores e responsáveis institucionais o art. 29, caput e §§1º e 2º do Código Penal.</li><li>Abrange instituições que permitam práticas ilícitas previstas na Lei.</li></ul></div>
+<div class="balloon b-verm"><div class="bt">Art. 20 – Sanções às instituições</div>
+<div class="sub2">I – Instituição particular</div><ul class="dash">
+<li>a) Multa: <b>200 a 360 dias-multa</b>.<ul class="dash"><li>Reincidência: Suspensão das atividades; ou Descredenciamento.</li><li>Sem indenização ou cobertura de gastos.</li></ul></li>
+<li>b) Proibições:<ul class="dash"><li>Firmar contratos ou convênios com entidades públicas.</li><li>Receber créditos de instituições governamentais ou estatais.</li></ul></li>
+</ul>
+<div class="sub2">II – Instituição pública</div><ul class="dash"><li>Afastamento temporário ou definitivo dos agentes do ilícito.</li><li>Gestores e responsáveis.</li><li>Sem prejuízo de outras penalidades.</li></ul>
+</div>
+<div class="balloon b-azul"><div class="bt">Art. 21 – Reparação civil</div><ul class="plain"><li>Obrigação de reparar danos morais e materiais decorrentes de esterilização não autorizada.</li><li>Observância: Arts. 159, 1.518 e 1.521 do Código Civil e parágrafo único; Art. 63 do Código de Processo Penal.</li></ul></div>
+</script>
+
+<script type="text/plain" id="matS_lep_dl201b">
+<div class="sec roxo"><div class="num">56</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/decreto-lei/del0201.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Decreto-Lei nº 201/1967 — Responsabilidade dos Prefeitos e Vereadores</a></h2></div>
+<div class="lep-body">
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Crimes de responsabilidade em sentido penal (art. 1º)</h3></div>
+<div class="sub2">Natureza jurídica</div>
+<ul class="dash"><li>São <b>crimes propriamente ditos</b> (natureza penal).</li><li>Julgamento compete ao <b>Poder Judiciário</b>, especificamente ao <b>Tribunal de Justiça</b>.</li></ul>
+<div class="sub2">Procedimento</div>
+<ul class="dash"><li><b>Não dependem</b> de pronunciamento da Câmara de Vereadores.</li><li><b>Ação penal pública</b>, com denúncia oferecida pelo <b>Ministério Público</b>.</li><li>O processo é <b>judicial</b>, não político.</li></ul>
+<div class="sub2">Exemplos de condutas</div>
+<ul class="dash"><li>Apropriação de bens públicos;</li><li>Desvio de verbas públicas;</li><li>Fraude em licitações;</li><li>Utilização indevida de recursos públicos.</li></ul>
+<div class="sub2">Efeitos da condenação</div>
+<ul class="dash"><li>A condenação definitiva acarreta:<ul class="dash"><li><b>perda do cargo</b>;</li><li><b>inabilitação, pelo prazo de 5 anos</b>, para o exercício de cargo ou função pública, eletiva ou de nomeação;</li><li>sem prejuízo da <b>reparação civil</b> do dano causado ao patrimônio público ou particular.</li></ul></li></ul>
+</section>
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Infrações político-administrativas (art. 4º)</h3></div>
+<div class="sub2">Natureza jurídica</div>
+<ul class="dash"><li>São <b>atos político-administrativos</b>, e não crimes penais.</li></ul>
+<div class="sub2">Órgão julgador</div>
+<ul class="dash"><li>Julgamento compete à <b>Câmara de Vereadores</b>.</li><li>Podem resultar na <b>cassação do mandato</b> do Prefeito.</li></ul>
+<div class="sub2">Procedimento</div>
+<ul class="dash"><li><b>Dependem</b> de pronunciamento da Câmara Municipal.</li><li>Órgãos estaduais interessados podem atuar como <b>assistentes de acusação</b>, em qualquer fase do processo.</li></ul>
+<div class="sub2">Exemplos de condutas</div>
+<ul class="dash"><li>Deixar de apresentar contas à Câmara;</li><li>Proceder de modo incompatível com a dignidade do cargo;</li><li>Descumprimento reiterado de deveres administrativos.</li></ul>
+</section>
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Observação relevante sobre pena de reclusão</h3></div>
+<ul class="dash"><li>Somente <b>dois crimes</b> de responsabilidade do Prefeito admitem pena de <b>reclusão</b>.</li><li>Destaca-se o crime previsto no <b>art. 1º, I, do DL nº 201/1967</b>:<ul class="dash"><li><b>apropriar-se, desviar ou utilizar</b> bens, rendas ou serviços públicos em proveito próprio ou alheio; e</li><li><b>utilizar-se, indevidamente</b>, em proveito próprio ou alheio, de bens, rendas ou serviços públicos;</li></ul></li></ul>
+<div class="sub2">Exemplos práticos</div>
+<ul class="dash"><li>Prefeito que utiliza <b>carro oficial para fins particulares</b> (ex.: levar filho à escola);</li><li>Prefeito que se <b>apropria de valores</b> da Prefeitura;</li><li>Utilização de verbas do <b>Fundo Nacional de Saúde</b> para pagamento de débitos da Secretaria Municipal de Saúde.</li></ul>
+</section>
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>Entendimentos</h3></div>
+<div class="jur">Para a configuração do crime do art. 1º, I, é <b>irrelevante a existência de prejuízo efetivo</b> à Administração Pública. <i>(STF)</i></div>
+<div class="jur">“Se, no momento do oferecimento da denúncia, o acusado <b>não exercer função/cargo público</b>, torna-se <b>dispensável a defesa prévia</b> prevista no art. 2º, I, do Decreto-Lei nº 201/1967”. <i>(STJ. 5ª Turma. AgRg no RHC 163.645-TO, Rel. Min. Reynaldo Soares da Fonseca, julgado em 16/08/2022 — Info 746)</i></div>
+<div class="jur">O STJ possui entendimento de que o crime cometido por prefeito <b>em outro estado</b> deve ser julgado pelo <b>tribunal em cuja jurisdição se encontra o município administrado</b> por ele. <i>(STJ, CC nº 120.848/PE)</i></div>
+</section>
+</div>
+</script>
+
+<script type="text/plain" id="matS_lep_6385">
+<div class="sec azul"><div class="num">57</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l6385.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 6.385/1976 — Dispõe sobre o mercado de valores mobiliários e cria a Comissão de Valores Mobiliários</a></h2></div>
 </script>
 
 <script type="text/plain" id="matS_med_cap-0">
