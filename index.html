@@ -30825,7 +30825,6 @@ let MATS = {
     { id:"10446", c:"c-verm", cl:"card", t:"Lei n\u00ba 10.446/2002 \u2014 Infra\u00e7\u00f5es Penais de Repercuss\u00e3o Interestadual" },
     { id:"dl201", c:"c-roxo", cl:"card", t:"Decreto-Lei n\u00ba 201/1967 \u2014 Responsabilidade de Prefeitos e Vereadores" },
     { id:"9610", c:"c-azul", cl:"card", t:"Lei n\u00ba 9.610/1998 \u2014 Direitos Autorais" },
-    { id:"12737", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.737/2012 \u2014 Delitos Inform\u00e1ticos (Lei Carolina Dieckmann)" },
     { id:"13344", c:"c-verm", cl:"card", t:"Lei n\u00ba 13.344/2016 \u2014 Tr\u00e1fico de Pessoas" },
     { id:"12318", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.318/2010 \u2014 Aliena\u00e7\u00e3o Parental" },
     { id:"11105", c:"c-amar", cl:"card", t:"Lei n\u00ba 11.105/2005 \u2014 Organismos Geneticamente Modificados (Biosseguran\u00e7a)" },
@@ -30837,7 +30836,7 @@ let MATS = {
     { id:"9434", c:"c-amar", cl:"card", t:"Lei n\u00ba 9.434/1997 \u2014 Remo\u00e7\u00e3o de \u00d3rg\u00e3os, Tecidos e Partes do Corpo Humano" },
     { id:"12015", c:"c-verde", cl:"card", t:"Lei n\u00ba 12.015/2009 \u2014 Corrup\u00e7\u00e3o de Menores" },
     { id:"12694", c:"c-roxo", cl:"card", t:"Lei n\u00ba 12.694/2012 \u2014 Processo e julgamento colegiado em primeiro grau de jurisdi\u00e7\u00e3o de crimes praticados por organiza\u00e7\u00f5es criminosas" },
-    { id:"8176", c:"c-verde", cl:"card", t:"Lei n\u00ba 8.176/1991 \u2014 Crimes contra a ordem econ\u00f4mica" },
+    { id:"8176", c:"c-azul", cl:"card", t:"Lei n\u00ba 8.176/1991 \u2014 Crimes contra a Ordem Econ\u00f4mica" },
     { id:"12984", c:"c-verm", cl:"card", t:"Lei n\u00ba 12.984/2014 \u2014 Discrimina\u00e7\u00e3o contra portador de HIV e doente de AIDS" },
     { id:"6766", c:"c-azul", cl:"card", t:"Lei n\u00ba 6.766/1979 \u2014 Parcelamento do solo urbano" },
     { id:"9263", c:"c-verde", cl:"card", t:"Lei n\u00ba 9.263/1996 \u2014 Planejamento familiar (crimes)" },
@@ -31877,8 +31876,9 @@ function matMenuTabela(art, aoTerminar){
     });
     return lista;
   }
-  // onde entra o novo bloco: depois do bloco clicado; nunca dentro de título nem
-  // dentro de outro balão; clicou no vazio de um cartão, entra no fim dele
+  // onde entra o novo bloco: depois do bloco clicado, no mesmo lugar dele (dentro de
+  // um balão continua dentro); nunca dentro de título; clicou no vazio de um cartão
+  // ou de um balão, entra no fim dele
   function colocar(alvo, novo){
     let e = alvo && alvo.nodeType === 1 ? alvo : (alvo && alvo.parentElement);
     if (!e || !art.contains(e)) e = art;
@@ -31890,10 +31890,10 @@ function matMenuTabela(art, aoTerminar){
     let b = e.closest("p, ul, ol, table, blockquote, pre, figure, li");
     if (b && b.tagName === "LI") b = b.closest("ul, ol") || b;
     if (!b || !art.contains(b)) b = e;
-    // dentro de um balão: entra depois dele
-    let caixa = b;
-    for (let x = b; x && x !== art; x = x.parentElement) if (ehBalao(x)) caixa = x;
-    (caixa || b).after(novo);
+    // clicou no vazio de um balão: entra no fim dele (balão dentro de balão)
+    if (b === e && ehBalao(e)){ e.appendChild(novo); return; }
+    // clicou num texto (inclusive dentro de um balão): entra logo depois dele, no mesmo lugar
+    b.after(novo);
   }
   function terminar(novo, alvoTexto){
     // o cursor já fica no lugar de escrever
@@ -38901,9 +38901,6 @@ details.qf .qf-r b.no{color:#b3261e}
 <div class="sec azul"><div class="num">40</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l9610.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 9.610/1998 — Direitos Autorais</a></h2></div>
 </script>
 
-<script type="text/plain" id="matS_lep_12737">
-<div class="sec verde"><div class="num">41</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12737.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 12.737/2012 — Delitos Informáticos (Lei Carolina Dieckmann)</a></h2></div>
-</script>
 
 <script type="text/plain" id="matS_lep_13344">
 <div class="sec verm"><div class="num">42</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13344.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 13.344/2016 — Tráfico de Pessoas</a></h2></div>
@@ -38915,10 +38912,328 @@ details.qf .qf-r b.no{color:#b3261e}
 
 <script type="text/plain" id="matS_lep_11105">
 <div class="sec lar"><div class="num">44</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11105.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 11.105/2005 — Organismos Geneticamente Modificados (Biossegurança)</a></h2></div>
+
+<div class="lep-body">
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Objeto e diretrizes (Art. 1º)</h3></div>
+<div class="balloon b-azul"><div class="bt">Lei de Biossegurança</div>
+<ul class="plain"><li>Regulamenta o <b>art. 225, § 1º, II, IV e V, da CF</b> e estabelece <span class="mark">NORMAS DE SEGURANÇA E MECANISMOS DE FISCALIZAÇÃO</span> sobre atividades com <b>OGM e seus derivados</b>.</li></ul></div>
+<ul class="dash">
+<li>Abrange todo o ciclo: construção, cultivo, produção, manipulação, transporte, transferência, importação, exportação, armazenamento, <b>pesquisa</b>, comercialização, consumo, liberação no meio ambiente e <b>descarte</b>;</li>
+<li>Cria o <b>CNBS</b> e reestrutura a <b>CTNBio</b>;</li>
+<li>Diretrizes: estímulo ao avanço científico, proteção à vida e à saúde humana, animal e vegetal, e observância do <b>princípio da precaução</b>.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Quem pode exercer as atividades (Art. 2º)</h3></div>
+<ul class="dash">
+<li>Somente <b>pessoas jurídicas</b> de direito público ou privado, que respondem pelos danos decorrentes;</li>
+<li>Vedado a <b>pessoas físicas</b> em atuação autônoma e independente, <span class="rd">ainda que</span> mantenham vínculo empregatício ou qualquer outro com pessoas jurídicas;</li>
+<li>Exige-se o <b>CQB</b> (Certificado de Qualidade em Biossegurança), emitido pela CTNBio;</li>
+<li>O financiador ou patrocinador deve exigir o CQB, sob pena de se tornar <b>corresponsável</b>.</li>
+</ul>
+<div class="bizu">Pegadinha clássica: a banca troca "AINDA QUE mantenham vínculo" por "DESDE QUE mantenham vínculo". A versão com "desde que" está errada.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Conceitos (Art. 3º)</h3></div>
+<table class="t">
+<tr><th>Conceito</th><th>Definição legal</th></tr>
+<tr><td><b>OGM</b></td><td>Organismo cujo material genético (ADN/ARN) tenha sido modificado por qualquer técnica de <b>engenharia genética</b></td></tr>
+<tr><td><b>Derivado de OGM</b></td><td>Produto obtido de OGM que <span class="rd">NÃO</span> possua capacidade autônoma de replicação ou que não contenha forma viável de OGM</td></tr>
+<tr><td><b>Engenharia genética</b></td><td>Produção e manipulação de moléculas de <b>ADN/ARN recombinante</b></td></tr>
+<tr><td><b>Clonagem</b></td><td>Reprodução <b>assexuada</b>, produzida artificialmente, baseada em um único patrimônio genético</td></tr>
+<tr><td><b>Clonagem reprodutiva</b></td><td>Finalidade de obtenção de um <b>indivíduo</b></td></tr>
+<tr><td><b>Clonagem terapêutica</b></td><td>Finalidade de produção de <b>células-tronco embrionárias</b> para utilização terapêutica</td></tr>
+<tr><td><b>Células-tronco embrionárias</b></td><td>Células de embrião capazes de se transformar em células de qualquer tecido de um organismo</td></tr>
+</table>
+<div class="note"><b>Não é derivado de OGM (§ 2º):</b> a substância pura, quimicamente definida, obtida por processos biológicos e que não contenha OGM, proteína heteróloga ou ADN recombinante.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>O que não é OGM e onde a lei não se aplica (Arts. 3º, § 1º, e 4º)</h3></div>
+<ul class="dash">
+<li><b>Não são OGM</b> (art. 3º, § 1º): resultados de fecundação <i>in vitro</i>, conjugação, transdução, transformação, indução poliploide e outros processos naturais — <b>desde que não</b> envolvam ADN/ARN recombinante ou OGM;</li>
+<li><b>A lei não se aplica</b> (art. 4º): mutagênese, formação e utilização de células somáticas de hibridoma animal, fusão celular (inclusive de protoplasma de células vegetais) e autoclonagem de organismos não patogênicos — <b>desde que não</b> impliquem uso de OGM como receptor ou doador.</li>
+</ul>
+<div class="bizu">Regra de ouro: sempre "DESDE QUE NÃO". Se a assertiva disser "mesmo quando", "inclusive" ou "ainda que" envolvam OGM, está errada.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">5</div><h3>Células-tronco embrionárias (Art. 5º)</h3></div>
+<div class="balloon b-verde"><div class="bt">Uso permitido para pesquisa e terapia</div>
+<ul class="plain"><li>A utilização é <span class="mark">PERMITIDA PARA FINS DE PESQUISA E TERAPIA</span>, desde que cumpridos todos os requisitos abaixo.</li></ul></div>
+<div style="background:#1a1614;border:2px solid #6b6258;border-radius:4px;overflow:hidden;margin:16px 0;font-size:13.5px;color:#fff">
+<div style="background:#4a4238;color:#fff;text-align:center;font-weight:700;padding:10px;letter-spacing:.5px;border-bottom:2px solid #6b6258">CÉLULAS-TRONCO EMBRIONÁRIAS — REQUISITOS E VEDAÇÃO</div>
+<table style="width:100%;border-collapse:collapse">
+<tr>
+<td style="width:130px;background:#2a2320;color:#7ed957;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;padding:10px;letter-spacing:.5px">PODE</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>ORIGEM:</b> embriões produzidos por fertilização <i>in vitro</i> e não utilizados no procedimento <i style="color:#ddd">(art. 5º, caput)</i>;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>CONDIÇÃO:</b> embriões <b>inviáveis</b> <b>OU</b> congelados há <b style="color:#7ed957">3 anos ou mais</b> <i style="color:#ddd">(art. 5º, I e II)</i>;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>CONSENTIMENTO:</b> é sempre necessário o consentimento dos <b>genitores</b> <i style="color:#ddd">(art. 5º, § 1º)</i>;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>ÉTICA:</b> projeto aprovado pelo <b>comitê de ética em pesquisa</b> <i style="color:#ddd">(art. 5º, § 2º)</i>.</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="background:#2a2320;color:#ff6b5b;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;border-top:2px solid #6b6258;padding:10px;letter-spacing:.5px">NÃO<br>PODE</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top;border-top:2px solid #6b6258">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>EMBRIÕES VIÁVEIS:</b> não podem ser usados se não estiverem congelados há 3 anos ou mais <i style="color:#ddd">(art. 5º, I e II)</i>;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>COMERCIALIZAÇÃO:</b> vedada em qualquer hipótese, <b>mesmo com autorização dos genitores</b> — configura o crime do art. 15 da Lei nº 9.434/97 (Lei de Transplantes: reclusão de 3 a 8 anos e multa) <i style="color:#ddd">(art. 5º, § 3º)</i>.</li>
+</ul>
+</td>
+</tr>
+</table>
+</div>
+<div class="jur">O art. 5º da Lei de Biossegurança é <b>constitucional</b>: a pesquisa com células-tronco embrionárias não viola o direito à vida nem a dignidade da pessoa humana. <i>(STF, ADI 3.510/DF, 2008)</i></div>
+<div class="mnemo"><span class="lbl">Requisitos — FIV-3-GE</span> <b>FIV</b> (fertilização <i>in vitro</i>, não utilizado) · <b>3</b> anos congelado (ou inviável) · <b>G</b>enitores consentem · <b>E</b>tica (comitê aprova)</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">6</div><h3>Vedações (Art. 6º)</h3></div>
+<ul class="dash">
+<li>Implementar projeto com OGM <b>sem registro de seu acompanhamento individual</b>;</li>
+<li>Engenharia genética em organismo vivo, ou manejo <i>in vitro</i> de ADN/ARN, <b>em desacordo</b> com as normas;</li>
+<li>Engenharia genética em <b>célula germinal humana, zigoto humano e embrião humano</b>;</li>
+<li><b>Clonagem humana</b>;</li>
+<li>Destruição ou descarte de OGM no meio ambiente <b>em desacordo</b> com as normas;</li>
+<li>Liberação de OGM no meio ambiente sem decisão técnica favorável da CTNBio (e, conforme o caso, sem licenciamento ambiental ou sem aprovação do CNBS);</li>
+<li>Utilização, comercialização, registro, patenteamento e licenciamento de <b>tecnologias genéticas de restrição do uso</b> (as "sementes <i>terminator</i>").</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">7</div><h3>Crimes e penas (Arts. 24 a 29)</h3></div>
+<div class="balloon b-verm"><div class="bt">Ponto central para Delegado</div>
+<ul class="plain"><li>Todos os crimes são <b>dolosos</b> e de ação penal <b>pública incondicionada</b>. O art. 24 é o <span class="mark">ÚNICO PUNIDO COM DETENÇÃO</span>; os demais têm reclusão e multa.</li></ul></div>
+<table class="t">
+<tr><th style="width:9%">Art.</th><th>Conduta</th><th style="width:24%">Pena</th></tr>
+<tr><td><b>24</b></td><td>Utilizar embrião humano em desacordo com o art. 5º</td><td><b>Detenção</b>, 1 a 3 anos, e multa</td></tr>
+<tr><td><b>25</b></td><td>Praticar engenharia genética em célula germinal humana, zigoto humano ou embrião humano</td><td>Reclusão, 1 a 4 anos, e multa</td></tr>
+<tr><td><b>26</b></td><td>Realizar <b>clonagem humana</b></td><td>Reclusão, <b>2 a 5 anos</b>, e multa</td></tr>
+<tr><td><b>27</b></td><td>Liberar ou descartar OGM no meio ambiente <b>em desacordo</b> com as normas da CTNBio e dos órgãos de fiscalização</td><td>Reclusão, 1 a 4 anos, e multa</td></tr>
+<tr><td><b>28</b></td><td>Utilizar, comercializar, registrar, patentear e licenciar <b>tecnologias genéticas de restrição do uso</b></td><td>Reclusão, <b>2 a 5 anos</b>, e multa</td></tr>
+<tr><td><b>29</b></td><td>Produzir, armazenar, transportar, comercializar, importar ou exportar OGM ou derivados <b>sem autorização</b> ou em desacordo com as normas</td><td>Reclusão, 1 a 2 anos, e multa</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Maiores penas — 2 a 5 anos</span> <b>Clonagem humana</b> (art. 26) e <b>tecnologia de restrição do uso</b> (art. 28) — "clonou ou esterilizou a semente, pega 2 a 5"</div>
+<ul class="dash">
+<li>Só a clonagem <b>humana</b> é crime — clonar outros animais <span class="rd">não</span> é tipificado;</li>
+<li>O descarte só é crime se feito <b>em desacordo</b> com as normas — <span class="rd">não</span> "qualquer forma" de descarte;</li>
+<li>A modalidade culposa do art. 27 (§ 1º) foi <b>vetada</b>.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">8</div><h3>Causas de aumento do Art. 27 (§ 2º)</h3></div>
+<table class="t">
+<tr><th>Se resultar</th><th style="width:34%">A pena é agravada de</th></tr>
+<tr><td>Dano à <b>propriedade alheia</b></td><td>1/6 a 1/3</td></tr>
+<tr><td>Dano ao <b>meio ambiente</b></td><td>1/3 até a metade</td></tr>
+<tr><td><b>Lesão corporal grave</b> em outrem</td><td>Metade até 2/3</td></tr>
+<tr><td><b>Morte</b> de outrem</td><td>2/3 até o dobro</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">9</div><h3>Reflexos na atividade policial</h3></div>
+<ul class="dash">
+<li><b>Art. 29</b>: pena máxima de 2 anos — <b>infração de menor potencial ofensivo</b>; lavra-se <b>TCO</b> (Lei nº 9.099/95);</li>
+<li><b>Suspensão condicional do processo</b>: cabível nos arts. 24, 25, 27 e 29 (pena mínima de 1 ano);</li>
+<li>Os demais crimes (arts. 24 a 28) seguem o rito comum: flagrante e inquérito policial.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">10</div><h3>Órgãos de biossegurança</h3></div>
+<table class="t">
+<tr><th>Órgão</th><th>Atuação</th></tr>
+<tr><td><b>CNBS</b> — Conselho Nacional de Biossegurança</td><td>Vinculado à <b>Presidência da República</b>. Formula a Política Nacional de Biossegurança e decide, em <b>última e definitiva instância</b>, sobre a <b>conveniência e oportunidade socioeconômicas</b> da liberação comercial de OGM</td></tr>
+<tr><td><b>CTNBio</b> — Comissão Técnica Nacional de Biossegurança</td><td>Integrante do <b>Ministério da Ciência e Tecnologia</b>. Colegiado multidisciplinar, consultivo e deliberativo, com <b>27 membros</b>; sua decisão técnica <b>vincula</b> os demais órgãos quanto à biossegurança</td></tr>
+<tr><td><b>CIBio</b> — Comissão Interna de Biossegurança</td><td>Obrigatória em toda instituição que use técnicas de engenharia genética ou pesquise com OGM</td></tr>
+<tr><td>Órgãos de registro e fiscalização</td><td>Ministérios da Saúde, da Agricultura e do Meio Ambiente e Secretaria de Aquicultura e Pesca</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Quem decide o quê</span><b>CTNBio:</b> aspecto <b>técnico</b> (biossegurança)<br/>
+<b>CNBS:</b> aspecto <b>socioeconômico</b> (conveniência e oportunidade)</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">11</div><h3>Responsabilidades (Arts. 20 a 22)</h3></div>
+<ul class="dash">
+<li><b>Civil</b>: <b>objetiva e solidária</b> — indenização ou reparação integral dos danos ao meio ambiente e a terceiros, independentemente de culpa;</li>
+<li><b>Administrativa</b>: multa de <b>R$ 2.000,00 a R$ 1.500.000,00</b>, aplicada em dobro na reincidência;</li>
+<li>As esferas civil, administrativa e penal são <b>independentes</b>.</li>
+</ul>
+<div class="note">Alimentos e ingredientes destinados ao consumo que contenham OGM devem trazer essa informação no <b>rótulo</b> (art. 40).</div>
+</section>
+</div>
 </script>
 
 <script type="text/plain" id="matS_lep_11101">
 <div class="sec teal"><div class="num">45</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11101.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 11.101/2005 — Crimes Falimentares</a></h2></div>
+
+<div class="lep-body">
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Visão geral (Arts. 168 a 188)</h3></div>
+<div class="balloon b-azul"><div class="bt">Disposições penais da Lei de Falências</div>
+<ul class="plain"><li>A Lei nº 11.101/2005 regula a recuperação judicial, a recuperação extrajudicial e a falência. Os crimes estão nos <b>arts. 168 a 178</b>, as disposições comuns nos <b>arts. 179 a 182</b> e o procedimento penal nos <b>arts. 183 a 188</b>.</li></ul></div>
+<ul class="dash">
+<li>Todos os crimes são <b>dolosos</b> — não há modalidade culposa;</li>
+<li>Ação penal <b>pública incondicionada</b> (art. 184);</li>
+<li>Só há punição se existir a <span class="mark">SENTENÇA QUE DECRETA A FALÊNCIA, CONCEDE A RECUPERAÇÃO JUDICIAL OU HOMOLOGA A EXTRAJUDICIAL</span> (art. 180);</li>
+<li>Os crimes podem ser <b>antefalimentares</b> (praticados antes da sentença) ou <b>pós-falimentares</b> (praticados depois dela).</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Crimes em espécie (Arts. 168 a 178)</h3></div>
+<table class="t">
+<tr><th style="width:8%">Art.</th><th style="width:22%">Crime</th><th>Núcleo da conduta</th><th style="width:20%">Pena</th></tr>
+<tr><td><b>168</b></td><td style="text-align:left !important"><b>Fraude a credores</b></td><td>Praticar ato fraudulento, antes ou depois da sentença, de que resulte ou possa resultar prejuízo aos credores, para obter vantagem indevida</td><td style="text-align:left !important">Reclusão, <b>3 a 6 anos</b>, e multa</td></tr>
+<tr><td><b>169</b></td><td style="text-align:left !important">Violação de sigilo empresarial</td><td>Violar, explorar ou divulgar, sem justa causa, sigilo empresarial ou dados confidenciais, contribuindo para a inviabilidade econômica do devedor</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>170</b></td><td style="text-align:left !important">Divulgação de informações falsas</td><td>Divulgar ou propalar informação falsa sobre devedor <b>em recuperação judicial</b>, para levá-lo à falência ou obter vantagem</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>171</b></td><td style="text-align:left !important">Indução a erro</td><td>Sonegar, omitir ou prestar informações falsas no processo, para induzir a erro o juiz, o MP, os credores, a assembleia, o Comitê ou o administrador judicial</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>172</b></td><td style="text-align:left !important">Favorecimento de credores</td><td>Praticar ato de disposição ou oneração patrimonial para favorecer um ou mais credores em prejuízo dos demais</td><td style="text-align:left !important">Reclusão, <b>2 a 5 anos</b>, e multa</td></tr>
+<tr><td><b>173</b></td><td style="text-align:left !important">Desvio, ocultação ou apropriação de bens</td><td>Apropriar-se, desviar ou ocultar bens do devedor em recuperação judicial ou da massa falida, inclusive por interposta pessoa</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>174</b></td><td style="text-align:left !important">Aquisição, recebimento ou uso ilegal de bens</td><td>Adquirir, receber ou usar ilicitamente bem que <b>sabe</b> pertencer à massa falida, ou influir para que terceiro de boa-fé o faça</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>175</b></td><td style="text-align:left !important">Habilitação ilegal de crédito</td><td>Apresentar relação, habilitação de créditos ou reclamação falsas, ou juntar título falso ou simulado</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>176</b></td><td style="text-align:left !important">Exercício ilegal de atividade</td><td>Exercer atividade para a qual foi inabilitado ou incapacitado por decisão judicial</td><td style="text-align:left !important">Reclusão, <b>1 a 4 anos</b>, e multa</td></tr>
+<tr><td><b>177</b></td><td style="text-align:left !important">Violação de impedimento</td><td>Juiz, MP, administrador judicial, gestor, perito, avaliador, escrivão, oficial de justiça ou leiloeiro que adquire bens da massa ou especula com eles, tendo atuado no processo</td><td style="text-align:left !important">Reclusão, 2 a 4 anos, e multa</td></tr>
+<tr><td><b>178</b></td><td style="text-align:left !important">Omissão dos documentos contábeis obrigatórios</td><td>Deixar de elaborar, escriturar ou autenticar os documentos contábeis obrigatórios, antes ou depois da sentença</td><td style="text-align:left !important"><b>Detenção</b>, 1 a 2 anos, e multa</td></tr>
+</table>
+<div class="mnemo"><span class="lbl">Penas que fogem do padrão (2 a 4 anos)</span><b>168</b> Fraude a credores: 3 a 6 (a maior)<br/>
+<b>172</b> Favorecimento de credores: 2 a 5<br/>
+<b>176</b> Exercício ilegal de atividade: 1 a 4<br/>
+<b>178</b> Omissão contábil: <b>detenção</b> 1 a 2 (o único com detenção; subsidiário — "se o fato não constitui crime mais grave")</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Fraude a credores — detalhes (Art. 168)</h3></div>
+<div class="balloon b-verm"><div class="bt">O crime falimentar mais cobrado</div>
+<ul class="plain"><li>É o crime com a <span class="mark">MAIOR PENA DA LEI</span> (reclusão de 3 a 6 anos) e o único com causas de aumento, concurso de pessoas e redução de pena expressamente previstos.</li></ul></div>
+<ul class="dash">
+<li><b>§ 1º — aumento de 1/6 a 1/3</b> se o agente:
+<ul class="dash">
+<li>elabora escrituração contábil ou balanço com dados inexatos;</li>
+<li>omite lançamento que deveria constar, ou altera escrituração ou balanço verdadeiros;</li>
+<li>destrói, apaga ou corrompe dados contábeis ou negociais armazenados em computador;</li>
+<li>simula a composição do capital social;</li>
+<li>destrói, oculta ou inutiliza documentos de escrituração contábil obrigatórios.</li>
+</ul></li>
+<li><b>§ 2º — aumento de 1/3 até a metade</b>: <b>contabilidade paralela</b> ("caixa dois") — o devedor manteve ou movimentou recursos paralelamente à contabilidade exigida, inclusive distribuindo lucros ou dividendos a sócios durante a recuperação judicial (art. 6º-A, incluído pela Lei nº 14.112/2020);</li>
+<li><b>§ 3º — concurso de pessoas</b>: contadores, técnicos contábeis, auditores e outros profissionais que concorram para a conduta incidem nas mesmas penas, na medida de sua culpabilidade;</li>
+<li><b>§ 4º — ME e EPP</b>: na falência de microempresa ou empresa de pequeno porte, sem prática habitual de fraudes, o juiz pode <b>reduzir a pena de 1/3 a 2/3</b> ou substituí-la por restritivas de direitos.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>Sujeito ativo e equiparação (Art. 179)</h3></div>
+<ul class="dash">
+<li>Na falência ou recuperação de <b>sociedades</b>, equiparam-se ao devedor ou falido, para todos os efeitos penais: os <b>sócios, diretores, gerentes, administradores e conselheiros, de fato ou de direito</b>, e o <b>administrador judicial</b>;</li>
+<li>A responsabilidade é <b>na medida da culpabilidade</b> de cada um — não há responsabilidade penal objetiva;</li>
+<li>Credor que, <b>em conluio</b>, se beneficia do favorecimento responde pelo art. 172 (parágrafo único).</li>
+</ul>
+<div class="bizu">O administrador judicial é equiparado ao devedor para fins penais — pegadinha frequente.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">5</div><h3>Condição objetiva de punibilidade (Art. 180)</h3></div>
+<div class="balloon b-azul"><div class="bt">Sem sentença, não há crime falimentar punível</div>
+<ul class="plain"><li>A sentença que <b>decreta a falência</b>, <b>concede a recuperação judicial</b> ou <b>concede a recuperação extrajudicial</b> é <span class="mark">CONDIÇÃO OBJETIVA DE PUNIBILIDADE</span> de todos os crimes da lei.</li></ul></div>
+<ul class="dash">
+<li>É elemento externo ao tipo: o crime pode ser praticado antes, mas só é punível depois da sentença;</li>
+<li>Por isso, a <b>prescrição</b> também só começa a correr a partir da sentença (art. 182).</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">6</div><h3>Efeitos da condenação (Art. 181)</h3></div>
+<div style="background:#1a1614;border:2px solid #6b6258;border-radius:4px;overflow:hidden;margin:16px 0;font-size:13.5px;color:#fff">
+<div style="background:#4a4238;color:#fff;text-align:center;font-weight:700;padding:10px;letter-spacing:.5px;border-bottom:2px solid #6b6258">EFEITOS DA CONDENAÇÃO POR CRIME FALIMENTAR</div>
+<table style="width:100%;border-collapse:collapse">
+<tr>
+<td style="width:130px;background:#2a2320;color:#ff6b5b;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;padding:10px;letter-spacing:.5px">QUAIS SÃO</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>INABILITAÇÃO:</b> para o exercício de atividade empresarial <i style="color:#ddd">(art. 181, I)</i>;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>IMPEDIMENTO:</b> para cargo ou função em conselho de administração, diretoria ou gerência de sociedades sujeitas à lei <i style="color:#ddd">(art. 181, II)</i>;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>GESTÃO:</b> impossibilidade de gerir empresa por mandato ou gestão de negócio <i style="color:#ddd">(art. 181, III)</i>.</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="background:#2a2320;color:#5bb8e8;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;border-top:2px solid #6b6258;padding:10px;letter-spacing:.5px">COMO<br>FUNCIONAM</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top;border-top:2px solid #6b6258">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>NÃO SÃO AUTOMÁTICOS:</b> devem ser <b>motivadamente declarados na sentença</b> <i style="color:#ddd">(art. 181, § 1º)</i>;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>DURAÇÃO:</b> até <b style="color:#7ed957">5 anos após a extinção da punibilidade</b>, podendo cessar antes pela <b>reabilitação penal</b> <i style="color:#ddd">(art. 181, § 1º)</i>;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>REGISTRO:</b> transitada em julgado, notifica-se o Registro Público de Empresas <i style="color:#ddd">(art. 181, § 2º)</i>.</li>
+</ul>
+</td>
+</tr>
+</table>
+</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">7</div><h3>Prescrição (Art. 182)</h3></div>
+<ul class="dash">
+<li>Rege-se pelo <b>Código Penal</b>;</li>
+<li>Começa a correr do dia da <b>decretação da falência</b>, da <b>concessão da recuperação judicial</b> ou da <b>homologação do plano de recuperação extrajudicial</b>;</li>
+<li>A <b>decretação da falência interrompe</b> a prescrição que tenha começado com a concessão da recuperação judicial ou com a homologação da extrajudicial (parágrafo único).</li>
+</ul>
+<div class="jur">Nos crimes falimentares, aplicam-se as causas interruptivas da prescrição previstas no Código Penal. <i>(Súmula 592/STF)</i></div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">8</div><h3>Procedimento penal (Arts. 183 a 188)</h3></div>
+<table class="t">
+<tr><th>Tema</th><th>Regra</th></tr>
+<tr><td><b>Competência</b></td><td><b>Juiz criminal</b> da jurisdição onde foi decretada a falência, concedida a recuperação judicial ou homologada a extrajudicial (art. 183). A lei estadual de organização judiciária pode atribuí-la ao próprio juízo falimentar — é o caso de SP (STF, RHC 63.787/SP)</td></tr>
+<tr><td><b>Ação penal</b></td><td>Pública incondicionada. Se o MP não denunciar no prazo, <b>qualquer credor habilitado ou o administrador judicial</b> pode propor ação penal privada subsidiária, em <b>6 meses</b> (art. 184)</td></tr>
+<tr><td><b>Rito</b></td><td>Recebida a denúncia ou queixa, segue o rito dos <b>arts. 531 a 540 do CPP</b> — procedimento <b>sumário</b> (art. 185)</td></tr>
+<tr><td><b>Exposição circunstanciada</b></td><td>O administrador judicial apresenta ao juiz da falência relatório sobre as causas da falência e a conduta do devedor, com laudo do contador (art. 186)</td></tr>
+<tr><td><b>Atuação do MP</b></td><td>Intimado da sentença, promove a ação penal ou, se necessário, <b>requisita a abertura de inquérito policial</b> (art. 187)</td></tr>
+<tr><td><b>Prazo da denúncia</b></td><td>O do art. 46 do CPP; se o réu estiver solto ou afiançado, o MP pode aguardar a exposição circunstanciada e denunciar em <b>15 dias</b> (art. 187, § 1º)</td></tr>
+<tr><td><b>Aplicação subsidiária</b></td><td>Código de Processo Penal (art. 188)</td></tr>
+</table>
+<div class="bizu">A lei antiga (DL 7.661/45) previa o inquérito judicial. Na Lei nº 11.101/2005 ele não existe mais: a investigação é feita por inquérito policial, requisitado pelo MP.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">9</div><h3>Reflexos na atividade policial</h3></div>
+<ul class="dash">
+<li><b>Art. 178</b>: pena máxima de 2 anos — <b>infração de menor potencial ofensivo</b>; lavra-se <b>TCO</b> (Lei nº 9.099/95);</li>
+<li><b>Suspensão condicional do processo</b>: cabível nos arts. <b>176 e 178</b> (pena mínima de 1 ano); nos demais a pena mínima é de 2 ou 3 anos;</li>
+<li><b>Princípio da unicidade</b>: tese segundo a qual várias condutas falimentares no mesmo processo formam <b>crime único</b>. Hoje é <b>controvertida</b> no STJ — ver card 10.</li>
+</ul>
+</section>
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">10</div><h3>Jurisprudência</h3></div>
+<div class="sub">Prescrição</div>
+<div class="jur">Nos crimes falimentares, aplicam-se as causas interruptivas da prescrição previstas no Código Penal. <i>(Súmula 592/STF)</i></div>
+<div class="sub">Condição objetiva de punibilidade</div>
+<div class="jur">Atos fraudulentos em prejuízo de credores só são punidos como crime falimentar se for proferida a sentença de falência ou de recuperação. Sem ela, os atos podem ser atípicos ou configurar outro crime. <i>(STJ, 5ª Turma, AgRg nos EDcl no AREsp 745.816/RJ, Rel. Min. Reynaldo Soares da Fonseca, j. 21/03/2017)</i></div>
+<div class="bizu">A sentença de falência é condição OBJETIVA DE PUNIBILIDADE (art. 180), e não condição de procedibilidade. Questões de prova já cobraram essa troca.</div>
+<div class="sub">Competência</div>
+<div class="jur">É constitucional a lei estadual paulista (Lei nº 3.947/83) que atribui ao juízo universal da falência a competência para julgar os crimes falimentares. <i>(STF, RHC 63.787/SP, Rel. Min. Rafael Mayer, j. 27/06/1986)</i></div>
+<div class="sub">Princípio da unicidade — tema controvertido</div>
+<div class="balloon b-verm"><div class="bt">Atenção: o STJ oscila</div>
+<ul class="plain"><li>A unicidade nasceu na lei antiga (DL 7.661/45). Sob a Lei nº 11.101/2005, o STJ <b>já aplicou</b> a tese em alguns julgados, mas em decisões mais recentes tem <span class="mark">AFASTADO A UNICIDADE</span>, sobretudo entre os arts. 168 e 171.</li></ul></div>
+<div class="jur">Aplicou a unicidade apenas às condutas do art. 168, mantendo o <b>concurso material</b> com o art. 171. <i>(STJ, 6ª Turma, REsp 1.617.129/RS, Rel. Min. Sebastião Reis Júnior, j. 07/11/2017)</i></div>
+<div class="jur">Admitiu a aplicação da unicidade. <i>(STJ, 5ª Turma, AgRg no AREsp 986.276/RS, Rel. Min. Jorge Mussi, j. 07/08/2018)</i></div>
+<div class="jur">Manteve o afastamento da unicidade entre os crimes dos arts. 168 e 171. <i>(STJ, 5ª Turma, AgRg no RHC 174.790/RS, Rel. Min. Ribeiro Dantas, 2023)</i></div>
+<div class="sub">Unicidade x benefícios processuais</div>
+<div class="jur">Em concurso de crimes falimentares cuja soma das penas mínimas ultrapassa 1 ano, <b>não cabe suspensão condicional do processo</b>. A unicidade não pode ser usada antes da sentença para contornar esse limite. <i>(STJ, 5ª Turma, HC 26.126/SP, Rel. Min. Laurita Vaz, j. 18/11/2003; Súmula 243/STJ)</i></div>
+<div class="jur">A suspensão condicional do processo não se aplica quando a soma das penas em concurso formal, material ou continuidade delitiva ultrapassa 1 ano, ainda que se invoque a unicidade. <i>(STJ, 5ª Turma, EDcl no AgRg no Ag 698.820/RJ, Rel. Min. Gilson Dipp, j. 02/02/2006)</i></div>
+<div class="mnemo"><span class="lbl">Para a prova</span><b>Súmula 592/STF:</b> causas interruptivas do CP valem nos crimes falimentares<br/>
+<b>Sentença de falência:</b> condição objetiva de punibilidade, e não de procedibilidade<br/>
+<b>Unicidade:</b> controvertida no STJ; não serve para viabilizar a suspensão condicional do processo</div>
+</section>
+</div>
 </script>
 
 <script type="text/plain" id="matS_lep_lidicp">
@@ -38954,7 +39269,140 @@ details.qf .qf-r b.no{color:#b3261e}
 </script>
 
 <script type="text/plain" id="matS_lep_8176">
-<div class="sec verde"><div class="num">52</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l8176.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 8.176/1991 — Crimes contra a ordem econômica</a></h2></div>
+<div class="sec azul"><div class="num">52</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l8176.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 8.176/1991 — Crimes contra a Ordem Econômica</a></h2></div>
+
+<div class="fxP" role="note">
+<div class="fp-ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5 45 42H3L24 5Z" fill="#F2C200" stroke="#8A6D00" stroke-width="2.4" stroke-linejoin="round"/><rect x="21.8" y="18" width="4.4" height="12" rx="2" fill="#3A2E00"/><circle cx="24" cy="35" r="2.4" fill="#3A2E00"/></svg></div>
+<p><span class="fp-rot">ATENÇÃO!</span> A lei foi alterada duas vezes em 2026: a <b>Lei nº 15.348/2026</b> (fevereiro) reescreveu o art. 1º, II, e a <b>Lei nº 15.517/2026</b> (setembro) criou os <b>arts. 1º-A a 1º-D</b> — receptação de combustíveis. <b>Novidade legislativa = forte candidata a cair!</b></p>
+</div>
+
+<div class="lep-body">
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Visão geral da lei</h3></div>
+<div class="balloon b-azul"><div class="bt">Dois blocos de crimes</div>
+<ul class="plain"><li>A lei protege a <span class="mark">ORDEM ECONÔMICA NO SETOR DE COMBUSTÍVEIS</span> (art. 1º a 1º-D) e o <span class="mark">PATRIMÔNIO DA UNIÃO</span> sobre bens e matérias-primas, especialmente os <b>recursos minerais</b> (art. 2º).</li></ul></div>
+<table class="t">
+<tr><th style="width:12%">Art.</th><th>Crime</th><th style="width:28%">Pena</th></tr>
+<tr><td><b>1º</b></td><td>Crime contra a ordem econômica (combustíveis e GLP)</td><td><b>Detenção</b>, 1 a 5 anos</td></tr>
+<tr><td><b>1º-A</b></td><td>Receptação de combustível no exercício de atividade comercial ou industrial (sabe ser produto de crime)</td><td>Reclusão, <b>3 a 8 anos</b>, e multa</td></tr>
+<tr><td><b>1º-B</b></td><td>Aquisição de combustível que deve presumir-se de origem criminosa</td><td>Reclusão, 1 a 4 anos, e multa</td></tr>
+<tr><td><b>2º</b></td><td>Usurpação de bens ou matéria-prima da União</td><td><b>Detenção</b>, 1 a 5 anos, e multa</td></tr>
+</table>
+<div class="note">O art. 6º revogou o <b>art. 18 da Lei nº 8.137/90</b>, restaurando a numeração dos artigos do Código Penal que aquele dispositivo havia alterado.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Crime contra a ordem econômica (Art. 1º)</h3></div>
+<ul class="dash">
+<li><b>Inciso I</b>: <b>adquirir, distribuir e revender</b> derivados de petróleo, gás natural e suas frações recuperáveis, álcool etílico hidratado carburante e demais combustíveis líquidos carburantes, <b>em desacordo com as normas</b> estabelecidas na forma da lei;</li>
+<li><b>Inciso II</b> (redação da Lei nº 15.348/2026): <b>usar gás liquefeito de petróleo (GLP) para fins automotivos</b>, em desacordo com as normas estabelecidas na forma da lei;</li>
+<li>Pena: <b>detenção, de 1 a 5 anos</b> — <span class="rd">sem</span> previsão de multa.</li>
+</ul>
+<div class="bizu">Antes de 2026, o inciso II também punia o uso de GLP em motores de qualquer espécie, saunas, caldeiras e aquecimento de piscinas. Hoje só sobrou o uso para fins AUTOMOTIVOS.</div>
+<div class="balloon b-azul" style="background:#fff7e6;border-color:#f0dca8"><div class="bt" style="color:#8a6d1a"> Norma penal em branco</div><ul class="plain"><li>O tipo depende de complemento — as "normas estabelecidas na forma da lei" são, na prática, as resoluções da <b>ANP</b> (Agência Nacional do Petróleo). É o tipo usado para a venda de <b>combustível adulterado</b>.</li></ul></div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Receptação de combustíveis (Arts. 1º-A a 1º-D — Lei nº 15.517/2026)</h3></div>
+<div class="balloon b-verm"><div class="bt">Novidade de setembro de 2026</div>
+<ul class="plain"><li>Objeto: <b>combustíveis e lubrificantes</b> — petróleo, gás natural, biocombustíveis e lubrificantes. A estrutura <span class="mark">ESPELHA A RECEPTAÇÃO DO CÓDIGO PENAL</span> (art. 180, § 1º e § 3º), mas com penas próprias.</li></ul></div>
+<div style="background:#1a1614;border:2px solid #6b6258;border-radius:4px;overflow:hidden;margin:16px 0;font-size:13.5px;color:#fff">
+<div style="background:#4a4238;color:#fff;text-align:center;font-weight:700;padding:10px;letter-spacing:.5px;border-bottom:2px solid #6b6258">RECEPTAÇÃO DE COMBUSTÍVEIS — ART. 1º-A × ART. 1º-B</div>
+<table style="width:100%;border-collapse:collapse">
+<tr>
+<td style="width:130px;background:#2a2320;color:#ff6b5b;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;padding:10px;letter-spacing:.5px">ART. 1º-A<br>SABE</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>CONDUTA:</b> adquirir, receber, transportar, armazenar, vender ou utilizar, <b>no exercício de atividade comercial ou industrial</b>, produto que <b>sabe</b> ser de crime;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>PENA:</b> reclusão de <b style="color:#ff6b5b">3 a 8 anos</b> e multa;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>EQUIPARAÇÃO:</b> o comércio irregular ou clandestino, <b>inclusive o exercido em residência</b>, equipara-se à atividade comercial <i style="color:#ddd">(§ 1º)</i>;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>EFEITO:</b> interdição do estabelecimento pelo <b>dobro</b> da pena aplicada <i style="color:#ddd">(§ 3º)</i>.</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="background:#2a2320;color:#5bb8e8;font-weight:700;text-align:center;vertical-align:middle;border-right:2px solid #6b6258;border-top:2px solid #6b6258;padding:10px;letter-spacing:.5px">ART. 1º-B<br>DEVIA<br>PRESUMIR</td>
+<td style="padding:12px 14px;background:#100d0c;vertical-align:top;border-top:2px solid #6b6258">
+<ul style="list-style:none;margin:0;padding:0">
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>CONDUTA:</b> adquirir, receber ou manter o produto quando, pela <b>natureza</b>, pela <b>desproporção entre valor e preço</b> ou pela <b>condição de quem oferece</b>, deva presumir-se obtido por meio criminoso;</li>
+<li style="position:relative;padding-left:18px;margin-bottom:9px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>PENA:</b> reclusão de <b style="color:#7ed957">1 a 4 anos</b> e multa;</li>
+<li style="position:relative;padding-left:18px;line-height:1.45"><span style="position:absolute;left:0;color:#9a9088">&rsaquo;</span><b>PRIMÁRIO:</b> o juiz pode reduzir a pena de <b>1/3 a 2/3</b> ou deixar de aplicar a multa <i style="color:#ddd">(§ 1º)</i>.</li>
+</ul>
+</td>
+</tr>
+</table>
+</div>
+<ul class="dash">
+<li><b>Autonomia</b> (arts. 1º-A, § 2º, e 1º-B, § 2º): o crime é punível <b>ainda que desconhecido ou isento de pena</b> o autor do crime de que proveio o combustível;</li>
+<li><b>Art. 1º-C</b>: nos arts. 1º-A e 1º-B, a condenação gera <b>perda de cargo, função ou emprego público</b>, com inabilitação pelo <b>dobro</b> da pena aplicada;</li>
+<li><b>Art. 1º-D</b>: o juiz determina a <b>alienação antecipada</b> dos bens sujeitos a deterioração ou depreciação, ou de difícil manutenção (art. 144-A do CPP).</li>
+</ul>
+<div class="mnemo"><span class="lbl">Compare com o CP</span><b>Receptação qualificada (CP, art. 180, § 1º):</b> reclusão 3 a 8 → igual ao art. 1º-A<br/>
+<b>Receptação culposa (CP, art. 180, § 3º):</b> detenção 1 mês a 1 ano → o art. 1º-B pune bem mais (reclusão 1 a 4)</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>Usurpação de bens da União (Art. 2º)</h3></div>
+<div class="balloon b-verde"><div class="bt">Crime contra o patrimônio, na modalidade de usurpação</div>
+<ul class="plain"><li><b>Produzir bens ou explorar matéria-prima pertencentes à União</b>, sem autorização legal ou em desacordo com as obrigações impostas pelo título autorizativo. Pena: <b>detenção, de 1 a 5 anos, e multa</b>.</li></ul></div>
+<ul class="dash">
+<li><b>§ 1º — figura equiparada</b>: incorre na mesma pena quem, sem autorização, <b>adquirir, transportar, industrializar, tiver consigo, consumir ou comercializar</b> esses produtos ou matérias-primas;</li>
+<li><b>§ 2º</b>: multa de <b>10 a 360 dias-multa</b>;</li>
+<li><b>§ 3º</b>: dia-multa entre 14 e 200 BTN;</li>
+<li>Exemplos típicos: extração de <b>areia, argila, cascalho, ouro</b> (garimpo) sem autorização da ANM — recursos minerais são bens da União (CF, art. 20, IX).</li>
+</ul>
+<div class="bizu">Art. 2º é crime contra o PATRIMÔNIO DA UNIÃO, e não contra o meio ambiente. Por isso ele convive com o art. 55 da Lei nº 9.605/98 (crime ambiental) em concurso formal.</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">5</div><h3>Competência</h3></div>
+<table class="t">
+<tr><th style="width:26%">Crime</th><th>Justiça competente</th></tr>
+<tr><td><b>Art. 1º</b> (combustíveis)</td><td><b>Justiça Estadual</b> — a lei não prevê competência federal, então não incide o art. 109, VI, da CF (STF, RE 459.513/SP)</td></tr>
+<tr><td><b>Art. 2º</b> (usurpação mineral)</td><td><b>Justiça Federal</b> — os recursos minerais são bens da União, ainda que a extração ocorra em propriedade particular ou zona rural (STJ, AgRg no AREsp 1.789.629/MT)</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">6</div><h3>Reflexos na atividade policial</h3></div>
+<ul class="dash">
+<li><b>Nenhum crime da lei é de menor potencial ofensivo</b> — todas as penas máximas superam 2 anos: não cabe TCO;</li>
+<li><b>Fiança pelo Delegado</b> (CPP, art. 322 — pena máxima de até 4 anos): cabível só no <b>art. 1º-B</b>. Nos arts. 1º e 2º (máximo de 5 anos) e no art. 1º-A (máximo de 8 anos), a fiança é pedida ao juiz;</li>
+<li><b>Suspensão condicional do processo</b>: cabível nos arts. <b>1º, 1º-B e 2º</b> (pena mínima de 1 ano); <span class="rd">não</span> cabe no art. 1º-A (mínima de 3 anos);</li>
+<li>Na usurpação mineral, a <b>materialidade</b> pode ser provada por laudo técnico — não se exige perícia em sentido estrito.</li>
+</ul>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">7</div><h3>Furto e roubo de combustíveis no CP (Lei nº 15.517/2026)</h3></div>
+<div class="balloon b-azul"><div class="bt">A mesma lei que criou os arts. 1º-A a 1º-D alterou o Código Penal</div>
+<ul class="plain"><li>Objeto: petróleo e derivados, gás natural, álcool etílico hidratado carburante, outros combustíveis fluidos (inclusive biocombustíveis) ou óleos lubrificantes, <b>removidos de instalações de produção, armazenamento ou transporte, incluídos dutos</b>.</li></ul></div>
+<table class="t">
+<tr><th style="width:30%">Dispositivo</th><th>Regra</th></tr>
+<tr><td><b>CP, art. 155, § 10</b></td><td>Furto de combustível: reclusão de <b>4 a 10 anos</b> e multa</td></tr>
+<tr><td><b>CP, art. 155, § 11</b></td><td>Aumento de <b>1/3</b>: rompimento de obstáculo, concurso de 2 ou mais pessoas, abuso de confiança ou vínculo com o ente lesado, agente ocupante de cargo público</td></tr>
+<tr><td><b>CP, art. 155, § 12</b></td><td>Aumento de <b>2/3</b> se resultar suspensão de atividades, desabastecimento, incêndio, poluição, lesão corporal grave ou morte</td></tr>
+<tr><td><b>CP, art. 157, § 2º, XI</b></td><td>Roubo de combustível: nova causa de aumento</td></tr>
+<tr><td><b>CP, art. 157, § 2º-A, III</b></td><td>Aumento de <b>2/3</b> se resultar suspensão de atividades, desabastecimento, incêndio ou poluição (a alínea sobre lesão grave e morte foi <b>vetada</b>)</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">8</div><h3>Jurisprudência</h3></div>
+<div class="sub">Competência</div>
+<div class="jur">Compete à <b>Justiça Estadual</b> julgar os crimes contra a ordem econômica da Lei nº 8.176/91, como a venda de gasolina adulterada: a lei não traz regra de competência federal, o que afasta o art. 109, VI, da CF. <i>(STF, RE 459.513/SP, DJe 21/08/2009)</i></div>
+<div class="jur">A usurpação de recursos minerais configura o crime do art. 2º e é de competência da <b>Justiça Federal</b> mesmo quando a exploração ocorre em <b>propriedade particular</b> ou em zona rural municipal: as jazidas pertencem à União (CF, art. 20, IX; CC, art. 1.230). <i>(STJ, 6ª Turma, AgRg no AREsp 1.789.629/MT, Rel. Min. Rogerio Schietti Cruz, j. 28/11/2023 — Info 799)</i></div>
+<div class="sub">Concurso com crime ambiental</div>
+<div class="jur">A extração mineral sem autorização configura, em <b>concurso formal</b>, o art. 2º da Lei nº 8.176/91 e o art. 55 da Lei nº 9.605/98. Não há conflito aparente de normas: os bens jurídicos são distintos (patrimônio da União × meio ambiente). <i>(STJ, 6ª Turma, AgRg no REsp 1.856.109/RS, j. 16/06/2020; AgRg no AREsp 1.156.802/SP, j. 06/08/2019)</i></div>
+<div class="sub">Natureza do crime</div>
+<div class="jur">O crime do art. 2º é <b>permanente</b> enquanto o agente pratica atos voltados à extração; só cessa quando ele intencionalmente interrompe a atividade. Várias extrações no mesmo contexto formam crime único, e não continuidade delitiva. <i>(STJ, 6ª Turma, REsp 1.998.631/BA, Rel. Min. Sebastião Reis Júnior, j. 07/06/2022 — Info 740)</i></div>
+<div class="jur">Os crimes do art. 2º da Lei nº 8.176/91 e do art. 55 da Lei nº 9.605/98 são <b>formais</b>: dispensam resultado naturalístico, e a materialidade pode ser provada por laudo técnico. <i>(STJ, 5ª Turma, AgRg no HC 539.223/SP, j. 03/12/2019)</i></div>
+<div class="jur">Qualquer exploração de matéria-prima da União exige <b>autorização estatal</b>, independentemente do tipo de ato praticado. <i>(STJ, 5ª Turma, AgRg no REsp 1.944.475/PB, j. 28/09/2021)</i></div>
+<div class="mnemo"><span class="lbl">Para a prova</span><b>Art. 1º (combustível):</b> Justiça <b>Estadual</b> · detenção 1 a 5, sem multa<br/>
+<b>Art. 2º (minério):</b> Justiça <b>Federal</b> · detenção 1 a 5 e multa · permanente · formal · concurso formal com art. 55 da Lei 9.605<br/>
+<b>Arts. 1º-A e 1º-B:</b> receptação de combustível · 3 a 8 (sabe) × 1 a 4 (devia presumir)</div>
+</section>
+</div>
 </script>
 
 <script type="text/plain" id="matS_lep_12984">
@@ -44974,24 +45422,22 @@ REGRA GERAL: <span class="hl">MAIORIA SIMPLES</span> (metade mais um dos present
 <li>Subsiste apenas imunidade formal (foro).</li>
 <li>Não subsiste imunidade material.</li>
 </ul>
-<!-- MNEMONIC highlighted (associated with impedimentos) -->
+<h4 class="subsub">Impedimentos</h4>
 <div class="mnemo">
-<span class="mtit">Mnemônico para decorar os impedimentos:</span>
-Desde a expedição do diploma: Fi A está PRESA
+<span class="mtit">Desde a EXPEDIÇÃO DO DIPLOMA →</span> "FI-A"
 </div>
 <ul class="dash">
-<li>Firmar ou manter contrato;</li>
-<li>Aceitar ou exercer cargo;</li>
-<li>Membros do CN não podem ser presos, salvo em flagrante (desde a EXPEDIÇÃO).</li>
+<li><b>FI</b>rmar ou manter contrato com pessoa jurídica de direito público, autarquia, empresa pública, sociedade de economia mista ou concessionária de serviço público (exceto contratos de cláusulas uniformes);</li>
+<li><b>A</b>ceitar ou exercer cargo, função ou emprego remunerado nessas mesmas entidades.</li>
 </ul>
 <div class="mnemo">
-<span class="mtit">Desde a posse:</span> POSSe
+<span class="mtit">Desde a POSSE →</span> "POSSe"
 </div>
 <ul class="dash">
-<li>Patrocinar causa;</li>
-<li>Ocupar cargo;</li>
-<li>Ser proprietário/controlador/diretor;</li>
-<li>Ser titular de empresa.</li>
+<li><b>P</b>atrocinar causa em que essas entidades sejam interessadas;</li>
+<li><b>O</b>cupar cargo ou função demissível <i>ad nutum</i> nessas entidades;</li>
+<li><b>S</b>er proprietário, controlador ou diretor de empresa que tenha favor decorrente de contrato com o Poder Público;</li>
+<li><b>S</b>er titular de mais de um cargo ou mandato público eletivo.</li>
 </ul>
 <h3 class="sub">Remuneração Parlamentar</h3>
 <ul class="dash">
@@ -48605,6 +49051,19 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 <li>Gravíssima <b>questão de ordem pública</b>;</li>
 <li>Impedir a <b>influência do réu</b> sobre testemunha ou vítima, desde que elas não possam depor por videoconferência.</li>
 </ul>
+</div>
+
+<div class="balloon b-azul"><div class="bt">Mandado de busca e apreensão</div>
+<p>O art. 243 do CPP lista os requisitos do mandado de busca e apreensão:</p>
+<ul class="dash">
+<li>indicar, o mais precisamente possível, a casa em que será realizada a diligência e o nome do proprietário ou morador (ou, no caso de busca pessoal, o nome ou os sinais que identifiquem a pessoa);</li>
+<li>mencionar o motivo e os fins da diligência;</li>
+<li>ser subscrito pelo escrivão e assinado pela autoridade que o fizer expedir.</li>
+</ul>
+<p>O artigo <b>não exige a fixação de prazo</b> para o cumprimento.</p>
+<p>Assim, quando o juiz fixa um prazo por conta própria, ele funciona como <b>prazo impróprio</b>. Cumprir o mandado depois desse prazo não gera nulidade nem torna as provas ilícitas. Esse é o entendimento recente do STJ.</p>
+<p>A condição de validade é a <b>contemporaneidade</b>: os fatos que justificaram a medida precisam continuar atuais no momento do cumprimento. Isso ocorre no caso, já que a diligência foi feita poucos dias após o prazo e o contexto da investigação não havia mudado. Por isso, não se aplica o desentranhamento do art. 157 do CPP.</p>
+<div class="jur">Não há, no ordenamento jurídico brasileiro, prazo específico para o cumprimento do mandado de busca e apreensão. Entre os requisitos do mandado de busca previstos no art. 243 do CPP, não se encontra a fixação de prazo para o seu cumprimento.<br>Eventual prazo indicado pelo juiz será impróprio, não vinculando a autoridade policial e tampouco invalidando a diligência cumprida após o seu vencimento.<br>Assim, considera-se válido o cumprimento de mandado de busca vencido desde que permaneçam contemporâneos os fatos que motivaram o deferimento da medida.<br><b>STJ. 6ª Turma. AgRg no HC 897.802-SP, Rel. Min. Antonio Saldanha Palheiro, julgado em 2/9/2025 (Info 30 - Edição Extraordinária).</b></div>
 </div>
 </section>
 <section class="lepcard bordered">
