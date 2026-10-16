@@ -1123,6 +1123,25 @@ body:has(.hfInfoChk:checked){overflow:hidden}
 .hfInfoCaixa .hfInfoLista li{margin:0 0 5px}
 .hfInfoFecha{cursor:pointer;color:#2f6db5;font-size:13px;border:1px solid #9dbde4;border-radius:6px;padding:2px 10px;background:#fff;white-space:nowrap;font-weight:normal}
 .hfInfoFecha:hover{background:#2f6db5;color:#fff}
+/* ⓘ Ação Popular x Ação Civil Pública: a tabela no estilo do arquivo original */
+.hfInfoCaixa.apxCaixa{max-width:980px;text-align:left}
+.hfInfoCaixa.apxCaixa .hfInfoCabTit{font-weight:bold !important}
+.apxRola{overflow-x:auto;margin:6px 0 4px}
+table.apxTab{width:100%;min-width:760px;border-collapse:collapse;font:0.95rem/1.5 Georgia,"Times New Roman",serif;color:#1d2430}
+table.apxTab th,table.apxTab td{border:1px solid #c9d1dc;padding:10px 12px;vertical-align:top;text-align:left !important;hyphens:none}
+table.apxTab p,table.apxTab li{text-align:left !important}
+table.apxTab thead th{background:#1f3a5f;color:#fff;font-size:1rem;font-weight:bold}
+table.apxTab thead th:first-child{width:16%}
+table.apxTab thead th:nth-child(2),table.apxTab thead th:nth-child(3){width:42%}
+table.apxTab tbody th{background:#eef2f7;color:#1f3a5f;font-weight:bold}
+table.apxTab tbody td{background:#fff}
+table.apxTab tbody tr:nth-child(even) td{background:#fafbfd}
+table.apxTab ul{margin:4px 0 0;padding-left:20px}
+table.apxTab li{margin:0 0 3px}
+table.apxTab p{margin:0}
+table.apxTab p + ul{margin-top:6px}
+table.apxTab ul + p{margin-top:12px}
+table.apxTab .destaque{font-weight:bold !important}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -15329,6 +15348,11 @@ body.contTopoAberto .crimEngr{top:calc(var(--contTopoH,76px) + 56px)}
 body.contTopoAberto .crimVolta{top:calc(var(--contTopoH,76px) + 104px)}
 body.contTopoAberto .crimBarra{top:calc(var(--contTopoH,76px) + 8px)}
 @media print{ .contTopoBtn{display:none} }
+/* no alto da página os botões da direita descem até o começo do material (não cobrem as
+   abas das matérias); rolando, sobem junto até a posição de sempre */
+body:not(.contTopoAberto) .contTopoBtn,
+body:not(.contTopoAberto) .crimEngr,
+body:not(.contTopoAberto) .crimVolta{margin-top:var(--contDesce,0px) !important}
 .crimEtiq{display:inline-flex;align-items:center;gap:5px;background:#fff7e0;color:#8a6d1a;
   border:1px solid #f0dca8;border-radius:12px;padding:2px 9px;
   font:bold 10.5px Arial,Helvetica,sans-serif;margin-left:8px}
@@ -17830,6 +17854,8 @@ function zerarEstudos(){
   E.conteudos = {};
 }
 function zerarCadConteudo(){ DB.cadConteudo = []; }
+// tudo o que foi escrito por cima dos materiais: as seções voltam ao texto de fábrica
+function zerarEscritaMateriais(){ garantirCadernos(); DB.crimEdit = {}; matModo = "ler"; matAntes = null; matEstado = ""; }
 function zerarCadernoTec(){ if (!DB.caderno) DB.caderno = {}; DB.caderno.T = []; }
 function zerarJuris(){ DB.juris = []; }
 function zerarTeses(){ DB.teses = []; }
@@ -24299,6 +24325,15 @@ function telaListas(){
     "Zerar o caderno de conteúdo estudado",
     "Some tudo o que está anotado nos cadernos de conteúdo. O resto da planilha fica.",
     zerarCadConteudo);
+
+  botaoApagar("Apagar o que escrevi nos materiais",
+    "Devolver todas as seções dos materiais ao texto original",
+    "Some tudo o que você escreveu por cima dos materiais no modo Editar, em todas as " +
+    "matérias: textos alterados, balões, tabelas e imagens que você colocou. Cada seção " +
+    "volta ao texto original do app (as seções que você criou ficam só com o título). " +
+    "Continuam como estão: os nomes, a ordem e as seções ocultas, as anotações da tabela " +
+    "de conteúdo e o resto da planilha.",
+    zerarEscritaMateriais);
 
   botaoApagar("Apagar apenas caderno de erros do TEC",
     "Zerar as questões vindas do TEC",
@@ -33107,6 +33142,17 @@ const grupoDe = cls => CLS_GRUPO[cls] || null;
 let cliqueGaveta = null;   // separa um clique de dois na gaveta da materia
 
 /* barra do topo suspensa no caderno de conteúdo (botão ☰ ao lado da ⚙) */
+/* quanto os botões da direita (☰ ⚙ ↺) descem: até o começo do material, sem passar da
+   posição de sempre quando a página já rolou */
+function contDesceAjustar(){
+  const mat = modulo === "cCont" && !document.body.classList.contains("contTopoAberto")
+    ? document.querySelector("#tela .crimMat") : null;
+  let d = 0;
+  if (mat) d = Math.max(0, Math.round(mat.getBoundingClientRect().top + 14 - 12));
+  document.body.style.setProperty("--contDesce", d + "px");
+}
+window.addEventListener("scroll", () => requestAnimationFrame(contDesceAjustar), { passive: true });
+window.addEventListener("resize", () => requestAnimationFrame(contDesceAjustar));
 function contTopoAlternar(abrir){
   const b1 = document.getElementById("barra"), b2 = document.getElementById("barra2");
   if (!b1 || !b2) return;
@@ -33125,6 +33171,7 @@ function contTopoAlternar(abrir){
     b2.style.top = "";
   }
   document.querySelectorAll(".contTopoBtn").forEach(x => x.classList.toggle("on", on));
+  contDesceAjustar();
 }
 function render(){
   if (modulo !== "cCont" && document.body.classList.contains("contTopoAberto")) contTopoAlternar(false);
@@ -33321,6 +33368,8 @@ function render(){
   }
   if (mesmaTela && yAntes > 0 && Math.abs(window.scrollY - yAntes) > 2) window.scrollTo(0, yAntes);
   restaurarLeitura();
+  contDesceAjustar();
+  setTimeout(contDesceAjustar, 60); setTimeout(contDesceAjustar, 400);
 }
 
 /* ---------- posição de leitura no caderno de conteúdo ----------
@@ -44727,7 +44776,7 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 <li>Observação: Direitos de terceiros não podem ser invocados por HD.</li>
 </ul>
 <!-- SECTION 11 -->
-<div class="sec"><div class="num c11">11</div><h2>Ação Popular — Cidadão — eleitor</h2></div>
+<div class="sec"><div class="num c11">11</div><h2>Ação Popular — Cidadão — eleitor</h2><label for="apAcpInfoC" class="hfInfoBtn" title="Clique para ver a comparação com a ação civil pública">ⓘ</label></div>
 <ul class="dash">
 <li>Não exige dano material ao erário.</li>
 <li>Basta ilegalidade e lesividade a:
@@ -44740,6 +44789,241 @@ O transconstitucionalismo também é conhecido como constitucionalismo de nívei
 </li>
 </ul>
 <div class="note-box">O STF já consolidou que a ação pode ser proposta mesmo que não haja prejuízo financeiro direto, desde que se demonstre a ofensa à legalidade e à moralidade administrativa.</div>
+<div class="hfInfoPar"><input type="checkbox" id="apAcpInfoC" class="hfInfoChk"/><div class="hfInfoPainel"><label for="apAcpInfoC" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa apxCaixa" role="dialog" aria-label="Ação Popular x Ação Civil Pública"><div class="hfInfoCab"><span class="hfInfoCabTit">Ação Popular x Ação Civil Pública</span><label for="apAcpInfoC" class="hfInfoFecha">fechar ✕</label></div><div class="apxRola"><table class="apxTab">
+  <thead>
+    <tr>
+      <th>Critério</th>
+      <th>Ação Popular</th>
+      <th>Ação Civil Pública</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Previsão</th>
+      <td>Art. 5º, LXXIII, CF; Lei 4.717/65</td>
+      <td>Art. 129, III, CF; Lei 7.347/85 (integrada ao CDC, arts. 81 e ss.)</td>
+    </tr>
+    <tr>
+      <th>Natureza</th>
+      <td>Direito político fundamental; instrumento de participação e controle popular (soberania)</td>
+      <td>Instrumento processual de tutela coletiva</td>
+    </tr>
+    <tr>
+      <th>Legitimidade ativa</th>
+      <td>
+        <ul>
+          <li>Apenas o cidadão (eleitor);</li>
+          <li>prova da cidadania por título eleitoral ou documento equivalente (art. 1º, §3º);</li>
+          <li>pessoa jurídica não pode propor (Súmula 365/STF).</li>
+        </ul>
+      </td>
+      <td>
+        <p>Rol do art. 5º:</p>
+        <ul>
+          <li>Ministério Público;</li>
+          <li>Defensoria Pública;</li>
+          <li>União, Estados, DF e Municípios;</li>
+          <li>autarquias, empresas públicas, fundações e sociedades de economia mista;</li>
+          <li>associações constituídas há pelo menos 1 ano e com finalidade pertinente (o requisito temporal pode ser dispensado pelo juiz, art. 5º, §4º).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Papel do MP</th>
+      <td>
+        <ul>
+          <li>Fiscal da ordem jurídica;</li>
+          <li>não pode defender o ato impugnado (art. 6º, §4º);</li>
+          <li>pode assumir a ação em caso de desistência do autor (art. 9º).</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Pode ser autor ou fiscal da ordem jurídica (art. 5º, §1º);</li>
+          <li>assume a titularidade em caso de desistência infundada ou abandono por associação (art. 5º, §3º).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Legitimidade passiva</th>
+      <td>
+        <p>Em litisconsórcio necessário (art. 6º):</p>
+        <ul>
+          <li>entidades lesadas;</li>
+          <li>autoridades, funcionários e administradores que praticaram ou autorizaram o ato;</li>
+          <li>beneficiários diretos do ato.</li>
+        </ul>
+      </td>
+      <td>Qualquer pessoa física ou jurídica, pública ou privada, responsável pelo dano</td>
+    </tr>
+    <tr>
+      <th>Posição do ente público lesado</th>
+      <td>Intervenção móvel: pode contestar, abster-se ou atuar ao lado do autor (art. 6º, §3º)</td>
+      <td>Pode habilitar-se como litisconsorte de qualquer das partes (art. 5º, §2º)</td>
+    </tr>
+    <tr>
+      <th>Objeto</th>
+      <td>
+        <p>Anular ato lesivo:</p>
+        <ul>
+          <li>ao patrimônio público ou de entidade de que o Estado participe;</li>
+          <li>à moralidade administrativa;</li>
+          <li>ao meio ambiente;</li>
+          <li>ao patrimônio histórico e cultural.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Tutela (art. 1º):</p>
+        <ul>
+          <li>do meio ambiente;</li>
+          <li>do consumidor;</li>
+          <li>de bens e direitos de valor artístico, estético, histórico, turístico e paisagístico;</li>
+          <li>da ordem urbanística;</li>
+          <li>da ordem econômica;</li>
+          <li>da honra e da dignidade de grupos raciais, étnicos ou religiosos;</li>
+          <li>do patrimônio público e social;</li>
+          <li>de qualquer outro interesse difuso ou coletivo;</li>
+          <li>de direitos individuais homogêneos (CDC).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Mera tutela patrimonial do erário</th>
+      <td><span class="destaque">Não cabe</span> (STJ, REsp 1.608.161-RS, Info 820)</td>
+      <td><span class="destaque">Cabe</span> (Súmula 329/STJ; art. 1º, VIII, LACP)</td>
+    </tr>
+    <tr>
+      <th>Lesividade</th>
+      <td>Não exige prova de prejuízo material aos cofres públicos; a lesão à moralidade basta (STF, Tema 836)</td>
+      <td>Exige dano ou ameaça a interesse transindividual</td>
+    </tr>
+    <tr>
+      <th>Vedações específicas</th>
+      <td>
+        <p>Não serve para (STJ, Info 820):</p>
+        <ul>
+          <li>a mera tutela patrimonial dos cofres estatais;</li>
+          <li>se opor indiscriminadamente à atividade administrativa;</li>
+          <li>defender interesse exclusivamente pessoal do autor.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Não cabe para pretensões envolvendo (art. 1º, parágrafo único):</p>
+        <ul>
+          <li>tributos;</li>
+          <li>contribuições previdenciárias;</li>
+          <li>FGTS;</li>
+          <li>fundos institucionais cujos beneficiários possam ser individualmente determinados.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Pedidos</th>
+      <td>
+        <p>Art. 11:</p>
+        <ul>
+          <li>desconstitutivo: anulação do ato;</li>
+          <li>condenatório: perdas e danos.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Art. 3º:</p>
+        <ul>
+          <li>condenação em dinheiro;</li>
+          <li>obrigação de fazer ou não fazer (o STJ admite a cumulação);</li>
+          <li>pedidos declaratórios e constitutivos.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Procedimento investigatório prévio</th>
+      <td>Não há previsão</td>
+      <td>Inquérito civil, exclusivo do MP (art. 8º, §1º)</td>
+    </tr>
+    <tr>
+      <th>Solução consensual</th>
+      <td>Sem previsão legal específica</td>
+      <td>Termo de Ajustamento de Conduta (TAC), firmado por órgãos públicos legitimados (art. 5º, §6º)</td>
+    </tr>
+    <tr>
+      <th>Competência</th>
+      <td>
+        <p class="destaque">Regra geral</p>
+        <ul>
+          <li>O autor escolhe entre o foro do seu domicílio e o do local do fato, prevalecendo o de menor dificuldade para o exercício da ação (art. 51, parágrafo único, CPC; STJ, CC 47.950/DF).</li>
+        </ul>
+        <p class="destaque">Exceções</p>
+        <ul>
+          <li>Casos de grande magnitude, com várias ações concorrentes sobre o mesmo dano: foro do local do fato (STJ, CC 164.362-MG, Brumadinho);</li>
+          <li>temas ambientais: foro do local do dano, por analogia ao art. 2º da LACP.</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Foro do local do dano, com competência funcional e absoluta (art. 2º);</li>
+          <li>dano regional ou nacional: capital do Estado ou DF (art. 93, CDC).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Custas e sucumbência</th>
+      <td>Autor isento de custas e ônus da sucumbência, salvo comprovada má-fé (art. 5º, LXXIII, CF)</td>
+      <td>
+        <ul>
+          <li>Sem adiantamento de custas e honorários periciais;</li>
+          <li>associação autora só é condenada se houver má-fé (art. 18);</li>
+          <li>o MP não paga nem recebe honorários, salvo má-fé (simetria, STJ).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Destino da condenação</th>
+      <td>A entidade lesada</td>
+      <td>Fundo de defesa de direitos difusos (art. 13), nas condenações em dinheiro</td>
+    </tr>
+    <tr>
+      <th>Remessa necessária</th>
+      <td>Sentença de carência ou improcedência sujeita a reexame (art. 19), o que inverte a lógica do CPC</td>
+      <td>
+        <ul>
+          <li>O STJ aplica por analogia o art. 19 da LAP;</li>
+          <li>exceção: vedada na ação de improbidade (art. 17-C, §3º, LIA).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Coisa julgada</th>
+      <td>
+        <ul>
+          <li>Eficácia <i>erga omnes</i>;</li>
+          <li>exceção: improcedência por insuficiência de provas, caso em que a ação pode ser reproposta com prova nova (art. 18).</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Eficácia <i>erga omnes</i>, salvo improcedência por insuficiência de provas (art. 16);</li>
+          <li>a limitação territorial do art. 16 é inconstitucional (STF, Tema 1.075).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Execução</th>
+      <td>Se, em 60 dias da publicação da sentença condenatória de 2ª instância, o autor ou terceiro não promover a execução, o MP deve promovê-la nos 30 dias seguintes (art. 16)</td>
+      <td>Se, em 60 dias do trânsito em julgado da sentença condenatória, a associação autora não promover a execução, o MP deve promovê-la; os demais legitimados podem fazê-lo (art. 15)</td>
+    </tr>
+    <tr>
+      <th>Prescrição</th>
+      <td>5 anos (art. 21)</td>
+      <td>
+        <ul>
+          <li>Lei silente; o STJ aplica por analogia os 5 anos do art. 21 da LAP;</li>
+          <li>imprescritível o ressarcimento por improbidade dolosa (STF, Tema 897);</li>
+          <li>imprescritível a reparação de dano ambiental (STF, Tema 999).</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table></div></div></div></div>
 <div class="major-head">Dos Direitos Sociais (arts. 6º a 11 da CF/1988)</div>
 <div class="major-head">Da Nacionalidade (arts. 12 e 13 da CF/1988)</div>
 <div class="major-head">Direitos Políticos (arts. 14 a 16 da CF/1988)</div>
@@ -50116,7 +50400,8 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
  </figure>
  <p class="lead">Estrutura de validade do ato administrativo. <strong>Lembre-se:</strong> a prática de ato em desacordo com a lei em qualquer de seus requisitos de validade <span class="hl">não o torna nulo de pleno direito</span> automaticamente — comporta análise (vícios sanáveis e insanáveis).</p>
  <div class="box box-cinza">
- <strong>Teoria dos Motivos Determinantes:</strong> os motivos declarados como fundamento do ato vinculam a Administração. Se os motivos forem falsos ou inexistentes, o ato é inválido, ainda que a lei não exigisse a motivação.
+ <strong>Teoria dos Motivos Determinantes:</strong> os motivos declarados como fundamento do ato vinculam a Administração. Se os motivos forem falsos ou inexistentes, o ato é inválido, ainda que a lei não exigisse a motivação.<br>
+ A teoria dos motivos determinantes aplica-se tanto aos atos administrativos vinculados quanto aos discricionários (<a href="https://www.tecconcursos.com.br/questoes/4068632" target="_blank" rel="noopener noreferrer">PCDF - 2026</a>).
  </div>
  </section>
 
@@ -51464,7 +51749,7 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <div class="note">Conteúdo a preencher.</div>
 </section>
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">5</div><h3>Controle Jurisdicional</h3></div>
+<div class="card-head"><div class="num">5</div><h3>Controle Jurisdicional</h3><label for="apAcpInfoA" class="hfInfoBtn" title="Clique para ver a comparação com a ação civil pública">ⓘ</label></div>
 <ul class="dash">
 <li>Admite-se o controle jurisdicional a fim de interpretar o sentido e o alcance de normas meramente regimentais das casas legislativas quando ficar caracterizado <b>desrespeito às normas constitucionais</b> pertinentes ao processo legislativo.</li>
 </ul>
@@ -51517,6 +51802,241 @@ A <b>teoria da repartição dos encargos sociais</b> indica que, quando o Estado
 <li><b>Precedente:</b>AgInt no AREsp 1.955.074/TO (STJ).</li>
 </ul>
 </div>
+<div class="hfInfoPar"><input type="checkbox" id="apAcpInfoA" class="hfInfoChk"/><div class="hfInfoPainel"><label for="apAcpInfoA" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa apxCaixa" role="dialog" aria-label="Ação Popular x Ação Civil Pública"><div class="hfInfoCab"><span class="hfInfoCabTit">Ação Popular x Ação Civil Pública</span><label for="apAcpInfoA" class="hfInfoFecha">fechar ✕</label></div><div class="apxRola"><table class="apxTab">
+  <thead>
+    <tr>
+      <th>Critério</th>
+      <th>Ação Popular</th>
+      <th>Ação Civil Pública</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Previsão</th>
+      <td>Art. 5º, LXXIII, CF; Lei 4.717/65</td>
+      <td>Art. 129, III, CF; Lei 7.347/85 (integrada ao CDC, arts. 81 e ss.)</td>
+    </tr>
+    <tr>
+      <th>Natureza</th>
+      <td>Direito político fundamental; instrumento de participação e controle popular (soberania)</td>
+      <td>Instrumento processual de tutela coletiva</td>
+    </tr>
+    <tr>
+      <th>Legitimidade ativa</th>
+      <td>
+        <ul>
+          <li>Apenas o cidadão (eleitor);</li>
+          <li>prova da cidadania por título eleitoral ou documento equivalente (art. 1º, §3º);</li>
+          <li>pessoa jurídica não pode propor (Súmula 365/STF).</li>
+        </ul>
+      </td>
+      <td>
+        <p>Rol do art. 5º:</p>
+        <ul>
+          <li>Ministério Público;</li>
+          <li>Defensoria Pública;</li>
+          <li>União, Estados, DF e Municípios;</li>
+          <li>autarquias, empresas públicas, fundações e sociedades de economia mista;</li>
+          <li>associações constituídas há pelo menos 1 ano e com finalidade pertinente (o requisito temporal pode ser dispensado pelo juiz, art. 5º, §4º).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Papel do MP</th>
+      <td>
+        <ul>
+          <li>Fiscal da ordem jurídica;</li>
+          <li>não pode defender o ato impugnado (art. 6º, §4º);</li>
+          <li>pode assumir a ação em caso de desistência do autor (art. 9º).</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Pode ser autor ou fiscal da ordem jurídica (art. 5º, §1º);</li>
+          <li>assume a titularidade em caso de desistência infundada ou abandono por associação (art. 5º, §3º).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Legitimidade passiva</th>
+      <td>
+        <p>Em litisconsórcio necessário (art. 6º):</p>
+        <ul>
+          <li>entidades lesadas;</li>
+          <li>autoridades, funcionários e administradores que praticaram ou autorizaram o ato;</li>
+          <li>beneficiários diretos do ato.</li>
+        </ul>
+      </td>
+      <td>Qualquer pessoa física ou jurídica, pública ou privada, responsável pelo dano</td>
+    </tr>
+    <tr>
+      <th>Posição do ente público lesado</th>
+      <td>Intervenção móvel: pode contestar, abster-se ou atuar ao lado do autor (art. 6º, §3º)</td>
+      <td>Pode habilitar-se como litisconsorte de qualquer das partes (art. 5º, §2º)</td>
+    </tr>
+    <tr>
+      <th>Objeto</th>
+      <td>
+        <p>Anular ato lesivo:</p>
+        <ul>
+          <li>ao patrimônio público ou de entidade de que o Estado participe;</li>
+          <li>à moralidade administrativa;</li>
+          <li>ao meio ambiente;</li>
+          <li>ao patrimônio histórico e cultural.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Tutela (art. 1º):</p>
+        <ul>
+          <li>do meio ambiente;</li>
+          <li>do consumidor;</li>
+          <li>de bens e direitos de valor artístico, estético, histórico, turístico e paisagístico;</li>
+          <li>da ordem urbanística;</li>
+          <li>da ordem econômica;</li>
+          <li>da honra e da dignidade de grupos raciais, étnicos ou religiosos;</li>
+          <li>do patrimônio público e social;</li>
+          <li>de qualquer outro interesse difuso ou coletivo;</li>
+          <li>de direitos individuais homogêneos (CDC).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Mera tutela patrimonial do erário</th>
+      <td><span class="destaque">Não cabe</span> (STJ, REsp 1.608.161-RS, Info 820)</td>
+      <td><span class="destaque">Cabe</span> (Súmula 329/STJ; art. 1º, VIII, LACP)</td>
+    </tr>
+    <tr>
+      <th>Lesividade</th>
+      <td>Não exige prova de prejuízo material aos cofres públicos; a lesão à moralidade basta (STF, Tema 836)</td>
+      <td>Exige dano ou ameaça a interesse transindividual</td>
+    </tr>
+    <tr>
+      <th>Vedações específicas</th>
+      <td>
+        <p>Não serve para (STJ, Info 820):</p>
+        <ul>
+          <li>a mera tutela patrimonial dos cofres estatais;</li>
+          <li>se opor indiscriminadamente à atividade administrativa;</li>
+          <li>defender interesse exclusivamente pessoal do autor.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Não cabe para pretensões envolvendo (art. 1º, parágrafo único):</p>
+        <ul>
+          <li>tributos;</li>
+          <li>contribuições previdenciárias;</li>
+          <li>FGTS;</li>
+          <li>fundos institucionais cujos beneficiários possam ser individualmente determinados.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Pedidos</th>
+      <td>
+        <p>Art. 11:</p>
+        <ul>
+          <li>desconstitutivo: anulação do ato;</li>
+          <li>condenatório: perdas e danos.</li>
+        </ul>
+      </td>
+      <td>
+        <p>Art. 3º:</p>
+        <ul>
+          <li>condenação em dinheiro;</li>
+          <li>obrigação de fazer ou não fazer (o STJ admite a cumulação);</li>
+          <li>pedidos declaratórios e constitutivos.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Procedimento investigatório prévio</th>
+      <td>Não há previsão</td>
+      <td>Inquérito civil, exclusivo do MP (art. 8º, §1º)</td>
+    </tr>
+    <tr>
+      <th>Solução consensual</th>
+      <td>Sem previsão legal específica</td>
+      <td>Termo de Ajustamento de Conduta (TAC), firmado por órgãos públicos legitimados (art. 5º, §6º)</td>
+    </tr>
+    <tr>
+      <th>Competência</th>
+      <td>
+        <p class="destaque">Regra geral</p>
+        <ul>
+          <li>O autor escolhe entre o foro do seu domicílio e o do local do fato, prevalecendo o de menor dificuldade para o exercício da ação (art. 51, parágrafo único, CPC; STJ, CC 47.950/DF).</li>
+        </ul>
+        <p class="destaque">Exceções</p>
+        <ul>
+          <li>Casos de grande magnitude, com várias ações concorrentes sobre o mesmo dano: foro do local do fato (STJ, CC 164.362-MG, Brumadinho);</li>
+          <li>temas ambientais: foro do local do dano, por analogia ao art. 2º da LACP.</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Foro do local do dano, com competência funcional e absoluta (art. 2º);</li>
+          <li>dano regional ou nacional: capital do Estado ou DF (art. 93, CDC).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Custas e sucumbência</th>
+      <td>Autor isento de custas e ônus da sucumbência, salvo comprovada má-fé (art. 5º, LXXIII, CF)</td>
+      <td>
+        <ul>
+          <li>Sem adiantamento de custas e honorários periciais;</li>
+          <li>associação autora só é condenada se houver má-fé (art. 18);</li>
+          <li>o MP não paga nem recebe honorários, salvo má-fé (simetria, STJ).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Destino da condenação</th>
+      <td>A entidade lesada</td>
+      <td>Fundo de defesa de direitos difusos (art. 13), nas condenações em dinheiro</td>
+    </tr>
+    <tr>
+      <th>Remessa necessária</th>
+      <td>Sentença de carência ou improcedência sujeita a reexame (art. 19), o que inverte a lógica do CPC</td>
+      <td>
+        <ul>
+          <li>O STJ aplica por analogia o art. 19 da LAP;</li>
+          <li>exceção: vedada na ação de improbidade (art. 17-C, §3º, LIA).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Coisa julgada</th>
+      <td>
+        <ul>
+          <li>Eficácia <i>erga omnes</i>;</li>
+          <li>exceção: improcedência por insuficiência de provas, caso em que a ação pode ser reproposta com prova nova (art. 18).</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li>Eficácia <i>erga omnes</i>, salvo improcedência por insuficiência de provas (art. 16);</li>
+          <li>a limitação territorial do art. 16 é inconstitucional (STF, Tema 1.075).</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <th>Execução</th>
+      <td>Se, em 60 dias da publicação da sentença condenatória de 2ª instância, o autor ou terceiro não promover a execução, o MP deve promovê-la nos 30 dias seguintes (art. 16)</td>
+      <td>Se, em 60 dias do trânsito em julgado da sentença condenatória, a associação autora não promover a execução, o MP deve promovê-la; os demais legitimados podem fazê-lo (art. 15)</td>
+    </tr>
+    <tr>
+      <th>Prescrição</th>
+      <td>5 anos (art. 21)</td>
+      <td>
+        <ul>
+          <li>Lei silente; o STJ aplica por analogia os 5 anos do art. 21 da LAP;</li>
+          <li>imprescritível o ressarcimento por improbidade dolosa (STF, Tema 897);</li>
+          <li>imprescritível a reparação de dano ambiental (STF, Tema 999).</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table></div></div></div></div>
 </section>
 
 </div>
