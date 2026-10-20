@@ -1142,6 +1142,27 @@ table.apxTab p{margin:0}
 table.apxTab p + ul{margin-top:6px}
 table.apxTab ul + p{margin-top:12px}
 table.apxTab .destaque{font-weight:bold !important}
+/* ⓘ Confissão no STJ (Penal, dosimetria): tabelas no estilo do arquivo original */
+.hfInfoBtn.cfxBtn{margin-left:8px;vertical-align:middle;width:22px;height:22px;font-size:13px}
+.hfInfoCaixa.cfxCaixa{max-width:1000px;text-align:left;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.cfxCaixa .hfInfoCabTit{font-weight:bold !important}
+.cfxCaixa .cfxSub{color:#5b6370;margin:0 0 10px}
+.cfxCaixa .hfInfoTit{border-bottom:0 !important;border-left:4px solid #2f3e46;padding:0 0 0 10px !important;margin:22px 0 10px !important}
+.cfxRola{overflow-x:auto;background:#fff;border:1px solid #e1ddd3;border-radius:10px}
+table.cfxTab{width:100%;border-collapse:collapse;font-size:.92rem;line-height:1.5;min-width:620px;color:#1f2328}
+table.cfxTab th{background:#2f3e46 !important;color:#fff !important;text-align:left !important;padding:10px 12px !important;font-weight:600;border:0 !important}
+table.cfxTab td{border-left:0 !important;border-right:0 !important;border-bottom:0 !important}
+table.cfxTab td{padding:10px 12px;border-top:1px solid #e1ddd3;vertical-align:top;text-align:left !important;hyphens:none;background:#fff}
+table.cfxTab tr:nth-child(even) td{background:#faf9f6}
+table.cfxTab td:first-child{font-weight:500;width:34%}
+table.cfxTab td:nth-child(2){width:18%;white-space:nowrap}
+table.cfxTab strong{font-weight:bold !important}
+.cfxTag{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:600 !important;font-size:.82rem}
+.cfx-yes{color:#1f7a4d;background:#e6f4ec}.cfx-no{color:#b42318;background:#fdecea}.cfx-warn{color:#8a5a00;background:#fff4d6}
+.cfxRef{color:#5b6370;font-size:.85rem}
+.cfxCard{background:#fff;border:1px solid #e1ddd3;border-radius:10px;padding:16px 20px;text-align:left}
+.cfxCard ul{margin:0;padding-left:20px}.cfxCard li{margin:6px 0;text-align:left}
+.cfxCard strong{font-weight:bold !important}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -54226,7 +54247,7 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 <ul class="plain">
 <li><strong>Objeto da Lei:</strong> a lei dispõe sobre a responsabilização objetiva, administrativa e civil de <strong>pessoas jurídicas</strong> por atos contra a administração pública nacional ou estrangeira.</li>
 <li><strong>Pessoas Jurídicas Sujeitas:</strong> aplica-se a sociedades empresárias e simples, personificadas ou não, independentemente do modelo societário, incluindo fundações e associações.</li>
-<li><strong>Responsabilidade Objetiva:</strong> a pessoa jurídica <strong>responde independentemente da comprovação de culpa ou dolo</strong>. Basta a existência de conduta, dano e nexo causal para a responsabilização.</li>
+<li><strong>Responsabilidade Objetiva:</strong> a pessoa jurídica responde <strong>CIVIL e ADMINISTRATIVAMENTE</strong> <strong>independentemente da comprovação de culpa ou dolo</strong>. Basta a existência de conduta, dano e nexo causal para a responsabilização.</li>
 <li><strong>Responsabilidade Individual:</strong> a punição da empresa <strong>não exclui a responsabilização individual de dirigentes ou administradores</strong>, que respondem na medida de sua culpabilidade.</li>
 <li><strong>Sucessão Empresarial:</strong> a responsabilidade da pessoa jurídica subsiste em casos de <strong>alteração contratual, fusão, incorporação ou cisão</strong>. Nas hipóteses de fusão e incorporação, a responsabilidade da sucessora <strong>é restrita ao limite do patrimônio transferido</strong> (exceto em casos de fraude ou simulação).</li>
 <li><strong>Responsabilidade Solidária:</strong> sociedades controladoras, controladas, coligadas e consorciadas possuem responsabilidade solidária quanto ao pagamento de multas e reparação de danos.</li>
@@ -60631,6 +60652,56 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
   <figure class="fig">
     <img src="img/2058ce8abbf9ebd5.webp" alt="Circunstâncias atenuantes genéricas (mapa mental).">
   </figure>
+
+<h3>Confissão <label for="confSTJInfo" class="hfInfoBtn cfxBtn" title="Clique para ver o quadro de jurisprudência do STJ">ⓘ</label></h3>
+  <ul>
+    <li>A confissão de Carlos atenua a pena mesmo sem ter sido usada na formação do convencimento do juiz e ainda que a condenação se apoie só em outras provas.</li>
+  </ul>
+<div class="hfInfoPar"><input type="checkbox" id="confSTJInfo" class="hfInfoChk"/><div class="hfInfoPainel"><label for="confSTJInfo" class="hfInfoFundo" title="Fechar"></label><div class="hfInfoCaixa cfxCaixa" role="dialog" aria-label="Confissão no STJ"><div class="hfInfoCab"><span class="hfInfoCabTit">Confissão no STJ</span><label for="confSTJInfo" class="hfInfoFecha">fechar ✕</label></div>
+<p class="cfxSub">Atenuante, valor probatório e ANPP: quadro de jurisprudência</p>
+<p class="hfInfoTit">1. Atenuante da confissão espontânea (art. 65, III, "d", CP)</p>
+<div class="cfxRola"><table class="cfxTab">
+<thead><tr><th>Situação</th><th>Incide?</th><th>Fundamento / observação</th></tr></thead>
+<tbody>
+<tr><td>Confissão sem arrependimento ou estratégica</td><td><span class="cfxTag cfx-yes">Sim</span></td><td>Tema 1194: a confissão é fato objetivo e o motivo é irrelevante</td></tr>
+<tr><td>Confissão não usada pelo juiz / há outras provas suficientes</td><td><span class="cfxTag cfx-yes">Sim</span></td><td>Tema 1194 e Súmula 545: o direito nasce com a confissão</td></tr>
+<tr><td>Confissão parcial (crime menos grave) ou qualificada (excludente)</td><td><span class="cfxTag cfx-yes">Sim, menor proporção</span></td><td>Tema 1194: redução menor (ex.: 1/12), sem preponderar sobre agravantes</td></tr>
+<tr><td>Extrajudicial, sem retratação (inclui silêncio em juízo)</td><td><span class="cfxTag cfx-yes">Sim</span></td><td>Silêncio não é retratação</td></tr>
+<tr><td>Extrajudicial, retratada, mas útil à apuração</td><td><span class="cfxTag cfx-yes">Sim</span></td><td><span class="cfxRef">REsp 2.001.973/RS (3ª Seção); AgRg no AREsp 1.640.414/DF</span></td></tr>
+<tr><td>Extrajudicial, retratada e sem utilidade</td><td><span class="cfxTag cfx-no">Não</span></td><td>Não há confissão subsistente nem proveito investigativo</td></tr>
+<tr><td>Confissão informal (ex.: aos policiais na abordagem)</td><td><span class="cfxTag cfx-no">Não</span></td><td>Faltam garantias mínimas de autenticidade e contraditório.<br><span class="cfxRef">AREsp 2.313.703/SP (5ª T., Info 845)</span></td></tr>
+<tr><td>Confissão informal usada (indevidamente) pelo juiz para condenar</td><td><span class="cfxTag cfx-yes">Sim</span></td><td>Se o juiz se valeu dela, deve atenuar.<br><span class="cfxRef">AgRg no AREsp 2.739.660/RJ (5ª T.); REsp 2.185.729/MG (6ª T.), ambos de 11/3/2025</span></td></tr>
+<tr><td>Réu nega tudo; a defesa pede desclassificação subsidiária</td><td><span class="cfxTag cfx-no">Não</span></td><td>A confissão é personalíssima; tese do advogado não a supre.<br><span class="cfxRef">AgRg no AREsp 3.103.593/PR (6ª T., 7/4/2026)</span></td></tr>
+<tr><td>Júri: confissão não debatida em plenário</td><td><span class="cfxTag cfx-warn">Divergência</span></td><td><strong>6ª T.</strong> (AgRg no AREsp 3.103.593/PR): não incide (art. 492, I, "b", CPP).<br><strong>5ª T.</strong> (REsp 2.257.660/MG, Info 896): incide se a confissão extrajudicial consta dos autos e serviu à apuração</td></tr>
+</tbody>
+</table></div>
+<p class="hfInfoTit">2. Confissão como meio de prova</p>
+<div class="cfxRola"><table class="cfxTab">
+<thead><tr><th>Situação</th><th>Pode fundamentar?</th><th>Fundamento / observação</th></tr></thead>
+<tbody>
+<tr><td>Confissão extrajudicial isolada, sem corroboração</td><td><span class="cfxTag cfx-no">Não</span></td><td>Não serve para denúncia, pronúncia ou condenação (arts. 155 e 197 do CPP); leva ao trancamento da ação penal.<br><span class="cfxRef">REsp 2.232.036/DF (6ª T., Info 867, "Crime da 113 Sul")</span></td></tr>
+<tr><td>Pronúncia baseada só em elementos do inquérito</td><td><span class="cfxTag cfx-no">Não</span></td><td><em>In dubio pro societate</em> não supera a presunção de inocência</td></tr>
+<tr><td>Delação extrajudicial de corréu retratada em juízo</td><td><span class="cfxTag cfx-no">Não, sozinha</span></td><td>O juiz não pode ignorar depoimentos judiciais exculpantes sem justificar</td></tr>
+<tr><td>Confissão informal</td><td><span class="cfxTag cfx-no">Não</span></td><td>Inadmissível no processo penal.<br><span class="cfxRef">AREsp 2.313.703/SP</span></td></tr>
+</tbody>
+</table></div>
+<p class="hfInfoTit">3. Confissão e ANPP (art. 28-A, CPP)</p>
+<div class="cfxRola"><table class="cfxTab">
+<thead><tr><th>Situação</th><th>Solução</th><th>Fundamento</th></tr></thead>
+<tbody>
+<tr><td>Investigado não confessou no inquérito</td><td><span class="cfxTag cfx-no">MP não pode recusar</span></td><td>Recusa do ANPP só por esse motivo é inválida.<br><span class="cfxRef">Tema 1303 (REsp 2.161.548/BA, 3ª Seção, Info 843)</span></td></tr>
+<tr><td>Momento da confissão</td><td><span class="cfxTag cfx-yes">Na assinatura</span></td><td>Perante o MP, com defesa técnica, dado o caráter negocial do instituto (Tema 1303)</td></tr>
+</tbody>
+</table></div>
+<p class="hfInfoTit">Pontos que costumam cair juntos</p>
+<div class="cfxCard"><ul>
+<li><strong>Atenuante e valor probatório são coisas diferentes:</strong> uma confissão pode atenuar a pena (Tema 1194) e, ao mesmo tempo, ser insuficiente para condenar sozinha (REsp 2.232.036/DF).</li>
+<li><strong>Confissão informal:</strong> em regra não atenua, mas, se o juiz a usou para condenar, a atenuante é obrigatória.</li>
+<li><strong>Retratação:</strong> só afasta a atenuante se a confissão não tiver servido à apuração dos fatos.</li>
+<li><strong>Silêncio ≠ retratação:</strong> ficar calado em juízo não anula a confissão policial.</li>
+<li><strong>ANPP:</strong> a confissão é requisito do acordo, não do inquérito.</li>
+</ul></div>
+</div></div></div>
 
 <h3>Violenta emoção</h3>
   <ul>
