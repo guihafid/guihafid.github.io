@@ -1163,6 +1163,31 @@ table.cfxTab strong{font-weight:bold !important}
 .cfxCard{background:#fff;border:1px solid #e1ddd3;border-radius:10px;padding:16px 20px;text-align:left}
 .cfxCard ul{margin:0;padding-left:20px}.cfxCard li{margin:6px 0;text-align:left}
 .cfxCard strong{font-weight:bold !important}
+/* ---------- aba CONCURSOS: painel de cada concurso ---------- */
+.ccGrade{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin:12px 10px 20px}
+.ccCard{background:#fff;border:1px solid var(--borda);border-top:4px solid var(--azulEscuro);border-radius:10px;
+ padding:14px 16px;box-shadow:0 1px 4px rgba(15,30,51,.10);display:flex;flex-direction:column;gap:10px;font-size:13px;color:#1f2430}
+.ccNome{font-size:16px;font-weight:bold;color:var(--azulEscuro)}
+.ccSub{color:#5a6675;margin-top:2px}
+.ccProvas{display:flex;flex-wrap:wrap;gap:8px}
+.ccProva{flex:1 1 140px;display:flex;flex-direction:column;gap:1px;background:#f3f6fa;border:1px solid #dfe6ef;border-radius:8px;padding:7px 10px}
+.ccProva.futura{background:#eaf3ff;border-color:#b9d0ee}
+.ccProva.passada{opacity:.7}
+.ccProvaRot,.ccRot{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#5a6675;font-weight:bold}
+.ccProva b{font-size:14px;color:#14365c}
+.ccFalta{font-size:12px;color:#2f6db5;font-weight:bold}
+.ccInfo{color:#5a6675}
+.ccEtapa,.ccVert{display:flex;flex-direction:column;gap:4px;border-top:1px solid #edf1f5;padding-top:8px}
+.ccNada{color:#8a95a3;font-style:italic}
+.ccBarra{display:grid;grid-template-columns:70px 1fr 92px;align-items:center;gap:8px}
+.ccBRot{font-size:12px;color:#3a4756}
+.ccTrilho{height:8px;background:#e8edf3;border-radius:5px;overflow:hidden}
+.ccFeito{display:block;height:100%;background:#2f6db5;border-radius:5px}
+.ccBarra.vtQ .ccFeito{background:#2e7d4f}.ccBarra.vtR .ccFeito{background:#c47d12}
+.ccBNum{font-size:11.5px;color:#5a6675;text-align:right;white-space:nowrap}
+.ccAtalhos{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #edf1f5;padding-top:10px;margin-top:auto}
+.ccAtalhos .btn{font-size:12px;text-decoration:none}
+.ccVazio{margin:20px 10px;padding:20px;text-align:center;background:#fff;border:1px dashed var(--borda);border-radius:10px}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -15882,7 +15907,7 @@ async function abrirPerfil(){
 <div id="barra2">
   <button class="btn" id="btnInicio" title="Voltar à tela de abertura">◈ Início</button>
   <span class="segm" id="segModulo">
-    <button data-mod="cad" class="on">Cadastro de concurso</button>
+    <button data-mod="cad" class="on">Concursos</button>
     <button data-mod="est">Estudos</button>
     <button data-mod="cCont">Cadernos de conteúdo</button>
     <button data-mod="sim">Simulados e Provas</button>
@@ -22377,6 +22402,113 @@ function janelaCronograma(numInicial){
     if (primeira) calMes = primeira.slice(0,7);
     irParaModulo("cal","eCal");
   };
+}
+
+/* ---------- CONCURSOS: um painel por concurso (o cadastro fica na outra aba) ---------- */
+function telaConcursos(){
+  const tela = document.getElementById("tela");
+  tela.appendChild(el("div","tituloAba","CONCURSOS"));
+  tela.appendChild(el("div","subAba",
+    "Um painel por concurso: provas, próxima etapa do cronograma e o andamento do edital verticalizado."));
+  const hoje = hojeISO();
+  const dias = iso => Math.round((dataDeISO(iso) - dataDeISO(hoje)) / 864e5);
+  const dataLonga = iso => iso ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "";
+  const falta = iso => {
+    const n = dias(iso);
+    return n > 1 ? "faltam " + n + " dias" : n === 1 ? "amanhã" : n === 0 ? "hoje" : "realizada";
+  };
+  // a próxima prova do concurso (para ordenar os painéis)
+  const proxProva = c => [temObjetiva(c) && c.dataObj, temDiscursiva(c) && c.dataDis]
+    .filter(d => d && d >= hoje).sort()[0] || "";
+  const lista = DB.concursos.slice().sort((a, b) => {
+    const pa = proxProva(a), pb = proxProva(b);
+    return (pa ? 0 : 1) - (pb ? 0 : 1) || (pa < pb ? -1 : pa > pb ? 1 : 0) || a.num - b.num;
+  });
+  const grade = el("div","ccGrade");
+  if (!lista.length){
+    const v = el("div","ccVazio");
+    v.appendChild(el("p",null,"Nenhum concurso cadastrado ainda."));
+    const b = el("button","btn azulzinho","+ Novo concurso");
+    b.onclick = () => janelaNovoConcurso();
+    v.appendChild(b);
+    tela.appendChild(v);
+    return;
+  }
+  lista.forEach(c => {
+    const card = el("div","ccCard");
+    const cab = el("div","ccCab");
+    const tit = el("div","ccNome", (c.nome || "Concurso " + c.num) + (c.uf ? " — " + c.uf : ""));
+    cab.appendChild(tit);
+    const sub = [c.cargo, c.banca, c.estilo].filter(Boolean).join("  ·  ");
+    if (sub) cab.appendChild(el("div","ccSub", sub));
+    card.appendChild(cab);
+    // provas
+    const pv = el("div","ccProvas");
+    [["Objetiva", temObjetiva(c), c.dataObj, c.periodoObj], ["Discursiva", temDiscursiva(c), c.dataDis, c.periodoDis]]
+      .forEach(([rot, tem, d, per]) => {
+        if (!tem) return;
+        const x = el("div","ccProva" + (d && d >= hoje ? " futura" : d ? " passada" : ""));
+        x.appendChild(el("span","ccProvaRot","Prova " + rot.toLowerCase()));
+        x.appendChild(el("b",null, d ? dataLonga(d) + (per ? " (" + per + ")" : "") : "data a definir"));
+        if (d) x.appendChild(el("span","ccFalta", falta(d)));
+        pv.appendChild(x);
+      });
+    if (pv.children.length) card.appendChild(pv);
+    const info = [];
+    if (temObjetiva(c) && c.questoes) info.push(c.questoes + " questões na objetiva");
+    // "05:00:00" -> "5h"; "04:30:00" -> "4h30"
+    const tempo = t => { const [h, m] = String(t).split(":"); return isNaN(+h) ? t : (+h) + "h" + (+m ? String(m).padStart(2,"0") : ""); };
+    if (c.tempoObj && temObjetiva(c)) info.push("objetiva: " + tempo(c.tempoObj));
+    if (c.tempoDis && temDiscursiva(c)) info.push("discursiva: " + tempo(c.tempoDis));
+    if (info.length) card.appendChild(el("div","ccInfo", info.join("  ·  ")));
+    // próxima etapa do cronograma
+    const dados = cronogramaDe(c.num);
+    const prox = etapasDe(c).map(p => {
+      const ini = p.tipo === "prova" ? c[p.campoData] : (dados[p.id] || {}).ini;
+      const fim = p.tipo === "periodo" ? ((dados[p.id] || {}).fim || ini) : ini;
+      return ini ? { p, ini, fim } : null;
+    }).filter(x => x && x.fim >= hoje).sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0)[0];
+    const et = el("div","ccEtapa");
+    et.appendChild(el("span","ccRot","Próxima etapa"));
+    if (prox){
+      const quando = prox.fim !== prox.ini ? dataBR(prox.ini) + " a " + dataBR(prox.fim) : dataBR(prox.ini);
+      et.appendChild(el("span",null, prox.p.rot + " — " + quando +
+        (prox.ini > hoje ? " (" + falta(prox.ini).replace("realizada","") + ")" : " (em andamento)")));
+    } else et.appendChild(el("span","ccNada","Nenhuma data futura no cronograma."));
+    card.appendChild(et);
+    // edital verticalizado
+    const vt = el("div","ccVert");
+    vt.appendChild(el("span","ccRot","Edital verticalizado"));
+    const n = vertTotal(c);
+    if (n){
+      const M = c.vert.marcas || {};
+      VT_COLS.forEach(([k, rot]) => {
+        let feitos = 0;
+        c.vert.disc.forEach(d => d.itens.forEach((it, i) => { if ((M[vtChave(d, it, i)] || {})[k]) feitos++; }));
+        const pct = Math.round(feitos * 100 / n);
+        const b = el("div","ccBarra vt" + k);
+        b.appendChild(el("span","ccBRot", rot));
+        const tr = el("span","ccTrilho"); const f = el("span","ccFeito");
+        f.style.width = pct + "%"; tr.appendChild(f); b.appendChild(tr);
+        b.appendChild(el("span","ccBNum", feitos + "/" + n + " · " + pct + "%"));
+        vt.appendChild(b);
+      });
+    } else vt.appendChild(el("span","ccNada","Ainda não verticalizado."));
+    card.appendChild(vt);
+    // atalhos
+    const at = el("div","ccAtalhos");
+    if (c.edital){
+      const a = el("a","btn","📄 Edital");
+      a.href = c.edital; a.target = "_blank"; a.rel = "noopener noreferrer";
+      at.appendChild(a);
+    }
+    const b1 = el("button","btn","☰ Verticalizado"); b1.onclick = () => janelaVerticalizar(c.num); at.appendChild(b1);
+    const b2 = el("button","btn","🗓 Cronograma"); b2.onclick = () => janelaCronograma(c.num); at.appendChild(b2);
+    const b3 = el("button","btn","✎ Cadastro"); b3.onclick = () => irParaModulo("cad","cadastro"); at.appendChild(b3);
+    card.appendChild(at);
+    grade.appendChild(card);
+  });
+  tela.appendChild(grade);
 }
 
 function telaCadastro(){
@@ -33111,7 +33243,8 @@ const ABAS_JUR = [
    e viraram módulos próprios, com botão na barra de cima. As telas são as
    mesmas de sempre (telaCadastro e telaCalendario): nada foi desvinculado. */
 const ABAS_CAD = [
-  { id:"cadastro", nome:"Cadastro de Concursos", cls:"", fn: telaCadastro, oculta:true },
+  { id:"concursos", nome:"Concursos", cls:"cad", fn: telaConcursos },
+  { id:"cadastro", nome:"Cadastro de Concursos", cls:"cad", fn: telaCadastro },
 ];
 const ABAS_CAL = [
   { id:"eCal", nome:"Calendário", cls:"", fn: telaCalendario, oculta:true },
@@ -33119,11 +33252,11 @@ const ABAS_CAL = [
 // sete módulos na mesma aplicação, cada um com as suas abas
 const MODULOS = { cad:ABAS_CAD, est:ABAS_EST, cCont:ABAS_CONT,
   sim:ABAS_SIM, cTec:ABAS_TEC, cJur:ABAS_JUR, cal:ABAS_CAL, cfg:ABAS_CFG };
-const INICIAL = { cad:"cadastro", est:"eInicio", cCont:"cConteudo",
+const INICIAL = { cad:"concursos", est:"eInicio", cCont:"cConteudo",
   sim:"provas", cTec:"cTec", cJur:"cJuris", cal:"eCal", cfg:"listas" };
 let modulo = "cad";
 let ABAS = ABAS_CAD;
-const abaPorModulo = { cad:"cadastro", est:"eInicio", cCont:"cConteudo",
+const abaPorModulo = { cad:"concursos", est:"eInicio", cCont:"cConteudo",
   sim:"provas", cTec:"cTec", cJur:"cJuris", cal:"eCal" };
 function irParaModulo(qual, destino){
   // a Configuração é uma aba oculta que mora dentro de SIMULADOS. Se ela fosse
@@ -33769,11 +33902,12 @@ function montarCapa(){
      ["cadastro","Cadastro de concursos"],
      ["provas","Desempenho em prova"]]);
 
-  cartao("#2F5597","CADASTRO E CALEND\u00c1RIO","CADASTRO","cadastro",
+  cartao("#2F5597","CONCURSOS E CALEND\u00c1RIO","CONCURSOS","concursos",
     [[DB.concursos.length,"Concursos cadastrados"],
      [N.proximaProva || "\u2014","Pr\u00f3xima prova"],
      [N.eventosMes,"Eventos neste m\u00eas"]],
-    [["cadastro","Cadastro de concurso"],
+    [["concursos","Concursos"],
+     ["cadastro","Cadastro de concurso"],
      ["eCal","Calend\u00e1rio"]]);
 
   cartao("#1F6F6B","CONTROLE DE ESTUDOS","ESTUDOS","eInicio",
@@ -33803,7 +33937,7 @@ function montarCapa(){
 
   cx.appendChild(el("div","capaRodape",
     "Volte aqui quando quiser pelo botão ⌂ Início, na barra de cima. " +
-    "Todos os módulos também ficam lado a lado na barra de cima: Cadastro de concurso, " +
+    "Todos os módulos também ficam lado a lado na barra de cima: Concursos, " +
     "Estudos, Cadernos de conteúdo, Simulados e Provas, Caderno de erros do TEC, " +
     "Caderno de jurisprudências e Calendário."));
 }
@@ -38420,7 +38554,7 @@ details.qf .qf-r b.no{color:#b3261e}
 <div class="idc-col">
 <div class="idc-cab idc-coral"><b>IV · Ordem judicial</b><span>Essencial à investigação</span></div>
 <div class="idc-it idc-c">Juiz decide de ofício</div>
-<div class="idc-it idc-c">Ou: delegado, MP, defesa</div>
+<div class="idc-it idc-c">Ou mediante representação do delegado, MP, defesa</div>
 <div class="idc-it idc-c idc-dest">Coleta de DNA obrigatória</div>
 </div>
 <div class="idc-col">
@@ -38437,7 +38571,7 @@ details.qf .qf-r b.no{color:#b3261e}
 <div class="fp-ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5 45 42H3L24 5Z" fill="#F2C200" stroke="#8A6D00" stroke-width="2.4" stroke-linejoin="round"/><rect x="21.8" y="18" width="4.4" height="12" rx="2" fill="#3A2E00"/><circle cx="24" cy="35" r="2.4" fill="#3A2E00"/></svg></div>
 <p><span class="fp-rot">ATENÇÃO!</span> Os <b>presos provisórios e definitivos</b> poderão ter colhidos os seus registros biométricos, de impressões digitais, de íris, face e voz, <b>caso não tenham sido colhidos por ocasião da identificação criminal!</b></p>
 </div>
-<div class="balloon b-verm"><div class="bt">Acesso ao Banco Nacional Multibiométrico</div><ul class="plain"><li>No curso de um inquérito, a autoridade policial somente poderá ter acesso ao <b>Banco Nacional Multibiométrico e de impressões digitais</b> mediante <b>autorização judicial</b>.</li></ul></div>
+<div class="balloon b-verm"><div class="bt">Acesso ao Banco Nacional Multibiométrico</div><ul class="plain"><li>No curso de um inquérito, a autoridade policial e o MP somente poderão ter acesso ao <b>Banco Nacional Multibiométrico e de impressões digitais</b> mediante <b>autorização judicial</b>.</li></ul></div>
 <div class="note"><b>Novidade legislativa:</b> Lei nº 15.295/2025 — amplia a coleta de DNA de presos para o regime fechado. <a href="https://buscadordizerodireito.com.br/novidades_legislativas/664/lei-152952025-amplia-coleta-de-dna-de-presos-para-regime-fechado?page=1">Comentários (Buscador Dizer o Direito)</a>.</div>
 </script>
 
