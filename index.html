@@ -1225,6 +1225,18 @@ table.cfxTab strong{font-weight:bold !important}
 .aaWrap .aaFollow b{color:#1d2125}
 .aaWrap .aaWarn{margin-top:22px;padding:14px 16px;border-radius:10px;font-size:.88rem;background:#f1ede4;color:#646b75;border-left:4px solid #b4532a}
 @media (max-width:480px){.aaWrap dl.aaDl{grid-template-columns:1fr;gap:2px}.aaWrap dl.aaDl dd{margin-bottom:10px}}
+/* aviso: a seção mostra o texto reescrito e o material original foi atualizado */
+.matAtualizado{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;padding:10px 12px;
+ background:#fff7e0;border:1px solid #f0dca8;border-left:4px solid #d99a1c;border-radius:8px;
+ font:12.5px/1.45 Arial,Helvetica,sans-serif;color:#6b5312}
+.matAtualizado .matAtTx{flex:1 1 320px}
+.matAtBt{border:1px solid #d9bf75;background:#fff;color:#6b5312;border-radius:6px;padding:4px 10px;
+ font:bold 12px Arial,Helvetica,sans-serif;cursor:pointer}
+.matAtBt:hover{background:#faefcf}
+.matAtBt.forte{background:#d99a1c;border-color:#d99a1c;color:#fff}
+.modalCaixa.matOrigCaixa{max-width:1000px;width:96vw;max-height:90vh;overflow:auto;padding:0 16px 16px;background:#eef2f6}
+.matOrigCab{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;
+ background:#eef2f6;padding:12px 4px;font:15px Arial,Helvetica,sans-serif;color:#14365c}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -17938,7 +17950,7 @@ function zerarEstudos(){
 }
 function zerarCadConteudo(){ DB.cadConteudo = []; }
 // tudo o que foi escrito por cima dos materiais: as seções voltam ao texto de fábrica
-function zerarEscritaMateriais(){ garantirCadernos(); DB.crimEdit = {}; matModo = "ler"; matAntes = null; matEstado = ""; }
+function zerarEscritaMateriais(){ garantirCadernos(); DB.crimEdit = {}; DB.crimBase = {}; matModo = "ler"; matAntes = null; matEstado = ""; }
 function zerarCadernoTec(){ if (!DB.caderno) DB.caderno = {}; DB.caderno.T = []; }
 function zerarJuris(){ DB.juris = []; }
 function zerarTeses(){ DB.teses = []; }
@@ -31408,17 +31420,31 @@ function matVinculoRenomear(velho, novo){
    sem as que voc\u00ea excluiu e com os nomes que voc\u00ea trocou */
 function matSecoesDe(k, base){
   const novas = DB.secNovas[k] || [];
-  return base.concat(novas)
+  const lista = base.concat(novas)
     .filter(s => DB.secOcultas.indexOf(k + ":" + s.id) < 0 &&
                  DB.secExcluidas.indexOf(k + ":" + s.id) < 0)
     .map(s => {
       const nome = DB.secNome[k + ":" + s.id];
       return nome ? Object.assign({}, s, { t:nome }) : s;
-    })
-    // na ordem que voc\u00ea escolheu; as que n\u00e3o est\u00e3o nela v\u00e3o para o fim
-    .map((s, i) => [s, i])
-    .sort((a, b) => secPosOrdem(k, a[0].id, a[1]) - secPosOrdem(k, b[0].id, b[1]))
-    .map(x => x[0]);
+    });
+  // na ordem que voc\u00ea escolheu; a que n\u00e3o est\u00e1 nela (se\u00e7\u00e3o nova do material)
+  // entra logo depois da vizinha de antes no material, e n\u00e3o no fim
+  return secNaOrdem(k, lista, new Set(base.map(x => x.id)));
+}
+function secNaOrdem(k, lista, doMaterial){
+  const ord = DB.secOrdem && Array.isArray(DB.secOrdem[k]) ? DB.secOrdem[k] : null;
+  if (!ord) return lista;
+  const porId = {}; lista.forEach(s => porId[s.id] = s);
+  const r = ord.filter(id => porId[id]).map(id => porId[id]);
+  lista.forEach((s, i) => {
+    if (ord.indexOf(s.id) >= 0) return;
+    if (doMaterial && !doMaterial.has(s.id)){ r.push(s); return; }   // criada por voc\u00ea: no fim
+    // a vizinha de antes (no material) que j\u00e1 est\u00e1 na lista
+    let j = -1;
+    for (let v = i - 1; v >= 0 && j < 0; v--) j = r.indexOf(lista[v]);
+    r.splice(j + 1, 0, s);
+  });
+  return r;
 }
 function secPosOrdem(k, id, natural){
   const ord = DB.secOrdem && Array.isArray(DB.secOrdem[k]) ? DB.secOrdem[k] : null;
@@ -31680,6 +31706,25 @@ function matHtmlLimpo(art){
   return c.innerHTML;
 }
 
+/* mostra o texto original (atual) de uma se\u00e7\u00e3o reescrita, sem mexer na sua vers\u00e3o */
+function matVerOriginal(mat, id){
+  const M = MATS[mat];
+  const fundo = el("div","modalFundo");
+  const cx = el("div","modalCaixa matOrigCaixa");
+  const cab = el("div","matOrigCab");
+  cab.appendChild(el("b",null,"Material original atual"));
+  const f = el("button","secundario","Fechar"); f.onclick = () => fundo.remove();
+  cab.appendChild(f);
+  cx.appendChild(cab);
+  const corpo = el("div","crimMat " + (M ? M.est : ""));
+  const art = el("section","crimSec " + ((secDe(mat, id) || {}).cl || "card"));
+  art.innerHTML = matOriginal(mat, id) || "";
+  corpo.appendChild(art);
+  cx.appendChild(corpo);
+  fundo.appendChild(cx);
+  fundo.onclick = ev => { if (ev.target === fundo) fundo.remove(); };
+  document.body.appendChild(fundo);
+}
 /* monta o quadro de uma se\u00e7\u00e3o */
 function matQuadro(mat, id){
   const html = htmlDaSecao(mat, id);
@@ -31698,6 +31743,30 @@ function matQuadro(mat, id){
   if (posSec >= 0 && numSec && /^\s*\d+\s*$/.test(numSec.textContent))
     numSec.textContent = String(posSec + secBase(mat));
   if (matReescrita(mat, id)) art.classList.add("reescrito");
+  // a se\u00e7\u00e3o mostra o SEU texto: se o material dela foi atualizado, avisa e deixa escolher
+  if (matModo !== "escrever" && matOriginalMudou(mat, id)){
+    const av = el("div","matAtualizado");
+    av.setAttribute("contenteditable","false");
+    av.appendChild(el("span","matAtTx",
+      "\u26a0 Esta se\u00e7\u00e3o mostra o texto que voc\u00ea reescreveu" +
+      (matReescrita(mat, id).data ? " em " + dataBR(matReescrita(mat, id).data) : "") +
+      ". O material original dela foi atualizado e as mudan\u00e7as n\u00e3o aparecem aqui."));
+    const bV = el("button","matAtBt","Ver o original atual");
+    bV.onclick = () => matVerOriginal(mat, id);
+    const bU = el("button","matAtBt forte","Usar o original atual");
+    bU.onclick = () => {
+      if (!confirm("Trocar o seu texto desta se\u00e7\u00e3o pelo material original atualizado?\n" +
+                   "O que voc\u00ea escreveu nesta se\u00e7\u00e3o se perde.")) return;
+      delete DB.crimEdit[mat + ":" + id];
+      if (DB.crimBase) delete DB.crimBase[mat + ":" + id];
+      salvar(); render();
+    };
+    const bM = el("button","matAtBt","Manter o meu texto");
+    bM.title = "Esconde este aviso at\u00e9 a pr\u00f3xima atualiza\u00e7\u00e3o do material desta se\u00e7\u00e3o";
+    bM.onclick = () => { matBaseAnotar(mat, id); salvar(); render(); };
+    [bV, bU, bM].forEach(b => av.appendChild(b));
+    art.insertBefore(av, art.firstChild);
+  }
   // se esta se\u00e7\u00e3o tem lei pr\u00f3pria, o t\u00edtulo dela vira link para o Planalto.
   // S\u00f3 no modo leitura: assim o link nunca entra no que voc\u00ea escreve nem \u00e9 gravado
   if (matModo !== "escrever" && secOrig && secOrig.lei && secOrig.lei.url
@@ -32447,12 +32516,30 @@ async function matImgsEmbutidas(art){
   art.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+/* "impress\u00e3o digital" do texto de f\u00e1brica: serve para saber se o material foi
+   atualizado depois que voc\u00ea reescreveu a se\u00e7\u00e3o */
+function matHashTexto(t){
+  let h = 5381; t = String(t || "");
+  for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36) + "." + t.length.toString(36);
+}
+function matBaseAnotar(mat, id){
+  garantirCadernos();
+  if (!DB.crimBase || typeof DB.crimBase !== "object") DB.crimBase = {};
+  DB.crimBase[mat + ":" + id] = matHashTexto(matOriginal(mat, id));
+}
+// o material desta se\u00e7\u00e3o mudou desde a sua vers\u00e3o? (vers\u00e3o antiga, sem a marca: conta como mudou)
+function matOriginalMudou(mat, id){
+  if (!matReescrita(mat, id)) return false;
+  const b = DB.crimBase && DB.crimBase[mat + ":" + id];
+  return b !== matHashTexto(matOriginal(mat, id));
+}
 /* guarda o que est\u00e1 escrito. N\u00e3o redesenha a tela: o cursor fica onde est\u00e1 */
 function matAnotar(mat, id, art){
   garantirCadernos();
   const html = matHtmlLimpo(art);
   if (html === matOriginal(mat, id)) delete DB.crimEdit[mat + ":" + id];
-  else DB.crimEdit[mat + ":" + id] = { html, data: hojeISO(), ts: Date.now() };
+  else { DB.crimEdit[mat + ":" + id] = { html, data: hojeISO(), ts: Date.now() }; matBaseAnotar(mat, id); }
   art.classList.toggle("reescrito", !!matReescrita(mat, id));
   matAvisar("pendente");
   clearTimeout(matRelogio);
