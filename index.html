@@ -1237,6 +1237,36 @@ table.cfxTab strong{font-weight:bold !important}
 .modalCaixa.matOrigCaixa{max-width:1000px;width:96vw;max-height:90vh;overflow:auto;padding:0 16px 16px;background:#eef2f6}
 .matOrigCab{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;
  background:#eef2f6;padding:12px 4px;font:15px Arial,Helvetica,sans-serif;color:#14365c}
+/* tópico "Medidas que o juiz pode adotar de ofício" (Legislação Penal, tópico 0): estilo do arquivo original */
+.mdoWrap{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1d1d1b}
+.mdoWrap *{text-align:left !important;hyphens:none}
+.mdoWrap .mdoSub{color:#6b6a65;margin:0 0 14px}
+.mdoWrap .mdoRadio{display:none !important}
+.mdoWrap .mdoBarra{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.mdoWrap .mdoChip{border:1px solid #e4e2db;background:#fff;color:#1d1d1b;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:14px;user-select:none}
+#mdoF-all:checked ~ .mdoBarra .c-all,#mdoF-ok:checked ~ .mdoBarra .c-ok,#mdoF-warn:checked ~ .mdoBarra .c-warn,#mdoF-no:checked ~ .mdoBarra .c-no{border-color:#7a2e2e;box-shadow:inset 0 0 0 1px #7a2e2e}
+.mdoWrap .mdoLegenda{display:flex;flex-wrap:wrap;gap:14px;color:#6b6a65;font-size:13px;margin-bottom:12px}
+.mdoWrap .mdoCard{background:#fff;border:1px solid #e4e2db;border-radius:12px;overflow:hidden}
+.mdoWrap table.mdoTab{width:100%;border-collapse:collapse;margin:0;box-shadow:none}
+.mdoWrap table.mdoTab thead th{background:#f0eee8;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#6b6a65;padding:12px 14px;border:0;border-bottom:1px solid #e4e2db;font-weight:700}
+.mdoWrap table.mdoTab td{padding:12px 14px;border:0;border-bottom:1px solid #e4e2db;vertical-align:top;background:#fff;color:#1d1d1b;font-size:14.5px}
+.mdoWrap table.mdoTab tr.mdoGrupo td{background:#f0eee8;font-weight:600;font-size:14px;color:#7a2e2e;padding:9px 14px}
+.mdoWrap .mdoNum{color:#6b6a65;font-size:13px;margin-right:6px}
+.mdoWrap td.mdoDisp{white-space:nowrap;font-weight:600;font-size:14px}
+.mdoWrap .mdoSelo{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.4}
+.mdoWrap .mdo-ok{background:#e6f4ea;color:#1e6b35}.mdoWrap .mdo-warn{background:#fdf3dc;color:#8a5a00}.mdoWrap .mdo-no{background:#fbe7e6;color:#a12a22}
+.mdoWrap .mdoNovo{font-size:11px;font-weight:700;color:#7a2e2e;border:1px solid #7a2e2e;border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:middle}
+.mdoWrap .mdoRodape{color:#6b6a65;font-size:13px;margin:14px 0 0}
+#mdoF-ok:checked ~ .mdoCard tr.mdoLinha:not(.ok),#mdoF-ok:checked ~ .mdoCard tr.mdoGrupo:not(.g-ok),
+#mdoF-warn:checked ~ .mdoCard tr.mdoLinha:not(.warn),#mdoF-warn:checked ~ .mdoCard tr.mdoGrupo:not(.g-warn),
+#mdoF-no:checked ~ .mdoCard tr.mdoLinha:not(.no),#mdoF-no:checked ~ .mdoCard tr.mdoGrupo:not(.g-no){display:none}
+@media (max-width:720px){
+ .mdoWrap table.mdoTab thead{display:none}
+ .mdoWrap table.mdoTab,.mdoWrap table.mdoTab tbody,.mdoWrap table.mdoTab tr,.mdoWrap table.mdoTab td{display:block;width:100%}
+ .mdoWrap table.mdoTab tr.mdoLinha{padding:10px 14px;border-bottom:1px solid #e4e2db}
+ .mdoWrap table.mdoTab tr.mdoLinha td{border:0;padding:3px 0}
+ .mdoWrap td.mdoDisp{white-space:normal}
+}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -34603,6 +34633,92 @@ carregar().then(() => {
 </div>
 </div>
 <p class="aaWarn"><b>Prazos:</b> CPP e Lei de Lavagem não fixam prazo para o juiz decidir sobre a alienação. O prazo de 30 dias está na Lei de Drogas (art. 61, §1º). A antiga Res. CNJ 356/2020 estendia esse prazo de 30 dias a todos os processos criminais (art. 144-A do CPP); ela foi substituída pela Res. CNJ 558/24, cujo alcance exato nesse ponto convém conferir. Resolução do CNJ é norma administrativa, não lei.<br><br>* A Lei 15.358/26 não fixa percentual próprio; o art. 8º manda aplicar as disposições da Lei 9.613/98, o que permite sustentar o mínimo de 75%. Ainda não há jurisprudência consolidada.<br><br>A Lei 15.358/26 alterou dispositivos do CPP, da Lei de Drogas e da Lei de Lavagem sobre o tema. Confira os textos compilados no site do Planalto antes da prova.</p>
+</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">4</div><h3>Medidas que o juiz pode adotar de ofício</h3></div>
+<div class="mdoWrap">
+<p class="mdoSub">Legislação penal especial — o que o texto legal permite ao juiz fazer sem provocação, e onde isso é controvertido ou vedado após o Pacote Anticrime (Lei 13.964/2019).</p>
+<input type="radio" name="mdoFiltro" id="mdoF-all" class="mdoRadio" checked/><input type="radio" name="mdoFiltro" id="mdoF-ok" class="mdoRadio"/><input type="radio" name="mdoFiltro" id="mdoF-warn" class="mdoRadio"/><input type="radio" name="mdoFiltro" id="mdoF-no" class="mdoRadio"/>
+<div class="mdoBarra"><label for="mdoF-all" class="mdoChip c-all">Todos</label><label for="mdoF-ok" class="mdoChip c-ok">✅ Admitido</label><label for="mdoF-warn" class="mdoChip c-warn">⚠️ Controvertido</label><label for="mdoF-no" class="mdoChip c-no">❌ Não admitido</label></div>
+<div class="mdoLegenda"><span><span class="mdoSelo mdo-ok">✅</span> admitido / efeito automático</span><span><span class="mdoSelo mdo-warn">⚠️</span> controvertido</span><span><span class="mdoSelo mdo-no">❌</span> não admitido</span></div>
+<div class="mdoCard"><table class="mdoTab">
+<thead><tr><th style="width:110px">Dispositivo</th><th>O que o juiz pode fazer</th><th style="width:270px">De ofício?</th></tr></thead>
+<tbody>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">1</span>LEP (Lei 7.210/84)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Arts. 66 e 195</td><td>Incidentes da execução (progressão, remição, unificação, extinção da punibilidade etc.)</td><td><span class="mdoSelo mdo-ok">✅ Sim (pacífico)</span></td></tr>
+<tr class="mdoGrupo g-no g-warn"><td colspan="3"><span class="mdoNum">4</span>Interceptações (Lei 9.296/96)</td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 3º</td><td>Decretação da interceptação</td><td><span class="mdoSelo mdo-warn">⚠️ Previsto no texto, mas criticado (sistema acusatório)</span></td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Art. 8º-A</td><td>Captação ambiental</td><td><span class="mdoSelo mdo-no">❌ Exige requerimento do MP ou representação do delegado</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">5</span>Tortura (Lei 9.455/97)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º, §5º</td><td>Perda do cargo e interdição</td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação</span></td></tr>
+<tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">6</span>Lavagem (Lei 9.613/98)</td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Art. 17-D</td><td>Afastamento automático do servidor indiciado</td><td><span class="mdoSelo mdo-no">❌ Declarado inconstitucional pelo STF</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">7</span>CTB (Lei 9.503/97)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 294</td><td>Suspensão cautelar da permissão/habilitação ou proibição de obtê-la</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">9</span>Maria da Penha (Lei 11.340/06)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 12-C, §1º</td><td>Decidir em 24h se mantém ou revoga o afastamento do lar aplicado pelo delegado/policial</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 18, IV</td><td>Apreensão imediata de arma de fogo do agressor</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">—</span>Crimes contra a mulher por razões da condição do sexo feminino (CP – Lei 14.994/24)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 92, §2º, CP</td><td>Perda de cargo, função ou mandato; incapacidade para o poder familiar, tutela ou curatela; vedação de nomeação ou diplomação até o cumprimento da pena</td><td><span class="mdoSelo mdo-ok">✅ Efeitos automáticos, mesmo sem declaração na sentença</span></td></tr>
+<tr class="mdoGrupo g-ok g-warn"><td colspan="3"><span class="mdoNum">10</span>Drogas (Lei 11.343/06)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 50, §3º</td><td>Determinar a destruição das drogas</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 56, §1º</td><td>Afastamento cautelar do servidor denunciado</td><td><span class="mdoSelo mdo-warn">⚠️ Controvertido</span></td></tr>
+<tr class="mdoGrupo g-ok g-warn"><td colspan="3"><span class="mdoNum">11</span>Crime Organizado (Lei 12.850/13)</td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 2º, §5º</td><td>Afastamento cautelar do funcionário público</td><td><span class="mdoSelo mdo-warn">⚠️ Lei não exige provocação, mas é questionado</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 2º, §6º</td><td>Perda do cargo, função, emprego ou mandato e interdição por 8 anos após o cumprimento da pena</td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação transitada em julgado</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 4º, §8º</td><td>Recusar homologação da colaboração ou devolvê-la para adequação</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-no g-warn"><td colspan="3"><span class="mdoNum">12</span>Abuso de Autoridade (Lei 13.869/19)</td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Art. 4º, I</td><td>Fixar valor mínimo de indenização</td><td><span class="mdoSelo mdo-no">❌ Depende de requerimento do ofendido</span></td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 4º, par. único</td><td>Perda do cargo e inabilitação</td><td><span class="mdoSelo mdo-warn">⚠️ Não automáticos: exigem reincidência e declaração motivada na sentença</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">13</span>Preconceito (Lei 7.716/89)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 20, §3º</td><td>Recolher exemplares, cessar transmissões/publicações, mesmo antes do inquérito (ouvido o MP)</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">15</span>ECA (Lei 8.069/90)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 153</td><td>Investigar fatos e ordenar providências</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 191</td><td>Instaurar, por portaria, apuração de irregularidades em entidade</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 92, §2º, CP</td><td>Crimes de violência sexual (antiga “pornografia infantil”) e exploração sexual: mesmos efeitos do feminicídio — perda de cargo ou função, incapacidade para o poder familiar etc.<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Efeitos automáticos (Lei 15.487/26)</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 244-A, §2º</td><td>Exploração sexual: cassação da licença de localização e funcionamento do estabelecimento</td><td><span class="mdoSelo mdo-ok">✅ Efeito obrigatório da condenação</span></td></tr>
+<tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">16</span>Idoso (Lei 10.741/03)</td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Art. 45</td><td>Medidas de proteção</td><td><span class="mdoSelo mdo-no">❌ Judiciário age a requerimento do MP</span></td></tr>
+<tr class="mdoGrupo g-no g-ok"><td colspan="3"><span class="mdoNum">18</span>Prisão Temporária (Lei 7.960/89)</td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Art. 2º, caput</td><td>Decretar a prisão temporária</td><td><span class="mdoSelo mdo-no">❌ Nunca de ofício</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 2º, §3º</td><td>Mandar apresentar o preso, pedir informações ao delegado, exame de corpo de delito</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">20</span>Proteção à Testemunha (Lei 9.807/99)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 13</td><td>Perdão judicial ao colaborador</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 15, §2º</td><td>Medidas de proteção ao colaborador durante a instrução</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 19-A, par. único</td><td>Tomar antecipadamente o depoimento do protegido</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">22</span>Terrorismo (Lei 13.260/16)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 12</td><td>Medidas assecuratórias</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-no g-ok"><td colspan="3"><span class="mdoNum">23</span>JECRIM (Lei 9.099/95)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Arts. 66, par. único, e 77, §2º</td><td>Remeter ao juízo comum (réu não encontrado ou causa complexa)</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Arts. 76 e 89</td><td>Transação penal e suspensão condicional do processo</td><td><span class="mdoSelo mdo-no">❌ Súmula 696 STF (remessa ao PGJ)</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">25</span>Marco Legal do Combate ao Crime Organizado (Lei 15.358/26)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 9º</td><td>Sequestro, arresto, bloqueio e indisponibilidade de bens, inclusive ativos digitais<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Sentença</td><td>Medidas de desarticulação financeira definitiva<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">27</span>Economia Popular (Lei 1.521/51)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 7º</td><td>Recurso de ofício contra absolvição ou arquivamento do inquérito</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">29</span>Identificação Criminal (Lei 12.037/09)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 3º, IV</td><td>Identificação criminal essencial às investigações</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">31</span>Lei Geral do Esporte (Lei 14.597/23)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 201, §§2º, 4º e 5º</td><td>Converter a pena em impedimento de comparecer a eventos esportivos</td><td><span class="mdoSelo mdo-ok">✅ Sim (dever)</span></td></tr>
+<tr class="mdoGrupo g-warn"><td colspan="3"><span class="mdoNum">35</span>Prefeitos e Vereadores (DL 201/67)</td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 2º, II</td><td>Manifestar-se, ao receber a denúncia, sobre preventiva e afastamento do cargo</td><td><span class="mdoSelo mdo-warn">⚠️ Preventiva de ofício hoje vedada</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">37</span>Tráfico de Pessoas (Lei 13.344/16)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 8º</td><td>Medidas assecuratórias sobre bens</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">38</span>Alienação Parental (Lei 12.318/10)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 4º</td><td>Prioridade de tramitação e medidas provisórias, ouvido o MP</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok g-warn"><td colspan="3"><span class="mdoNum">40</span>Crimes Falimentares (Lei 11.101/05)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 187, §2º</td><td>Cientificar o MP ao surgirem indícios de crime</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoLinha warn"><td class="mdoDisp">Art. 181, §1º</td><td>Efeitos da condenação</td><td><span class="mdoSelo mdo-warn">⚠️ Não automáticos: declarados motivadamente</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">47</span>Julgamento Colegiado (Lei 12.694/12)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º</td><td>Instaurar o colegiado de 1º grau</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
+<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">—</span>Receptação de Combustíveis (Lei 15.517/26)</td></tr>
+<tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º-C</td><td>Nos crimes dos arts. 1º-A e 1º-B, a condenação gera perda de cargo, função ou emprego público, com inabilitação pelo dobro da pena aplicada<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação</span></td></tr>
+<tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">—</span>Henry Borel (Lei 14.344/22)</td></tr>
+<tr class="mdoLinha no"><td class="mdoDisp">Medidas protetivas e preventiva</td><td>Medidas protetivas e prisão preventiva</td><td><span class="mdoSelo mdo-no">❌ Exigem provocação</span></td></tr>
+</tbody></table></div>
+<p class="mdoRodape">Confira sempre a redação atualizada no Planalto — as Leis 15.358/2026, 15.487/2026 e 15.517/2026 alteraram vários desses diplomas.</p>
 </div>
 </section>
 </div>
