@@ -1168,6 +1168,9 @@ table.cfxTab strong{font-weight:bold !important}
 .ccCard{background:#fff;border:1px solid var(--borda);border-top:4px solid var(--azulEscuro);border-radius:10px;
  padding:14px 16px;box-shadow:0 1px 4px rgba(15,30,51,.10);display:flex;flex-direction:column;gap:10px;font-size:13px;color:#1f2430}
 .ccNome{font-size:16px;font-weight:bold;color:var(--azulEscuro)}
+.ccCard.ccPassou{background:#fdf6f6;border-color:#f0dcdc;border-top-color:#d9a3a3}
+.ccCard.ccPassou .ccProva,.ccCard.ccPassou .ccProva.passada{background:#fbeeee;border-color:#f0d6d6;opacity:1}
+.ccCard.ccPassou .ccFalta{color:#a65a5a}
 .ccSub{color:#5a6675;margin-top:2px}
 .ccProvas{display:flex;flex-wrap:wrap;gap:8px}
 .ccProva{flex:1 1 140px;display:flex;flex-direction:column;gap:1px;background:#f3f6fa;border:1px solid #dfe6ef;border-radius:8px;padding:7px 10px}
@@ -22514,7 +22517,11 @@ function telaConcursos(){
     return;
   }
   lista.forEach(c => {
-    const card = el("div","ccCard");
+    // todas as provas do concurso já passaram: o painel ganha um tom vermelho suave
+    const datas = [temObjetiva(c) && c.dataObj, temDiscursiva(c) && c.dataDis].filter(Boolean);
+    const passou = datas.length > 0 && datas.every(d => d < hoje);
+    const card = el("div","ccCard" + (passou ? " ccPassou" : ""));
+    if (passou) card.title = "As provas deste concurso já passaram";
     const cab = el("div","ccCab");
     const tit = el("div","ccNome", (c.nome || "Concurso " + c.num) + (c.uf ? " — " + c.uf : ""));
     cab.appendChild(tit);
@@ -33424,7 +33431,8 @@ function irParaModulo(qual, destino){
   const saindoDe = ABAS.find(x => x.id === abaAtual);
   if (!saindoDe || !saindoDe.oculta) abaPorModulo[modulo] = abaAtual;
   modulo = qual; ABAS = MODULOS[qual];
-  abaAtual = destino || abaPorModulo[qual] ||
+  // Concursos sempre abre pelo painel (aba Concursos), não pela última aba visitada
+  abaAtual = destino || (qual === "cad" ? INICIAL.cad : abaPorModulo[qual]) ||
              (qual === "cCont" && DB.ultimaCont &&
               ABAS.some(x => x.id === DB.ultimaCont) ? DB.ultimaCont : null) ||
              INICIAL[qual];
@@ -33433,7 +33441,7 @@ function irParaModulo(qual, destino){
 // acha em que módulo mora uma aba, para os atalhos da capa
 const moduloDaAba = id =>
   Object.keys(MODULOS).find(k => MODULOS[k].some(a => a.id === id)) || "sim";
-let abaAtual = "cadastro";
+let abaAtual = "concursos";
 // o que a grade está mostrando:
 //   null            -> tudo, lado a lado
 //   {conc: nº}      -> todos os blocos de um concurso
