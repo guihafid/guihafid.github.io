@@ -1270,6 +1270,44 @@ table.cfxTab strong{font-weight:bold !important}
  .mdoWrap table.mdoTab tr.mdoLinha td{border:0;padding:3px 0}
  .mdoWrap td.mdoDisp{white-space:normal}
 }
+/* tópico "Perda do cargo como efeito automático" (Legislação Penal, tópico 0): estilo do arquivo original */
+.pcaWrap{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1d1d1b}
+.pcaWrap *{text-align:left !important;hyphens:none}
+.pcaWrap .pcaSub{color:#6b6a65;margin:0 0 14px}
+.pcaWrap .pcaCard{background:#fff;border:1px solid #e4e2db;border-radius:12px;overflow-x:auto}
+.pcaWrap table.pcaTab{width:100%;border-collapse:collapse;margin:0;box-shadow:none;min-width:760px}
+.pcaWrap table.pcaTab thead th{background:#f0eee8;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#6b6a65;padding:12px 14px;border:0;border-bottom:1px solid #e4e2db;font-weight:700}
+.pcaWrap table.pcaTab td{padding:12px 14px;border:0;border-bottom:1px solid #e4e2db;vertical-align:top;background:#fff;color:#1d1d1b;font-size:14.5px}
+.pcaWrap table.pcaTab tbody tr:last-child td{border-bottom:0}
+.pcaWrap td.pcaLei{font-weight:600}
+.pcaWrap td.pcaDisp{white-space:nowrap;font-weight:600;font-size:14px}
+.pcaWrap .pcaSelo{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.4}
+.pcaWrap .pca-ok{background:#e6f4ea;color:#1e6b35}.pcaWrap .pca-warn{background:#fdf3dc;color:#8a5a00}
+.pcaWrap .pcaFund{display:block;color:#6b6a65;font-size:13px;margin-top:5px}
+.crimMat .pcaWrap table.pcaTab td.pcaPrazo{font-weight:600;color:#7a2e2e !important}
+.pcaWrap .pcaNovo{font-size:11px;font-weight:700;color:#7a2e2e;border:1px solid #7a2e2e;border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:middle}
+.pcaWrap .pcaTip{margin-top:20px;background:#fff;border:1px solid #e4e2db;border-left:4px solid #7a2e2e;border-radius:10px;padding:16px 18px}
+.pcaWrap .pcaTipTit{margin:0 0 8px;font-size:16px;font-weight:bold}
+.pcaWrap .pcaTip ul{margin:0;padding-left:20px}
+.pcaWrap .pcaTip li{margin:4px 0}
+.pcaWrap .pcaTip strong{font-weight:bold !important}
+.pcaWrap .pcaRodape{color:#6b6a65;font-size:13px;margin:14px 0 0}
+.crimMat .pcaWrap table.pcaTab th,.crimMat .pcaWrap p,.crimMat .pcaWrap li,.crimMat .pcaWrap span{text-align:left !important}
+/* células justificadas (margens uniformes); o selo continua compacto */
+.crimMat .pcaWrap table.pcaTab td,.crimMat .pcaWrap table.pcaTab td .pcaFund{text-align:justify !important;hyphens:auto}
+/* colunas estreitas (lei e dispositivo) justificadas abrem buracos: ficam à esquerda */
+.crimMat .pcaWrap table.pcaTab td.pcaLei,.crimMat .pcaWrap table.pcaTab td.pcaDisp{text-align:left !important;hyphens:none}
+.crimMat .pcaWrap .pcaNovo{white-space:nowrap;display:inline-block}
+.crimMat .pcaWrap table.pcaTab td .pcaSelo{text-align:left !important}
+.crimMat .mdoWrap table.mdoTab td,.crimMat .mdoWrap table.mdoTab th{text-align:left !important}
+.crimMat .pcaWrap table.pcaTab td,.crimMat .pcaWrap table.pcaTab thead th{vertical-align:middle !important}
+.pcaWrap table.pcaTab{table-layout:fixed}
+.pcaWrap table.pcaTab thead th:nth-child(1){width:17% !important}
+.pcaWrap table.pcaTab thead th:nth-child(2){width:12% !important}
+.pcaWrap table.pcaTab thead th:nth-child(3){width:37% !important}
+.pcaWrap table.pcaTab thead th:nth-child(4){width:18% !important}
+.pcaWrap table.pcaTab thead th:nth-child(5){width:16% !important}
+.crimMat .pcaWrap table.pcaTab td.pcaDisp{white-space:normal}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -34659,8 +34697,6 @@ carregar().then(() => {
 <tr class="mdoGrupo g-no g-warn"><td colspan="3"><span class="mdoNum">4</span>Interceptações (Lei 9.296/96)</td></tr>
 <tr class="mdoLinha warn"><td class="mdoDisp">Art. 3º</td><td>Decretação da interceptação</td><td><span class="mdoSelo mdo-warn">⚠️ Previsto no texto, mas criticado (sistema acusatório)</span></td></tr>
 <tr class="mdoLinha no"><td class="mdoDisp">Art. 8º-A</td><td>Captação ambiental</td><td><span class="mdoSelo mdo-no">❌ Exige requerimento do MP ou representação do delegado</span></td></tr>
-<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">5</span>Tortura (Lei 9.455/97)</td></tr>
-<tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º, §5º</td><td>Perda do cargo e interdição</td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação</span></td></tr>
 <tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">6</span>Lavagem (Lei 9.613/98)</td></tr>
 <tr class="mdoLinha no"><td class="mdoDisp">Art. 17-D</td><td>Afastamento automático do servidor indiciado</td><td><span class="mdoSelo mdo-no">❌ Declarado inconstitucional pelo STF</span></td></tr>
 <tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">7</span>CTB (Lei 9.503/97)</td></tr>
@@ -34668,14 +34704,11 @@ carregar().then(() => {
 <tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">9</span>Maria da Penha (Lei 11.340/06)</td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 12-C, §1º</td><td>Decidir em 24h se mantém ou revoga o afastamento do lar aplicado pelo delegado/policial</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 18, IV</td><td>Apreensão imediata de arma de fogo do agressor</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
-<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">—</span>Crimes contra a mulher por razões da condição do sexo feminino (CP – Lei 14.994/24)</td></tr>
-<tr class="mdoLinha ok"><td class="mdoDisp">Art. 92, §2º, CP</td><td>Perda de cargo, função ou mandato; incapacidade para o poder familiar, tutela ou curatela; vedação de nomeação ou diplomação até o cumprimento da pena</td><td><span class="mdoSelo mdo-ok">✅ Efeitos automáticos, mesmo sem declaração na sentença</span></td></tr>
 <tr class="mdoGrupo g-ok g-warn"><td colspan="3"><span class="mdoNum">10</span>Drogas (Lei 11.343/06)</td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 50, §3º</td><td>Determinar a destruição das drogas</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
 <tr class="mdoLinha warn"><td class="mdoDisp">Art. 56, §1º</td><td>Afastamento cautelar do servidor denunciado</td><td><span class="mdoSelo mdo-warn">⚠️ Controvertido</span></td></tr>
 <tr class="mdoGrupo g-ok g-warn"><td colspan="3"><span class="mdoNum">11</span>Crime Organizado (Lei 12.850/13)</td></tr>
 <tr class="mdoLinha warn"><td class="mdoDisp">Art. 2º, §5º</td><td>Afastamento cautelar do funcionário público</td><td><span class="mdoSelo mdo-warn">⚠️ Lei não exige provocação, mas é questionado</span></td></tr>
-<tr class="mdoLinha ok"><td class="mdoDisp">Art. 2º, §6º</td><td>Perda do cargo, função, emprego ou mandato e interdição por 8 anos após o cumprimento da pena</td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação transitada em julgado</span></td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 4º, §8º</td><td>Recusar homologação da colaboração ou devolvê-la para adequação</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
 <tr class="mdoGrupo g-no g-warn"><td colspan="3"><span class="mdoNum">12</span>Abuso de Autoridade (Lei 13.869/19)</td></tr>
 <tr class="mdoLinha no"><td class="mdoDisp">Art. 4º, I</td><td>Fixar valor mínimo de indenização</td><td><span class="mdoSelo mdo-no">❌ Depende de requerimento do ofendido</span></td></tr>
@@ -34685,7 +34718,6 @@ carregar().then(() => {
 <tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">15</span>ECA (Lei 8.069/90)</td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 153</td><td>Investigar fatos e ordenar providências</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 191</td><td>Instaurar, por portaria, apuração de irregularidades em entidade</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
-<tr class="mdoLinha ok"><td class="mdoDisp">Art. 92, §2º, CP</td><td>Crimes de violência sexual (antiga “pornografia infantil”) e exploração sexual: mesmos efeitos do feminicídio — perda de cargo ou função, incapacidade para o poder familiar etc.<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Efeitos automáticos (Lei 15.487/26)</span></td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 244-A, §2º</td><td>Exploração sexual: cassação da licença de localização e funcionamento do estabelecimento</td><td><span class="mdoSelo mdo-ok">✅ Efeito obrigatório da condenação</span></td></tr>
 <tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">16</span>Idoso (Lei 10.741/03)</td></tr>
 <tr class="mdoLinha no"><td class="mdoDisp">Art. 45</td><td>Medidas de proteção</td><td><span class="mdoSelo mdo-no">❌ Judiciário age a requerimento do MP</span></td></tr>
@@ -34721,12 +34753,37 @@ carregar().then(() => {
 <tr class="mdoLinha warn"><td class="mdoDisp">Art. 181, §1º</td><td>Efeitos da condenação</td><td><span class="mdoSelo mdo-warn">⚠️ Não automáticos: declarados motivadamente</span></td></tr>
 <tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">47</span>Julgamento Colegiado (Lei 12.694/12)</td></tr>
 <tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º</td><td>Instaurar o colegiado de 1º grau</td><td><span class="mdoSelo mdo-ok">✅ Sim</span></td></tr>
-<tr class="mdoGrupo g-ok"><td colspan="3"><span class="mdoNum">—</span>Receptação de Combustíveis (Lei 15.517/26)</td></tr>
-<tr class="mdoLinha ok"><td class="mdoDisp">Art. 1º-C</td><td>Nos crimes dos arts. 1º-A e 1º-B, a condenação gera perda de cargo, função ou emprego público, com inabilitação pelo dobro da pena aplicada<span class="mdoNovo">2026</span></td><td><span class="mdoSelo mdo-ok">✅ Efeito automático da condenação</span></td></tr>
 <tr class="mdoGrupo g-no"><td colspan="3"><span class="mdoNum">—</span>Henry Borel (Lei 14.344/22)</td></tr>
 <tr class="mdoLinha no"><td class="mdoDisp">Medidas protetivas e preventiva</td><td>Medidas protetivas e prisão preventiva</td><td><span class="mdoSelo mdo-no">❌ Exigem provocação</span></td></tr>
 </tbody></table></div>
 <p class="mdoRodape">Confira sempre a redação atualizada no Planalto — as Leis 15.358/2026, 15.487/2026 e 15.517/2026 alteraram vários desses diplomas.</p>
+</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">5</div><h3>Perda do cargo como efeito automático da condenação</h3></div>
+<div class="pcaWrap">
+<p class="pcaSub">Hipóteses em que a perda do cargo decorre da própria condenação, sem necessidade de pedido da acusação ou de fundamentação específica na sentença.</p>
+<div class="pcaCard"><table class="pcaTab">
+<thead><tr><th style="width:250px">Lei / crime</th><th style="width:130px">Dispositivo</th><th>Efeito</th><th style="width:200px">Inabilitação / prazo</th><th style="width:150px">Automático?</th></tr></thead>
+<tbody>
+<tr><td class="pcaLei">Tortura (Lei 9.455/97)</td><td class="pcaDisp">Art. 1º, §5º</td><td>Perda do cargo, função ou emprego público<span class="pcaFund">Fundamento: jurisprudência pacífica do STJ e do STF — efeito obrigatório, dispensa fundamentação específica (diferente do art. 92 do CP).</span></td><td class="pcaPrazo">Interdição pelo dobro do prazo da pena aplicada</td><td><span class="pcaSelo pca-ok">✅ Automático</span></td></tr>
+<tr><td class="pcaLei">Crime Organizado (Lei 12.850/13)</td><td class="pcaDisp">Art. 2º, §6º</td><td>Perda do cargo, função, emprego ou mandato eletivo com o trânsito em julgado<span class="pcaFund">Fundamento: STF, ADI 5567 (rel. Min. Alexandre de Moraes) — §6º constitucional; efeito automático, independe de pedido do MP e da quantidade de pena.</span></td><td class="pcaPrazo">Interdição por 8 anos subsequentes ao cumprimento da pena</td><td><span class="pcaSelo pca-ok">✅ Automático</span></td></tr>
+<tr><td class="pcaLei">Crimes contra a mulher por razões da condição do sexo feminino (CP – Lei 14.994/24)</td><td class="pcaDisp">Art. 92, §2º, I a III, CP</td><td>Perda do cargo, função ou mandato; incapacidade para o poder familiar, tutela ou curatela<span class="pcaFund">Fundamento: texto expresso — o inciso III do §2º declara esses efeitos automáticos (exceção ao §1º, que exige declaração motivada).</span></td><td class="pcaPrazo">Vedada nomeação, designação ou diplomação do trânsito em julgado até o cumprimento da pena</td><td><span class="pcaSelo pca-ok">✅ Automático (lei expressa)</span></td></tr>
+<tr><td class="pcaLei">ECA – arts. 240, 241, 241-A, 241-B, 241-D e 244-A (CP – Lei 15.487/26)<span class="pcaNovo">2026</span></td><td class="pcaDisp">Art. 92, §2º, I a III, CP</td><td>Mesmos efeitos do item anterior: perda do cargo, função ou mandato; incapacidade para o poder familiar etc.<span class="pcaFund">Fundamento: texto expresso — a Lei 15.487/26 incluiu esses crimes do ECA no §2º do art. 92. Atenção: o rol é taxativo (crimes do ECA listados).</span></td><td class="pcaPrazo">Mesmo regime: vedação de nomeação até o cumprimento da pena</td><td><span class="pcaSelo pca-ok">✅ Automático (lei expressa)</span></td></tr>
+<tr><td class="pcaLei">Receptação de Combustíveis (Lei 8.176/91, arts. 1º-A a 1º-D, incluídos pela Lei 15.517/26)<span class="pcaNovo">2026</span></td><td class="pcaDisp">Art. 1º-C</td><td>Nos crimes dos arts. 1º-A e 1º-B, perda do cargo, da função ou do emprego público<span class="pcaFund">Fundamento: a lei diz que a condenação “terá como efeito” a perda, mas não diz expressamente que é automática. Redação próxima à da Tortura, o que indica efeito automático, porém ainda não há jurisprudência.</span></td><td class="pcaPrazo">Inabilitação pelo dobro do prazo da pena aplicada</td><td><span class="pcaSelo pca-warn">⚠️ Provavelmente automático — sem jurisprudência</span></td></tr>
+</tbody>
+</table></div>
+<div class="pcaTip">
+<p class="pcaTipTit">Para memorizar os prazos</p>
+<ul>
+<li><strong>Dobro da pena:</strong> Tortura e Receptação de Combustíveis.</li>
+<li><strong>8 anos após o cumprimento:</strong> Organização Criminosa.</li>
+<li><strong>Até o cumprimento da pena:</strong> Crimes contra a mulher e crimes do ECA listados (art. 92, §2º, CP).</li>
+<li><strong>Regra geral (art. 92, §1º, CP):</strong> efeitos NÃO automáticos — exigem declaração motivada na sentença.</li>
+</ul>
+</div>
+<p class="pcaRodape">Confira sempre a redação atualizada no Planalto — as Leis 15.487/2026 e 15.517/2026 são recentes.</p>
 </div>
 </section>
 </div>
@@ -39487,6 +39544,7 @@ details.qf .qf-r b.no{color:#b3261e}
 <div class="jur">Para a configuração do crime do <b>art. 1º, I</b>, é <span class="rd">irrelevante</span> a existência de prejuízo efetivo à Administração Pública. <i>(STF)</i></div>
 <div class="jur">Se, no momento do oferecimento da denúncia, o acusado <b>não exercer função/cargo público</b>, torna-se <b>dispensável a defesa prévia</b> prevista no art. 2º, I, do DL nº 201/1967. <i>(STJ — Info 746)</i> <span class="jurcite">STJ. 5ª Turma. AgRg no RHC 163.645-TO, Rel. Min. Reynaldo Soares da Fonseca, julgado em 16/08/2022.</span></div>
 <div class="jur">O crime cometido por prefeito em <b>outro estado</b> deve ser julgado pelo tribunal em cuja jurisdição se encontra o <b>município administrado</b> por ele. <i>(STJ)</i> <span class="jurcite">CC nº 120.848/PE.</span></div>
+<div class="jur"><a href="https://buscadordizerodireito.com.br/jurisprudencia/14553/a-pena-de-perda-de-cargo-e-de-inabilitacao-para-o-exercicio-de-cargo-ou-funcao-publica-prevista-no-art-1o-2o-do-dl-2011967-e-autonoma-e-possui-prazo-prescricional-proprio-nao-sendo-por-si-so-atingida-pela-prescricao-da-pena-privativa-de-liberdade" target="_blank" rel="noopener noreferrer">A pena de perda de cargo e de inabilitação para o exercício de cargo ou função pública, prevista no art. 1º, § 2º, do DL 201/1967, é autônoma e possui prazo prescricional próprio, não sendo, por si só, atingida pela prescrição da pena privativa de liberdade.</a></div>
 </section>
 </div>
 
