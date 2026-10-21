@@ -1188,6 +1188,43 @@ table.cfxTab strong{font-weight:bold !important}
 .ccAtalhos{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #edf1f5;padding-top:10px;margin-top:auto}
 .ccAtalhos .btn{font-size:12px;text-decoration:none}
 .ccVazio{margin:20px 10px;padding:20px;text-align:center;background:#fff;border:1px dashed var(--borda);border-radius:10px}
+/* tópico "Alienação antecipada de bens" (Legislação Penal, tópico 0): estilo do arquivo original */
+.aaWrap{--c:#1e3a5f;font:15px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1d2125}
+.aaWrap *{text-align:left;hyphens:none}
+.aaWrap .aaSub{color:#646b75;margin:0 0 6px}
+.aaWrap .aaH2{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#646b75;margin:26px 0 12px;font-weight:700;border:0;padding:0}
+.aaWrap .aaTW{background:#fff;border:1px solid #e4dfd4;border-radius:12px;overflow-x:auto}
+.aaWrap table.aaTab{width:100%;border-collapse:collapse;margin:0;box-shadow:none}
+.aaWrap table.aaTab th,.aaWrap table.aaTab td{padding:12px 14px;text-align:left !important;border:0;border-bottom:1px solid #e4dfd4;font-size:.92rem;vertical-align:top;background:#fff;color:#1d2125}
+.aaWrap table.aaTab thead th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#646b75;background:#f1ede4;font-weight:700}
+.aaWrap table.aaTab tbody tr:last-child td{border-bottom:none}
+.aaWrap td.aaLaw{font-weight:600;white-space:nowrap}
+.aaWrap td.aaLaw small{display:block;font-weight:400;color:#646b75;font-size:.78rem}
+.aaWrap .aaDot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.aaWrap .aaPill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.82rem;font-weight:600;background:#f1ede4}
+.aaWrap .aaPill.aaHi{background:#b4532a;color:#fff}
+.aaWrap .aaGrid,.aaWrap .aaTwo{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.aaWrap .aaCard{background:#fff;border:1px solid #e4dfd4;border-radius:12px;padding:18px 20px;border-top:4px solid var(--c)}
+.aaWrap .aaCard h3{margin:0;font-size:1.1rem;color:var(--c);text-transform:none;border:0;padding:0}
+.aaWrap .aaRef{color:#646b75;font-size:.82rem;margin:2px 0 14px}
+.aaWrap dl.aaDl{margin:0;display:grid;grid-template-columns:110px 1fr;gap:10px 12px}
+.aaWrap dl.aaDl dt{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#646b75;font-weight:600;padding-top:2px}
+.aaWrap dl.aaDl dd{margin:0;font-size:.93rem}
+.aaWrap dl.aaDl dd strong{color:#b4532a}
+.aaWrap .aaBox{background:#fff;border:1px solid #e4dfd4;border-radius:12px;padding:18px 20px}
+.aaWrap .aaBox h3{margin:0 0 12px;font-size:1rem;color:#1e3a5f;text-transform:none;border:0;padding:0}
+.aaWrap ul.aaDest{list-style:none;margin:0;padding:0}
+.aaWrap ul.aaDest li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #e4dfd4;font-size:.93rem}
+.aaWrap ul.aaDest li::before{display:none}
+.aaWrap ul.aaDest li:last-child{border-bottom:none}
+.aaWrap ul.aaDest span:last-child{font-weight:600;text-align:right}
+.aaWrap ul.aaNotes{margin:0;padding-left:18px}
+.aaWrap ul.aaNotes li{margin-bottom:10px;font-size:.93rem}
+.aaWrap ul.aaNotes b{color:#b4532a}
+.aaWrap .aaFollow{margin:12px 2px 0;font-size:.88rem;color:#646b75}
+.aaWrap .aaFollow b{color:#1d2125}
+.aaWrap .aaWarn{margin-top:22px;padding:14px 16px;border-radius:10px;font-size:.88rem;background:#f1ede4;color:#646b75;border-left:4px solid #b4532a}
+@media (max-width:480px){.aaWrap dl.aaDl{grid-template-columns:1fr;gap:2px}.aaWrap dl.aaDl dd{margin-bottom:10px}}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -23018,7 +23055,7 @@ function vtSecaoFala(texto, k, id){
 function vtSecaoDe1(texto, mats){
   const leis = vtLeis(texto), pt = [...new Set(vtPalavras(texto))];
   const secs = [];
-  mats.forEach(k => MATS[k].secoes.forEach((s, i) => secs.push({ k, s, pos: i + 1,
+  mats.forEach(k => MATS[k].secoes.forEach((s, i) => secs.push({ k, s, pos: i + secBase(k),
     frases: vtAssuntos(k, s).map(f => [...new Set(vtPalavras(f))]).filter(f => f.length) })));
   const freq = {};
   secs.forEach(x => new Set([].concat(...x.frases)).forEach(w => freq[w] = (freq[w] || 0) + 1));
@@ -23406,7 +23443,7 @@ function janelaVerticalizar(num){
           x.g = ef;
           if (ef && !grupos[ef]){
             const [k, id] = [ef.slice(0, ef.indexOf(":")), ef.slice(ef.indexOf(":") + 1)];
-            const pos = MATS[k].secoes.findIndex(s => s.id === id) + 1;
+            const pos = MATS[k].secoes.findIndex(s => s.id === id) + secBase(k);
             grupos[ef] = { k, id, pos, t: MATS[k].secoes[pos - 1].t, ord: MAT_ORDEM.indexOf(k) * 1000 + pos };
           }
         });
@@ -30974,6 +31011,7 @@ function telaTempoEstudo(){
 let MATS = {
   lep: {
     rot:"01 - LEGISLA\u00c7\u00c3O PENAL", cls:"lep", est:"mat_lep", secoes:[
+    { id:"dif", c:"c-azul", cl:"card", t:"Diferen\u00e7as das Legisla\u00e7\u00f5es", zero:true },
     { id:"lep", c:"c-azul", cl:"card", t:"Lei n\u00ba 7.210/1984 \u2014 Lei de Execu\u00e7\u00e3o Penal (LEP)" },
     { id:"8", c:"c-azul", cl:"card", t:"Lei n\u00ba 8.072/1990 \u2014 Crimes Hediondos" },
     { id:"10", c:"c-verde", cl:"card", t:"Leis 8.078/1990 e 8.137/1990 (Consumo e ordem tribut\u00e1ria/econ\u00f4mica \u2013 parte penal)" },
@@ -31322,6 +31360,9 @@ function matGavetaBase(k){
    as de fábrica pelo número (a "03 - CONSTITUCIONAL" com a "03 - ..." da lista),
    as que você acrescenta pelo item escolhido. Renomear na Configuração
    (migrarMateria) leva a ligação junto, mesmo se o número mudar. */
+/* numeração das seções: começa em 0 quando a primeira seção da matéria é marcada
+   com zero:true (ex.: "0 · Diferenças das Legislações", antes da LEP) */
+function secBase(mat){ const M = MATS[mat]; return M && M.secoes[0] && M.secoes[0].zero ? 0 : 1; }
 function matVinculo(k){
   garantirCadernos();
   const lista = Array.isArray(DB.materias) ? DB.materias : [];
@@ -31655,7 +31696,7 @@ function matQuadro(mat, id){
   const numSec = h2Sec && h2Sec.parentElement
     ? h2Sec.parentElement.querySelector(":scope > .num") : null;
   if (posSec >= 0 && numSec && /^\s*\d+\s*$/.test(numSec.textContent))
-    numSec.textContent = String(posSec + 1);
+    numSec.textContent = String(posSec + secBase(mat));
   if (matReescrita(mat, id)) art.classList.add("reescrito");
   // se esta se\u00e7\u00e3o tem lei pr\u00f3pria, o t\u00edtulo dela vira link para o Planalto.
   // S\u00f3 no modo leitura: assim o link nunca entra no que voc\u00ea escreve nem \u00e9 gravado
@@ -32736,7 +32777,7 @@ function telaMat(mat, id){
     M.secoes.forEach((x, i) => {
       const li = el("li");
       const a = el("a");
-      a.appendChild(el("span","tn " + x.c, String(i + 1)));
+      a.appendChild(el("span","tn " + x.c, String(i + secBase(mat))));
       a.appendChild(el("span","tt", x.t));
       a.title = "Ir para " + x.t;
       a.onclick = () => {
@@ -32836,7 +32877,7 @@ function montarAbasCont(){
     L.push({ id:"mat_" + mat, nome:"\u25c8 Ver todas as se\u00e7\u00f5es", cls:M.cls,
              sub:M.sub, pai, fn:() => telaMat(mat, "") });
     M.secoes.forEach((x, i) => L.push({
-      id:"mat_" + mat + "_" + x.id, nome:(i + 1) + ". " + x.t, cls:M.cls,
+      id:"mat_" + mat + "_" + x.id, nome:(i + secBase(mat)) + ". " + x.t, cls:M.cls,
       sub:M.sub, pai, fn:() => telaMat(mat, x.id) }));
   });
   return L;
@@ -32855,7 +32896,8 @@ function recarregarMaterias(){
   if (modulo === "cCont") ABAS = ABAS_CONT;
 }
 /* a janelinha do \u270e: n\u00famero (posi\u00e7\u00e3o) e nome da se\u00e7\u00e3o */
-function janelaEditarSecao(pos, total, nome, cor, aoSalvar){
+function janelaEditarSecao(pos, total, nome, cor, aoSalvar, base){
+  const b0 = base === 0 ? 0 : 1, d = 1 - b0;       // número mostrado = posição - d
   const fundo = el("div","modalFundo secEdFundo");
   const caixa = el("div","modalCaixa secEdCaixa");
   const sair = () => { if (fundo.parentNode) document.body.removeChild(fundo); };
@@ -32864,7 +32906,7 @@ function janelaEditarSecao(pos, total, nome, cor, aoSalvar){
   const cN = el("label","secEdCampo secEdNum");
   cN.appendChild(el("span","secEdRot","N\u00ba"));
   const iN = el("input","mtNum " + (cor || ""));
-  iN.type = "number"; iN.min = 1; iN.max = total; iN.value = pos; iN.inputMode = "numeric";
+  iN.type = "number"; iN.min = b0; iN.max = total - d; iN.value = pos - d; iN.inputMode = "numeric";
   cN.appendChild(iN);
   const cT = el("label","secEdCampo secEdNome");
   cT.appendChild(el("span","secEdRot","Nome da se\u00e7\u00e3o"));
@@ -32874,11 +32916,11 @@ function janelaEditarSecao(pos, total, nome, cor, aoSalvar){
   linha.appendChild(cN); linha.appendChild(cT);
   caixa.appendChild(linha);
   caixa.appendChild(el("p","dica",
-    "Mude o n\u00famero (de 1 a " + total + ") para levar a se\u00e7\u00e3o a outra posi\u00e7\u00e3o: " +
+    "Mude o n\u00famero (de " + b0 + " a " + (total - d) + ") para levar a se\u00e7\u00e3o a outra posi\u00e7\u00e3o: " +
     "as outras se renumeram. Deixe o nome em branco para voltar ao original."));
   const ok = () => {
     const v = parseInt(iN.value, 10);
-    const p = v ? Math.max(1, Math.min(total, v)) : pos;
+    const p = !isNaN(v) ? Math.max(1, Math.min(total, v + d)) : pos;
     const n = iT.value.replace(/\s+/g, " ").trim();
     sair(); aoSalvar(p, n);
   };
@@ -32939,7 +32981,7 @@ function janelaSecoes(gaveta, soEsta){
         const criada = !!(DB.secNovas[k] || []).find(x => x.id === s.id);
         const L = el("div","matItem" + (criada ? " minha" : ""));
         // o n\u00famero s\u00f3 se troca pelo \u270e, junto com o nome
-        L.appendChild(el("span","mtNum " + (s.c || ""), String(i + 1)));
+        L.appendChild(el("span","mtNum " + (s.c || ""), String(i + secBase(k))));
         L.appendChild(el("span","mtNome", s.t));
         const bR = el("button","mini","\u270e");
         bR.title = "Trocar o nome ou o n\u00famero";
@@ -32951,7 +32993,7 @@ function janelaSecoes(gaveta, soEsta){
           else if (nome !== s.t) DB.secNome[k + ":" + s.id] = nome.slice(0, 300);
           if (pos && pos !== i + 1){ recarregarMaterias(); secMoverPara(k, s.id, pos); }
           salvar(); recarregarMaterias(); pintar(); render();
-        });
+        }, secBase(k));
         if (!criada){
           const bO = el("button","mini","\u{1F441}");
           bO.title = "Ocultar esta se\u00e7\u00e3o";
@@ -34318,6 +34360,166 @@ carregar().then(() => {
 });
 </script>
 
+
+<script type="text/plain" id="matS_lep_dif">
+<div class="sec azul"><div class="num">0</div><h2>Diferenças das Legislações</h2></div>
+<div class="lep-body">
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">1</div><h3>Colaboração delituosa — escala de benefícios</h3></div>
+<div class="tier tier-azul">
+<h4>1) Redução de 1/3 até 2/3 da pena</h4>
+<div class="chips"><span class="chip">Redução 1/3 a 2/3</span></div>
+<p><b>Aplica-se a:</b> Lei de Drogas · Crimes Hediondos · Crimes contra o Sistema Financeiro Nacional · Crimes contra a Ordem Tributária · Crime de Extorsão Mediante Sequestro.</p>
+</div>
+<div class="tier tier-verde">
+<h4>2) Redução de 1/3 até 2/3 + Perdão Judicial</h4>
+<div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span></div>
+<p><b>Aplica-se a:</b> <span class="mark">APENAS</span> a Lei de Proteção à Testemunha.</p>
+</div>
+<div class="tier tier-roxo">
+<h4>3) Redução de 1/3 até 2/3 + Perdão Judicial + Substituição de PPL por PRD</h4>
+<div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span><span class="chip">PPL → PRD</span></div>
+<p><b>Aplica-se a:</b> Lavagem de Capitais.</p>
+</div>
+<div class="tier tier-verm">
+<h4>4) Pacote completo — máximo de benefícios</h4>
+<div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span><span class="chip">PPL → PRD</span><span class="chip">Não oferecimento de denúncia</span><span class="chip">Redução 1/2 (após sentença)</span><span class="chip">Progressão de Regime</span></div>
+<p><b>Aplica-se a:</b> <span class="mark">LEI DE ORGANIZAÇÃO CRIMINOSA.</span></p>
+<p><b>Requisitos do não oferecimento de denúncia:</b> o colaborador não ser o líder da organização criminosa e ser o primeiro a prestar efetiva colaboração (delatar).</p>
+<p><b>Se a colaboração ocorrer após a sentença:</b> a pena poderá ser reduzida em <span class="mark">até 1/2</span> ou admitida a progressão de regime ainda que ausentes os requisitos objetivos.</p>
+</div>
+<div class="resumo">
+<div class="rt">RESUMO ESQUEMÁTICO DA SEÇÃO</div>
+<p>A intensidade dos benefícios aumenta conforme o crime: começa com a simples <b>redução de pena</b> (1ª categoria), evolui para o <b>perdão judicial</b> exclusivo da Lei de Proteção à Testemunha (2ª), depois acrescenta a <b>substituição de PPL por PRD</b> na Lavagem de Capitais (3ª), até o <b>pacote completo</b> da Lei de Organização Criminosa (4ª).</p>
+</div>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">2</div><h3>Medidas assecuratórias — de ofício e alcance</h3></div>
+<table class="t">
+<tr><th>Lei</th><th>Pode de ofício?</th><th>Alcance</th></tr>
+<tr><td>CPP (sequestro, art. 127)</td><td>Pelo texto, sim. Debatido após o Pacote Anticrime</td><td>Produto/proveito do crime</td></tr>
+<tr><td>CPP (hipoteca e arresto)</td><td>Não, depende de requerimento</td><td>Bens lícitos, para garantir a reparação</td></tr>
+<tr><td>Lavagem (art. 4º)</td><td>Pelo texto, sim. Debatido</td><td>Inclui bens de interpostas pessoas</td></tr>
+<tr><td>Drogas (art. 60)</td><td><b>Não</b>, desde 2019</td><td>Produto/proveito do crime</td></tr>
+<tr><td>DL 3.240/41</td><td>Não, depende do MP</td><td><b>Qualquer bem</b> do indiciado</td></tr>
+</table>
+</section>
+
+<section class="lepcard bordered">
+<div class="card-head"><div class="num">3</div><h3>Alienação antecipada de bens</h3></div>
+<div class="aaWrap">
+<p class="aaSub">Quadro comparativo do CPP e das leis penais especiais · atualizado até out/2026</p>
+<div class="aaH2">Resumo rápido</div>
+<div class="aaTW">
+<table class="aaTab">
+<thead>
+<tr><th>Lei</th><th>Iniciativa</th><th>Prazo</th><th>Valor mínimo</th><th>Destino final</th></tr>
+</thead>
+<tbody>
+<tr>
+<td class="aaLaw"><span class="aaDot" style="background:#1e3a5f"></span>CPP<small>art. 144-A</small></td>
+<td>De ofício, MP, ofendido (e assistente) ou delegado (art. 127)</td><td>Lei não fixa prazo para decidir · 2º leilão em até <span class="aaPill aaHi">10 dias</span></td><td><span class="aaPill aaHi">80%</span> no 2º leilão</td><td>Funpen</td>
+</tr>
+<tr>
+<td class="aaLaw"><span class="aaDot" style="background:#2f6f5e"></span>Lavagem<small>Lei 9.613/98</small></td>
+<td>Medidas: de ofício, MP ou delegado · Alienação: de ofício, MP ou interessado</td><td>Lei não fixa prazo para decidir · edital de 15 dias</td><td><span class="aaPill aaHi">75%</span></td><td>União ou Estado</td>
+</tr>
+<tr>
+<td class="aaLaw"><span class="aaDot" style="background:#8a3b2c"></span>Drogas<small>Lei 11.343/06</small></td>
+<td>Medidas: MP, assistente ou delegado (não de ofício) · Alienação: juiz, após comunicação do delegado</td><td><span class="aaPill aaHi">30 dias</span></td><td><span class="aaPill aaHi">50%</span></td><td>Funad</td>
+</tr>
+<tr>
+<td class="aaLaw"><span class="aaDot" style="background:#5b3f86"></span>Marco Legal do Crime Organizado<small>Lei 15.358/26</small></td>
+<td>Representação do delegado ou requerimento do MP</td><td><span class="aaPill aaHi">Imediata</span> após a constrição</td><td>Lei 9.613 se aplica (75%)*</td><td>Fundos de segurança</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="aaFollow">Seguem o CPP (art. 144-A), sem regra própria: <b>Organização Criminosa</b> (Lei 12.850/13) e <b>Combustíveis</b> (Lei 15.517/26).</p>
+<div class="aaH2">Detalhes por lei</div>
+<div class="aaGrid">
+<div class="aaCard" style="--c: #1e3a5f">
+<h3>Código de Processo Penal</h3>
+<p class="aaRef">Art. 144-A</p>
+<dl class="aaDl">
+<dt>Cabimento</dt><dd>Bens sujeitos a deterioração, depreciação ou de difícil manutenção</dd>
+<dt>Iniciativa</dt><dd>Sequestro (art. 127): <strong>de ofício</strong>, a requerimento do <strong>MP</strong> ou do <strong>ofendido</strong> (o que permite admitir também o <strong>assistente de acusação</strong>), ou por <strong>representação da autoridade policial</strong>. A alienação (art. 144-A) é determinada pelo juiz. A atuação de ofício é criticada pela doutrina (ex.: Aury Lopes Jr.) por violar o sistema acusatório (art. 3º-A)</dd>
+<dt>Procedimento</dt><dd>Leilão, preferencialmente eletrônico</dd>
+<dt>Prazo</dt><dd>A lei <strong>não fixa</strong> prazo para o juiz decidir. Único prazo: novo leilão em até <strong>10 dias</strong> após o primeiro (§2º)</dd>
+<dt>Valor</dt><dd>1º leilão: avaliação · 2º leilão: <strong>mínimo 80%</strong></dd>
+<dt>Dinheiro</dt><dd>Conta judicial até o fim do processo</dd>
+<dt>Absolvição</dt><dd>Valor devolvido ao acusado</dd>
+</dl>
+</div>
+<div class="aaCard" style="--c: #2f6f5e">
+<h3>Lavagem de Dinheiro</h3>
+<p class="aaRef">Lei 9.613/98 · arts. 4º, §1º, e 4º-A</p>
+<dl class="aaDl">
+<dt>Cabimento</dt><dd>Mesmas hipóteses do CPP</dd>
+<dt>Iniciativa</dt><dd><strong>Medidas assecuratórias (art. 4º):</strong> de ofício, a requerimento do MP ou mediante <strong>representação do delegado</strong>, ouvido o MP em 24 horas. <strong>Alienação antecipada (art. 4º-A):</strong> de ofício, a requerimento do MP ou por solicitação da parte interessada — aqui a lei <strong>não menciona o delegado</strong></dd>
+<dt>Prazo</dt><dd>A lei <strong>não fixa</strong> prazo para decidir; só o edital de intimação do interessado, com 15 dias</dd>
+<dt>Procedimento</dt><dd>Autos apartados → avaliação → intimação do MP, União/Estado e interessado (edital de 15 dias) → sentença homologatória</dd>
+<dt>Valor</dt><dd><strong>Mínimo 75%</strong> da avaliação</dd>
+<dt>Dinheiro</dt><dd>Conta judicial; com a perda, União ou Estado</dd>
+<dt>Absolvição</dt><dd>Valor devolvido ao acusado</dd>
+</dl>
+</div>
+<div class="aaCard" style="--c: #8a3b2c">
+<h3>Lei de Drogas</h3>
+<p class="aaRef">Lei 11.343/06 · arts. 61 a 63-E</p>
+<dl class="aaDl">
+<dt>Cabimento</dt><dd>Veículos, embarcações, aeronaves, maquinário e objetos usados no tráfico</dd>
+<dt>Iniciativa</dt><dd><strong>Medidas assecuratórias (art. 60):</strong> a requerimento do MP ou do assistente de acusação, ou mediante <strong>representação do delegado</strong> — <strong>não cabe de ofício</strong> desde a Lei 13.840/19. <strong>Alienação (art. 61):</strong> o delegado <strong>comunica a apreensão</strong> ao juiz, que deve determinar a alienação em 30 dias</dd>
+<dt>Prazo</dt><dd><strong>30 dias</strong> para decidir (art. 61 e Res. CNJ 558/24)</dd>
+<dt>Procedimento</dt><dd>Avaliação por oficial de justiça em 5 dias (10 dias se houver avaliador especializado) → manifestação do Funad, MP e interessado em 5 dias → homologação → hasta pública, preferencialmente eletrônica</dd>
+<dt>Valor</dt><dd><strong>Mínimo 50%</strong> da avaliação judicial (art. 61, §11)</dd>
+<dt>Dinheiro</dt><dd><strong>Funad</strong>, integralmente, sem quitar multas ou tributos do bem (art. 63-E)</dd>
+<dt>Absolvição</dt><dd>Devolução, ressalvado terceiro de boa-fé</dd>
+</dl>
+</div>
+<div class="aaCard" style="--c: #5b3f86">
+<h3>Marco Legal do Crime Organizado</h3>
+<p class="aaRef">Lei 15.358/26 · Lei Raul Jungmann</p>
+<dl class="aaDl">
+<dt>Cabimento</dt><dd>Organizações ultraviolentas, milícias e grupos paramilitares</dd>
+<dt>Iniciativa</dt><dd>Delegado representa ou MP requer o <strong>uso provisório</strong> ou, sem interesse no uso, a <strong>alienação antecipada</strong>, até o perdimento</dd>
+<dt>Momento</dt><dd>Feita a constrição, o juiz delibera <strong>imediatamente</strong> sobre alienação antecipada ou nomeação de administrador</dd>
+<dt>Valor</dt><dd>A lei manda aplicar a Lei 9.613 (art. 8º) → sustenta-se o mínimo de <strong>75%</strong>*</dd>
+<dt>Alcance</dt><dd>Inclui ativos digitais, cotas, participações e bens no exterior</dd>
+<dt>Dinheiro</dt><dd>Fundos de segurança pública (vetado o repasse a fundos estaduais)</dd>
+<dt>Absolvição</dt><dd>Devolução, salvo perdimento extraordinário</dd>
+<dt>Atenção</dt><dd>Alterou CPP, Lei de Drogas e Lei de Lavagem — conferir texto compilado</dd>
+</dl>
+</div>
+</div>
+<div class="aaH2">Destino e jurisprudência</div>
+<div class="aaTwo">
+<div class="aaBox">
+<h3>Destino com a perda definitiva</h3>
+<ul class="aaDest">
+<li><span>Drogas</span><span>Funad</span></li>
+<li><span>Crimes em geral (art. 91 CP)</span><span>Funpen</span></li>
+<li><span>Lavagem</span><span>União ou Estado</span></li>
+<li><span>Milícias</span><span>Fundo Nac. de Segurança Pública</span></li>
+</ul>
+<p class="aaRef" style="color:#646b75;font-size:.8rem;margin:12px 0 0">Fonte: Res. CNJ 558/24</p>
+</div>
+<div class="aaBox">
+<h3>O que os tribunais dizem</h3>
+<ul class="aaNotes">
+<li><b>Não é automática:</b> exige decisão fundamentada com risco concreto de depreciação ou custo de guarda.</li>
+<li><b>É cautelar, não pena:</b> preserva o valor do bem; restituição se houver absolvição (STJ, AgRg no RMS 48.684/SC).</li>
+<li><b>Demora do Estado barra a venda:</b> excesso de prazo levou à suspensão e à nomeação dos donos como fiéis depositários (STJ, RMS 68.735/PE).</li>
+<li><b>Contraditório:</b> pode ser diferido na urgência, nunca suprimido.</li>
+</ul>
+</div>
+</div>
+<p class="aaWarn"><b>Prazos:</b> CPP e Lei de Lavagem não fixam prazo para o juiz decidir sobre a alienação. O prazo de 30 dias está na Lei de Drogas (art. 61, §1º). A antiga Res. CNJ 356/2020 estendia esse prazo de 30 dias a todos os processos criminais (art. 144-A do CPP); ela foi substituída pela Res. CNJ 558/24, cujo alcance exato nesse ponto convém conferir. Resolução do CNJ é norma administrativa, não lei.<br><br>* A Lei 15.358/26 não fixa percentual próprio; o art. 8º manda aplicar as disposições da Lei 9.613/98, o que permite sustentar o mínimo de 75%. Ainda não há jurisprudência consolidada.<br><br>A Lei 15.358/26 alterou dispositivos do CPP, da Lei de Drogas e da Lei de Lavagem sobre o tema. Confira os textos compilados no site do Planalto antes da prova.</p>
+</div>
+</section>
+</div>
+</script>
 
 <script type="text/plain" id="matS_lep_lep">
 <div class="sec azul"><div class="num">1</div><h2><a class="lei-link" href="https://www.planalto.gov.br/ccivil_03/leis/l7210.htm" target="_blank" rel="noopener" title="Abrir a íntegra no Planalto">Lei nº 7.210/1984 — Lei de Execução Penal (LEP)</a></h2></div>
@@ -36341,32 +36543,10 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <li><b>Alteração de nome</b> - rito sumaríssimo</li>
 </ul>
 <div class="balloon b-azul"><div class="bt">Duração da proteção (Art. 11)</div><ul class="plain"><li>A proteção oferecida pelo programa terá a <b>duração máxima de dois anos</b>.</li><li><b>Parágrafo único.</b> Em circunstâncias excepcionais, perdurando os motivos que autorizam a admissão, a permanência poderá ser prorrogada.</li></ul></div>
-<div class="sub">Colaboração delituosa — escala de benefícios</div>
-<div class="tier tier-azul">
-<h4>1) Redução de 1/3 até 2/3 da pena</h4>
-<div class="chips"><span class="chip">Redução 1/3 a 2/3</span></div>
-<p><b>Aplica-se a:</b> Lei de Drogas · Crimes Hediondos · Crimes contra o Sistema Financeiro Nacional · Crimes contra a Ordem Tributária · Crime de Extorsão Mediante Sequestro.</p>
-</div>
+<div class="sub">Colaboração delituosa</div>
 <div class="tier tier-verde">
-<h4>2) Redução de 1/3 até 2/3 + Perdão Judicial</h4>
 <div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span></div>
 <p><b>Aplica-se a:</b> <span class="mark">APENAS</span> a Lei de Proteção à Testemunha.</p>
-</div>
-<div class="tier tier-roxo">
-<h4>3) Redução de 1/3 até 2/3 + Perdão Judicial + Substituição de PPL por PRD</h4>
-<div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span><span class="chip">PPL → PRD</span></div>
-<p><b>Aplica-se a:</b> Lavagem de Capitais.</p>
-</div>
-<div class="tier tier-verm">
-<h4>4) Pacote completo — máximo de benefícios</h4>
-<div class="chips"><span class="chip">Redução 1/3 a 2/3</span><span class="chip">Perdão Judicial</span><span class="chip">PPL → PRD</span><span class="chip">Não oferecimento de denúncia</span><span class="chip">Redução 1/2 (após sentença)</span><span class="chip">Progressão de Regime</span></div>
-<p><b>Aplica-se a:</b> <span class="mark">LEI DE ORGANIZAÇÃO CRIMINOSA.</span></p>
-<p><b>Requisitos do não oferecimento de denúncia:</b> o colaborador não ser o líder da organização criminosa e ser o primeiro a prestar efetiva colaboração (delatar).</p>
-<p><b>Se a colaboração ocorrer após a sentença:</b> a pena poderá ser reduzida em <span class="mark">até 1/2</span> ou admitida a progressão de regime ainda que ausentes os requisitos objetivos.</p>
-</div>
-<div class="resumo">
-<div class="rt">RESUMO ESQUEMÁTICO DA SEÇÃO</div>
-<p>A intensidade dos benefícios aumenta conforme o crime: começa com a simples <b>redução de pena</b> (1ª categoria), evolui para o <b>perdão judicial</b> exclusivo da Lei de Proteção à Testemunha (2ª), depois acrescenta a <b>substituição de PPL por PRD</b> na Lavagem de Capitais (3ª), até o <b>pacote completo</b> da Lei de Organização Criminosa (4ª).</p>
 </div>
 </script>
 
