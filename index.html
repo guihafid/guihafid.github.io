@@ -1308,6 +1308,10 @@ table.cfxTab strong{font-weight:bold !important}
 .pcaWrap table.pcaTab thead th:nth-child(4){width:18% !important}
 .pcaWrap table.pcaTab thead th:nth-child(5){width:16% !important}
 .crimMat .pcaWrap table.pcaTab td.pcaDisp{white-space:normal}
+/* Personalidade do Nascituro — três colunas iguais, texto justificado e centralizado na vertical */
+.crimMat table.nascTab{table-layout:fixed;width:100%}
+.crimMat table.nascTab th{width:33.33%}
+.crimMat table.nascTab td{text-align:justify !important;vertical-align:middle !important;font-size:13.5px;line-height:1.45;hyphens:auto}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -57137,7 +57141,7 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
 
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">1</div><h3>Personalidade do Nascituro — Teorias</h3></div>
-<table class="t th-cinza">
+<table class="t th-cinza nascTab">
 <thead>
 <tr><th>Natalista</th><th>Personalidade Condicional</th><th>Concepcionista</th></tr>
 </thead>
@@ -61994,13 +61998,13 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
           <td class="nome c-pun">PRESCRIÇÃO<br>da pretensão punitiva</td>
           <td>Perda do direito de <span class="b">aplicar</span> a pena por demora do Estado em processar.</td>
           <td><span class="b c-pun">Antes</span> do <span class="b">trânsito em julgado</span>.</td>
-          <td style="text-align:center;">Prazo conforme a pena máxima</td>
+          <td style="text-align:center;">Prazo conforme a pena máxima<br><br><span class="b">Nenhum efeito</span> da condenação subsiste</td>
         </tr>
         <tr>
           <td class="nome c-exe">PRESCRIÇÃO<br>da pretensão executória</td>
           <td>Perda do direito de <span class="b">executar</span> a pena <span class="b">após trânsito em julgado</span>.</td>
           <td><span class="b c-exe">Após</span> o <span class="b">trânsito em julgado</span>.</td>
-          <td style="text-align:center;">Condenação esquecida</td>
+          <td style="text-align:center;">Apaga <span class="b">só a pena principal</span><br><br>Os <span class="b">efeitos secundários continuam</span> (reincidência e sentença como título executivo cível)</td>
         </tr>
         <tr>
           <td class="nome c-ren">RENÚNCIA<br>ao direito de queixa</td>
@@ -62017,10 +62021,12 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
           <td>
             <ol>
               <li>deixar de promover andamento do processo durante 30 dias;</li>
-              <li>falecendo ou sobrevindo incapacidade do querelado, nenhum legitimado comparecer em juízo em 60 dias;</li>
+              <li>falecendo ou sobrevindo incapacidade do <span class="b">querelante</span>, nenhum legitimado comparecer em juízo em 60 dias;</li>
               <li>querelante deixar de comparecer a qualquer ato do processo, sem motivo justificado;</li>
-              <li>deixar de apresentar pedido de condenação nas alegações finais.</li>
+              <li>deixar de apresentar pedido de condenação nas alegações finais;</li>
+              <li>sendo o querelante <span class="b">pessoa jurídica</span>, esta se extinguir sem deixar sucessor.</li>
             </ol>
+            <p style="margin:4px 0 0;font-size:12px;color:#555">(art. 60 do CPP)</p>
           </td>
         </tr>
         <tr>
@@ -62028,11 +62034,12 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
           <td>É a <span class="b">renúncia ao prosseguimento da ação penal privada</span> depois de já ter sido ajuizada a <span class="b">queixa-crime</span>.
             <ul><li>Ação penal <span class="b">PRIVADA</span></li></ul>
           </td>
-          <td><span class="b c-perd">Após o início da Ação penal</span><br>Antes da Sentença</td>
+          <td><span class="b c-perd">Após o início da Ação penal</span><br>Até o <span class="b">trânsito em julgado</span> da sentença condenatória (art. 106, §2º, do CP)</td>
           <td style="text-align:center;">Expresso ou Tácito<br><br><span class="b">Bilateral:</span> réu precisa aceitar para ter efeito<br><br><span class="b">Indivisível:</span> se estende a todos que aceitarem</td>
         </tr>
       </tbody>
     </table>
+    <div class="jurisp" style="border-left-color:#c0392b"><span class="b">Apenas a prescrição</span> pode sofrer <span class="b">interrupção</span> ou ser <span class="b">suspensa</span>.</div>
   </div>
 
   <!-- SEÇÃO 2 -->
@@ -62134,6 +62141,11 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
     <div class="jurisp">
       Ao interpretar o parágrafo único do art. 116 do CP, o STJ pacificou que o <span class="b">cumprimento de pena imposta em outro processo</span> — ainda que em regime aberto ou em prisão domiciliar — <span class="b">impede o curso da prescrição executória</span>.
       <span class="ref">Informativo 670 — STJ.</span>
+    </div>
+
+    <div class="jurisp">
+      <span class="b">Atenção:</span> O art. 113 do CP (prescrição pela <span class="b">pena residual</span>) aplica-se apenas à <span class="b">evasão</span> e à <span class="b">revogação do livramento condicional</span>. Na <span class="b">conversão da pena restritiva de direitos em privativa</span> por descumprimento, a prescrição continua calculada pela <span class="b">pena total aplicada</span>.
+      <span class="ref">STJ. 5ª Turma. RHC 99.969/RS, Rel. Min. Felix Fischer, j. 04/09/2018.</span>
     </div>
 
     <a class="fonte" href="https://www.tecconcursos.com.br/aulas/materias/7/assuntos/3174" target="_blank" rel="noopener">Fonte: Da Prescrição (arts. 108 a 119 do CP)</a>
