@@ -32124,6 +32124,13 @@ function matMenuTabela(art, aoTerminar){
       cx.className = "mtSub";
       sub.forEach(f => cx.appendChild(f));
       b.appendChild(cx);
+      // submenu que passaria da tela: sobe (ou abre para a esquerda) para caber
+      b.addEventListener("mouseenter", () => {
+        cx.style.top = ""; cx.style.left = ""; cx.style.right = ""; cx.style.marginLeft = "";
+        const r = cx.getBoundingClientRect();
+        if (r.bottom > innerHeight - 8) cx.style.top = (-6 - (r.bottom - innerHeight + 8)) + "px";
+        if (r.right > innerWidth - 8){ cx.style.left = "auto"; cx.style.right = "100%"; cx.style.marginLeft = "0"; }
+      });
     } else {
       b.addEventListener("click", ev => { ev.stopPropagation(); acao(); fechar(); if (aoTerminar) aoTerminar(); });
     }
@@ -32543,6 +32550,35 @@ function matMenuTabela(art, aoTerminar){
     menu.appendChild(item("Inserir balão", "▭", null, modelos.length
       ? modelos.map(m => item(esc(m.nome), amostra(m), () => inserirBalao(menuAlvo, m.el)))
       : [itemInativo("Nenhum balão nesta seção", "∅")]));
+    // clicou dentro de um balão: dá para trocar a cor dele
+    let balaoAlvo = null;
+    for (let x = menuAlvo && menuAlvo.nodeType === 1 ? menuAlvo : menuAlvo && menuAlvo.parentElement; x && x !== art; x = x.parentElement)
+      if (ehBalao(x)){ balaoAlvo = x; break; }
+    if (balaoAlvo){
+      const PARES = [["Azul","#e8f1fb","#2f6db5"],["Verde","#e9f6ea","#2e7d4f"],["Vermelho","#fdecea","#c0392b"],
+        ["Amarelo","#fff7d6","#d4a017"],["Roxo","#f3ecfa","#6c3fa3"],["Laranja","#fdf0e2","#d2691e"],["Cinza","#f1f3f5","#6b7785"]];
+      const CAB = ":scope > .bt, :scope > .balao-head, :scope > .balao-title, :scope > .bj-head, :scope > .gh, :scope > .lab, :scope > .ch, :scope > .rt";
+      const pintarBalao = (fundo, forte) => {
+        const cab = balaoAlvo.querySelector(CAB);
+        const cabPintado = cab && !semCor(getComputedStyle(cab).backgroundColor);
+        if (!fundo){
+          ["background","border-color"].forEach(pr => balaoAlvo.style.removeProperty(pr));
+          if (cab){ cab.style.removeProperty("background"); cab.style.removeProperty("color"); if (!cab.getAttribute("style")) cab.removeAttribute("style"); }
+          if (!balaoAlvo.getAttribute("style")) balaoAlvo.removeAttribute("style");
+          return;
+        }
+        balaoAlvo.style.setProperty("background", fundo, "important");
+        balaoAlvo.style.setProperty("border-color", forte, "important");
+        if (cab){
+          if (cabPintado || cab.style.background){ cab.style.setProperty("background", forte, "important"); cab.style.setProperty("color", "#fff", "important"); }
+          else cab.style.setProperty("color", forte, "important");
+        }
+      };
+      menu.appendChild(item("Cor do balão", "🎨", null, PARES.map(([nome, fundo, forte]) =>
+        item(nome, '<span style="display:inline-block;width:15px;height:15px;border-radius:3px;background:' + fundo +
+             ';border:2px solid ' + forte + ';vertical-align:middle"></span>', () => { pintarBalao(fundo, forte); art.dispatchEvent(new Event("input", { bubbles: true })); }))
+        .concat([item("Cor original", "∅", () => { pintarBalao(null); art.dispatchEvent(new Event("input", { bubbles: true })); })])));
+    }
     menu.appendChild(item("Inserir tabela", "▦", null,
       [[2,2],[2,3],[3,2],[3,3],[4,3],[4,4]].map(([c, l]) =>
         item(c + " colunas × " + l + " linhas", "▦", () => inserirTabela(menuAlvo, c, l)))));
@@ -32592,6 +32628,53 @@ function matMenuTabela(art, aoTerminar){
     if (p.rs > 1 || p.cs > 1) mescl.push(item("Desfazer mesclagem (dividir)", "⊞", () => dividir(t, td)));
     if (!mescl.length) mescl.push(item("Arraste o mouse sobre as células para selecionar", "ⓘ", () => {}));
     menu.appendChild(item("Mesclar", "⊡", null, mescl));
+    // alinhar: as células selecionadas (ou a clicada), ou a tabela inteira
+    const alvoAl = () => sel.length > 1 ? sel : [td];
+    const alinhar = (cels, prop, v) => cels.forEach(c => {
+      [c, ...c.querySelectorAll("p,li,div,ul,ol")].forEach(e => {
+        if (prop === "vertical-align" && e !== c) return;
+        e.style.setProperty(prop, v, "important");
+        if (prop === "text-align" && e !== c && /^(UL|OL)$/.test(e.tagName))
+          e.style.setProperty("list-style-position", v === "center" || v === "right" ? "inside" : "", "");
+      });
+    });
+    const toda = () => [...t.querySelectorAll("td,th")];
+    const qual = sel.length > 1 ? "nas " + sel.length + " células" : "nesta célula";
+    // cor de fundo: escolhe onde (célula, linha, coluna, tabela) e depois a cor
+    const CORES_FUNDO = [
+      ["Amarelo claro","#fff3b0"],["Verde claro","#e3f4e6"],["Azul claro","#e3eefa"],["Vermelho claro","#fbe4e2"],
+      ["Roxo claro","#efe6f8"],["Laranja claro","#fdebd6"],["Cinza claro","#eef1f4"],
+      ["Azul escuro","#1f3a5f"],["Verde escuro","#2e7d4f"],["Vermelho escuro","#a5281c"],["Cinza escuro","#5a6675"]];
+    const escura = h => { const v = parseInt(h.slice(1), 16); return ((v >> 16) * 299 + ((v >> 8) & 255) * 587 + (v & 255) * 114) / 1000 < 140; };
+    const pintar = (cels, cor) => cels.forEach(c => {
+      if (!cor){ c.style.removeProperty("background"); c.style.removeProperty("color"); if (!c.getAttribute("style")) c.removeAttribute("style"); return; }
+      c.style.setProperty("background", cor, "important");
+      if (escura(cor)) c.style.setProperty("color", "#fff", "important"); else c.style.removeProperty("color");
+    });
+    const colunaToda = () => { const G2 = grade(t), cs = new Set(); G2.M.forEach(l => { const x = l[p.c]; if (x) cs.add(x); }); return [...cs]; };
+    const coresPara = quem => CORES_FUNDO.map(([nome, cor]) =>
+        item(nome, '<span style="display:inline-block;width:15px;height:15px;border-radius:3px;background:' + cor +
+             ';border:1px solid #b9c2cc;vertical-align:middle"></span>', () => pintar(quem(), cor)))
+      .concat([item("Sem cor (voltar ao padrão)", "∅", () => pintar(quem(), null))]);
+    menu.appendChild(item("Cor de fundo", "🎨", null, [
+      item(sel.length > 1 ? "Nas " + sel.length + " células" : "Nesta célula", "◻", null, coresPara(alvoAl)),
+      item("Na linha inteira", "▭", null, coresPara(() => [...tr.cells])),
+      item("Na coluna inteira", "▯", null, coresPara(colunaToda)),
+      item("Na tabela inteira", "▦", null, coresPara(toda))
+    ]));
+    menu.appendChild(item("Alinhar texto", "≡", null, [
+      item("Centralizar " + qual, "☰", () => alinhar(alvoAl(), "text-align", "center")),
+      item("À esquerda " + qual, "⇤", () => alinhar(alvoAl(), "text-align", "left")),
+      item("À direita " + qual, "⇥", () => alinhar(alvoAl(), "text-align", "right")),
+      item("Justificar " + qual, "▤", () => alinhar(alvoAl(), "text-align", "justify")),
+      item("No meio (vertical) " + qual, "⇕", () => alinhar(alvoAl(), "vertical-align", "middle")),
+      item("No topo (vertical) " + qual, "⤒", () => alinhar(alvoAl(), "vertical-align", "top")),
+      item("Centralizar a tabela inteira", "▦", () => { alinhar(toda(), "text-align", "center"); alinhar(toda(), "vertical-align", "middle"); }),
+      item("Centralizar a coluna inteira", "▯", () => {
+        const G2 = grade(t), cs = new Set(); G2.M.forEach(l => { const x = l[p.c]; if (x && G2.pos.get(x).cs === 1) cs.add(x); });
+        alinhar([...cs], "text-align", "center");
+      })
+    ]));
     menu.appendChild(item("Inserir", "⊞", null, [
       item("Inserir Linha Acima",     "⤒", () => inserirLinha(t, tr, false)),
       item("Inserir Linha Abaixo",    "⤓", () => inserirLinha(t, tr, true)),
