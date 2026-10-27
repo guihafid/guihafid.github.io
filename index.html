@@ -1312,6 +1312,17 @@ table.cfxTab strong{font-weight:bold !important}
 .crimMat table.nascTab{table-layout:fixed;width:100%}
 .crimMat table.nascTab th{width:33.33%}
 .crimMat table.nascTab td{text-align:justify !important;vertical-align:middle !important;font-size:13.5px;line-height:1.45;hyphens:auto}
+/* barra de pesquisa do material (mesmo desenho do arquivo "Meios de obtenção de prova") */
+.crimMat .matBuscaLugar{margin:0 0 22px}
+.crimMat .matBusca.grudada{position:fixed;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.crimMat .matBusca{position:relative;z-index:5;background:#f6f5f1;padding:10px 12px 12px;border-bottom:1px solid #e4e2db;
+ margin:0;box-sizing:border-box;border-radius:0 0 10px 10px;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.crimMat .matBuscaTools{display:flex;gap:8px}
+.crimMat .matBuscaInput{flex:1;min-width:0;padding:9px 12px;border:1px solid #e4e2db;border-radius:8px;background:#fff;color:#1d1d1b;font-size:15px;font-family:inherit}
+.crimMat .matBuscaBtn{flex:0 0 auto;border:1px solid #e4e2db;background:#fff;color:#1d1d1b;padding:8px 12px;border-radius:8px;font-size:13.5px;cursor:pointer;font-family:inherit}
+.crimMat .matBuscaInfo{color:#6b6a65;font-size:13px;margin-top:6px}
+.crimMat .matBuscaInfo:empty{display:none}
+.crimMat .matBuscaVazio{color:#6b6a65;text-align:center;padding:30px 0}
 /* ⓘ das exceções da desfiliação partidária (Constitucional) */
 .desfInfoChk{display:none !important}
 .desfInfoBtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:6px auto 0;
@@ -33215,10 +33226,13 @@ function telaMat(mat, id){
       Math.ceil(M.secoes.length / 2) + ", auto)";
     ind.appendChild(ol);
     wrap.appendChild(ind);
+    // barra de pesquisa (por enquanto só na Legislação Penal): filtra todo o material
+    const busca = mat === "lep" && matModo !== "escrever" ? matBarraBusca(wrap) : null;
     M.secoes.forEach(x => {
       const q = matQuadro(mat, x.id);
       if (q) wrap.appendChild(q);
     });
+    if (busca) wrap.appendChild(busca.vazio);
   } else {
     const q = matQuadro(mat, id);
     if (!q){
@@ -33238,6 +33252,85 @@ function telaMat(mat, id){
       matRolarTabelas(cx); matContraste(cx);
     }
   }, 0);
+}
+/* barra de pesquisa do material: digitou, ficam só as seções (e, dentro delas, os
+   cartões) que têm o termo. Sem acento e sem diferença de maiúscula. */
+function matBarraBusca(wrap){
+  const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const bar = el("div","matBusca");
+  const tools = el("div","matBuscaTools");
+  const inp = document.createElement("input");
+  inp.type = "search"; inp.className = "matBuscaInput";
+  inp.placeholder = "Buscar lei, assunto ou artigo…";
+  const bAll = el("button","matBuscaBtn","Abrir tudo");
+  tools.appendChild(inp); tools.appendChild(bAll);
+  bar.appendChild(tools);
+  const info = el("div","matBuscaInfo","");
+  bar.appendChild(info);
+  // a página rola dentro de um contêiner que não deixa o "sticky" funcionar:
+  // a barra gruda no alto por conta própria, com um espaço reservado no lugar dela
+  const lugar = el("div","matBuscaLugar");
+  lugar.appendChild(bar);
+  wrap.appendChild(lugar);
+  const grudar = () => {
+    if (!lugar.isConnected){ window.removeEventListener("scroll", grudar, true); window.removeEventListener("resize", grudar); return; }
+    const topo = document.body.classList.contains("contTopoAberto")
+      ? (parseFloat(getComputedStyle(document.body).getPropertyValue("--contTopoH")) || 76) : 0;
+    const r = lugar.getBoundingClientRect();
+    if (r.top < topo && wrap.getBoundingClientRect().bottom > topo + 120){
+      lugar.style.height = bar.offsetHeight + "px";
+      bar.classList.add("grudada");
+      bar.style.top = topo + "px"; bar.style.left = r.left + "px"; bar.style.width = r.width + "px";
+    } else {
+      bar.classList.remove("grudada"); bar.style.top = bar.style.left = bar.style.width = ""; lugar.style.height = "";
+    }
+  };
+  window.addEventListener("scroll", grudar, true);
+  window.addEventListener("resize", grudar);
+  const vazio = el("div","matBuscaVazio","Nenhum resultado.");
+  vazio.style.display = "none";
+  const UNID = ".lepcard, section.card, .seccard, .cards-body > section";
+  let cache = null;
+  const montar = () => {
+    cache = [...wrap.querySelectorAll(":scope > section.crimSec")].map(sec => {
+      const cab = sec.querySelector("h2, .sec h2, .chapter-head h2");
+      const unids = [...sec.querySelectorAll(UNID)].filter(u => !u.parentElement.closest(UNID));
+      return { sec, tit: norm(cab ? cab.textContent : ""), txt: norm(sec.textContent),
+               unids: unids.map(u => ({ u, txt: norm(u.textContent) })) };
+    });
+  };
+  function filtrar(){
+    if (!cache) montar();
+    const q = norm(inp.value.trim());
+    let nSec = 0, nUn = 0;
+    cache.forEach(c => {
+      if (!q){ c.sec.style.display = ""; c.unids.forEach(x => x.u.style.display = ""); return; }
+      const tem = c.txt.indexOf(q) >= 0;
+      c.sec.style.display = tem ? "" : "none";
+      if (!tem){ c.unids.forEach(x => x.u.style.display = ""); return; }
+      nSec++;
+      // o título da seção bate: mostra a seção inteira; senão, só os cartões que têm o termo
+      const inteiro = c.tit.indexOf(q) >= 0 || !c.unids.some(x => x.txt.indexOf(q) >= 0);
+      c.unids.forEach(x => {
+        const ok = inteiro || x.txt.indexOf(q) >= 0;
+        x.u.style.display = ok ? "" : "none";
+        if (ok) nUn++;
+      });
+    });
+    info.textContent = q ? (nSec ? nSec + (nSec === 1 ? " seção encontrada" : " seções encontradas") : "") : "";
+    vazio.style.display = q && !nSec ? "block" : "none";
+    bAll.textContent = "Abrir tudo";
+  }
+  let t = null;
+  inp.addEventListener("input", () => { clearTimeout(t); t = setTimeout(filtrar, 160); });
+  inp.addEventListener("keydown", ev => { if (ev.key === "Escape"){ inp.value = ""; filtrar(); } });
+  bAll.onclick = () => {
+    const ds = [...wrap.querySelectorAll("details")].filter(d => d.offsetParent);
+    const abrir = ds.some(d => !d.open);
+    ds.forEach(d => d.open = abrir);
+    bAll.textContent = abrir ? "Fechar tudo" : "Abrir tudo";
+  };
+  return { bar, vazio };
 }
 /* ===================== abas ===================== */
 const ABAS_SIM = [
