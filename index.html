@@ -15494,6 +15494,9 @@ table.t{border-collapse:collapse;width:100%;margin:10px 0 6px;font-size:.93em;
   background:#fff;border:1px solid #cfd6de;border-radius:10px;padding:6px;
   box-shadow:0 8px 26px rgba(15,30,51,.18);min-width:215px;}
 .mtItem.temSub:hover > .mtSub{display:block;}
+/* células selecionadas para mesclar */
+.crimMat .crimSec.escrevendo td.mtSel,.crimMat .crimSec.escrevendo th.mtSel{
+  box-shadow:inset 0 0 0 9999px rgba(47,109,181,.18);outline:2px solid #2f6db5;outline-offset:-2px}
 .crimMat .crimSec.escrevendo .redim-dica{
   font-size:12px;color:#2e7d4f;background:#eef7f1;border:1px solid #bcdcc8;
   border-radius:8px;padding:6px 10px;margin:0 0 12px;}
@@ -31779,6 +31782,7 @@ function matLinhaNoVazio(ev, art, mat, id){
 function matHtmlLimpo(art){
   const c = art.cloneNode(true);
   c.querySelectorAll("[data-enviando]").forEach(e => e.remove());   // imagem ainda subindo
+  c.querySelectorAll(".mtSel").forEach(e => { e.classList.remove("mtSel"); if (!e.className) e.removeAttribute("class"); });
   c.querySelectorAll("[data-contraste]").forEach(e => {
     e.style.removeProperty("color");
     e.removeAttribute("data-contraste");
@@ -32126,36 +32130,186 @@ function matMenuTabela(art, aoTerminar){
     return b;
   }
 
-  function colunaDe(td){
-    let i = 0;
-    for (const c of td.parentElement.cells){ if (c === td) break; i += c.colSpan || 1; }
-    return i;
+  /* a tabela como grade: M[linha][coluna] = célula que ocupa aquele lugar
+     (uma célula mesclada aparece em todos os lugares que cobre) */
+  function grade(t){
+    const M = [], pos = new Map();
+    [...t.rows].forEach((tr, r) => {
+      M[r] = M[r] || [];
+      let c = 0;
+      [...tr.cells].forEach(td => {
+        while (M[r][c]) c++;
+        const rs = Math.max(1, td.rowSpan || 1), cs = Math.max(1, td.colSpan || 1);
+        pos.set(td, { r, c, rs, cs });
+        for (let i = 0; i < rs; i++){
+          M[r + i] = M[r + i] || [];
+          for (let j = 0; j < cs; j++) M[r + i][c + j] = td;
+        }
+        c += cs;
+      });
+    });
+    const largura = Math.max(0, ...M.map(l => l.length));
+    return { M, pos, largura, linhas: M.length };
   }
-  function novaCelula(linha){
-    const e = document.createElement(linha.cells[0] && linha.cells[0].tagName === "TH" ? "th" : "td");
+  function colunaDe(td){ const p = grade(td.closest("table")).pos.get(td); return p ? p.c : 0; }
+  // retângulo que cobre as duas células, crescido até não cortar nenhuma mesclagem
+  function retangulo(t, a, b){
+    const G = grade(t), pa = G.pos.get(a), pb = G.pos.get(b);
+    let r0 = Math.min(pa.r, pb.r), c0 = Math.min(pa.c, pb.c);
+    let r1 = Math.max(pa.r + pa.rs, pb.r + pb.rs) - 1, c1 = Math.max(pa.c + pa.cs, pb.c + pb.cs) - 1;
+    for (let mudou = true; mudou; ){
+      mudou = false;
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++){
+        const td = G.M[r] && G.M[r][c]; if (!td) continue;
+        const p = G.pos.get(td);
+        if (p.r < r0){ r0 = p.r; mudou = true; }
+        if (p.c < c0){ c0 = p.c; mudou = true; }
+        if (p.r + p.rs - 1 > r1){ r1 = p.r + p.rs - 1; mudou = true; }
+        if (p.c + p.cs - 1 > c1){ c1 = p.c + p.cs - 1; mudou = true; }
+      }
+    }
+    const cel = new Set();
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++){ const td = G.M[r] && G.M[r][c]; if (td) cel.add(td); }
+    return { r0, c0, r1, c1, cel: [...cel] };
+  }
+  const vazia = td => !td.textContent.replace(/\u00a0/g, " ").trim() && !td.querySelector("img,table");
+  // junta tudo num retângulo: o texto das células vai para a de cima à esquerda
+  function mesclar(t, R){
+    const G = grade(t), alvo = G.M[R.r0][R.c0];
+    R.cel.forEach(td => {
+      if (td === alvo) return;
+      if (!vazia(td)){
+        if (vazia(alvo)) alvo.innerHTML = "";
+        else alvo.appendChild(document.createElement("br"));
+        while (td.firstChild) alvo.appendChild(td.firstChild);
+      }
+      td.remove();
+    });
+    alvo.rowSpan = R.r1 - R.r0 + 1;
+    alvo.colSpan = R.c1 - R.c0 + 1;
+    if (alvo.rowSpan === 1) alvo.removeAttribute("rowspan");
+    if (alvo.colSpan === 1) alvo.removeAttribute("colspan");
+    // linha que ficou sem célula nenhuma: some, e quem a atravessava encolhe
+    [...t.rows].forEach(tr => {
+      if (tr.cells.length) return;
+      const G2 = grade(t), r = [...t.rows].indexOf(tr), vistos = new Set();
+      (G2.M[r] || []).forEach(td => { if (td && !vistos.has(td)){ vistos.add(td); td.rowSpan = Math.max(1, td.rowSpan - 1); if (td.rowSpan === 1) td.removeAttribute("rowspan"); } });
+      tr.remove();
+    });
+    limparSelecao();
+    limparColgroup(t);
+  }
+  // desfaz a mesclagem: a célula volta a 1×1 e os lugares que ela cobria ganham células vazias
+  function dividir(t, td){
+    const G = grade(t), p = G.pos.get(td);
+    const linhas = [...t.rows];
+    for (let r = p.r; r < p.r + p.rs; r++){
+      const tr = linhas[r]; if (!tr) continue;
+      const ref = [...tr.cells].find(x => x !== td && G.pos.get(x).c > p.c) || null;
+      for (let c = p.c; c < p.c + p.cs; c++){
+        if (r === p.r && c === p.c) continue;
+        tr.insertBefore(novaCelula(tr, td), ref);
+      }
+    }
+    td.removeAttribute("rowspan"); td.removeAttribute("colspan");
+    limparColgroup(t);
+  }
+  function novaCelula(linha, modelo){
+    const e = document.createElement(modelo ? modelo.tagName.toLowerCase()
+      : (linha.cells[0] && linha.cells[0].tagName === "TH" ? "th" : "td"));
+    if (modelo && modelo.className) e.className = modelo.className.replace(/\bmtSel\b/g, "").trim();
+    if (!e.className) e.removeAttribute("class");
     e.innerHTML = "<br>";
     return e;
   }
   function limparColgroup(t){ const cg = t.querySelector(":scope > colgroup"); if (cg) cg.remove(); }
 
+  /* inserir/excluir respeitando as células mescladas */
   function inserirLinha(t, tr, depois){
-    const nova = tr.cloneNode(false);
-    for (let k = 0; k < tr.cells.length; k++) nova.appendChild(novaCelula(tr));
-    tr.parentElement.insertBefore(nova, depois ? tr.nextSibling : tr);
-  }
-  function inserirColuna(t, idx, depois){
-    for (const r of t.rows){
-      const alvo = r.cells[Math.min(idx, r.cells.length - 1)];
-      const e = novaCelula(r);
-      if (!alvo) r.appendChild(e);
-      else r.insertBefore(e, depois ? alvo.nextSibling : alvo);
+    const G = grade(t), r = [...t.rows].indexOf(tr);
+    // a nova linha entra antes da linha b da grade (depois de uma mesclagem, depois dela toda)
+    let b = r;
+    if (depois){ b = r + 1; [...tr.cells].forEach(td => { const p = G.pos.get(td); b = Math.max(b, p.r + p.rs); }); }
+    const nova = tr.cloneNode(false), cresceu = new Set();
+    for (let c = 0; c < G.largura; c++){
+      const cima = b > 0 && G.M[b - 1] ? G.M[b - 1][c] : null, baixo = G.M[b] ? G.M[b][c] : null;
+      if (cima && cima === baixo){ if (!cresceu.has(cima)){ cresceu.add(cima); cima.rowSpan = (cima.rowSpan || 1) + 1; } c += G.pos.get(cima).cs - 1; continue; }
+      nova.appendChild(novaCelula(tr));
     }
+    const linhas = [...t.rows];
+    const antes = linhas[b] && linhas[b].parentElement === tr.parentElement ? linhas[b] : null;
+    tr.parentElement.insertBefore(nova, antes || (depois ? null : tr));
+  }
+  function excluirLinha(t, tr){
+    const G = grade(t), r = [...t.rows].indexOf(tr), prox = t.rows[r + 1], vistos = new Set();
+    (G.M[r] || []).forEach((td, c) => {
+      if (!td || vistos.has(td)) return; vistos.add(td);
+      const p = G.pos.get(td);
+      if (p.rs === 1) return;
+      if (p.r < r){ td.rowSpan = p.rs - 1; if (td.rowSpan === 1) td.removeAttribute("rowspan"); return; }
+      // começa nesta linha e desce: passa para a de baixo
+      if (prox){
+        const ref = [...prox.cells].find(x => G.pos.get(x).c > p.c) || null;
+        prox.insertBefore(td, ref);
+        td.rowSpan = p.rs - 1; if (td.rowSpan === 1) td.removeAttribute("rowspan");
+      }
+    });
+    tr.remove();
+  }
+  function inserirColuna(t, idx, depois, td){
+    const G = grade(t), p = td ? G.pos.get(td) : { c: idx, cs: 1 };
+    const b = depois ? p.c + p.cs : p.c;
+    const cresceu = new Set();
+    [...t.rows].forEach((tr, r) => {
+      const esq = b > 0 ? G.M[r][b - 1] : null, dir = G.M[r][b];
+      if (esq && esq === dir){
+        if (!cresceu.has(esq)){ cresceu.add(esq); esq.colSpan = (esq.colSpan || 1) + 1; }
+        return;
+      }
+      const ref = [...tr.cells].find(x => G.pos.get(x).c >= b) || null;
+      tr.insertBefore(novaCelula(tr), ref);
+    });
     limparColgroup(t);
   }
   function excluirColuna(t, idx){
-    for (const r of t.rows){ if (r.cells[idx]) r.deleteCell(idx); }
+    const G = grade(t), vistos = new Set();
+    G.M.forEach(l => {
+      const td = l[idx]; if (!td || vistos.has(td)) return; vistos.add(td);
+      if ((td.colSpan || 1) > 1){ td.colSpan -= 1; if (td.colSpan === 1) td.removeAttribute("colspan"); }
+      else td.remove();
+    });
     limparColgroup(t);
   }
+
+  /* ---- seleção de várias células: clique e arraste (ou Shift + clique) ---- */
+  let selTab = null, selIni = null, selFim = null, arrastando = false;
+  function limparSelecao(){
+    art.querySelectorAll(".mtSel").forEach(x => { x.classList.remove("mtSel"); if (!x.className) x.removeAttribute("class"); });
+    selTab = selIni = selFim = null;
+  }
+  function pintarSelecao(){
+    art.querySelectorAll(".mtSel").forEach(x => { x.classList.remove("mtSel"); if (!x.className) x.removeAttribute("class"); });
+    if (!selTab || !selIni || !selFim || selIni === selFim) return;
+    retangulo(selTab, selIni, selFim).cel.forEach(x => x.classList.add("mtSel"));
+  }
+  const selecionadas = () => [...art.querySelectorAll(".mtSel")];
+  art.addEventListener("mousedown", ev => {
+    if (ev.button !== 0 || ev.defaultPrevented) return;
+    const td = ev.target.closest && ev.target.closest("td,th");
+    if (!td || !art.contains(td)){ limparSelecao(); return; }
+    const t = td.closest("table");
+    if (ev.shiftKey && selTab === t && selIni){ selFim = td; pintarSelecao(); ev.preventDefault(); return; }
+    limparSelecao();
+    selTab = t; selIni = selFim = td; arrastando = true;
+  });
+  art.addEventListener("mouseover", ev => {
+    if (!arrastando) return;
+    const td = ev.target.closest && ev.target.closest("td,th");
+    if (!td || td.closest("table") !== selTab || td === selFim) return;
+    selFim = td; pintarSelecao();
+    if (selIni !== selFim){ const s = window.getSelection(); if (s) s.removeAllRanges(); }
+  });
+  document.addEventListener("mouseup", () => { arrastando = false; });
 
   /* ---- menu geral (fora de tabela): inserir balão / tabela, recortar, copiar, colar ----
      Os balões oferecidos são os que JÁ existem nesta seção: assim o que entra
@@ -32420,19 +32574,34 @@ function matMenuTabela(art, aoTerminar){
     ev.preventDefault();
     fechar();
     const tr = td.parentElement, idx = colunaDe(td);
+    // clicou fora da seleção: a seleção some e vale só a célula clicada
+    if (!td.classList.contains("mtSel")) limparSelecao();
+    const sel = selecionadas().filter(x => x.closest("table") === t);
 
     menu = document.createElement("div");
     menu.className = "mtMenu";
+    const G = grade(t), p = G.pos.get(td);
+    const baixo = G.M[p.r + p.rs] ? G.M[p.r + p.rs][p.c] : null;
+    const dir = G.M[p.r] ? G.M[p.r][p.c + p.cs] : null;
+    const mescl = [];
+    if (sel.length > 1) mescl.push(item("Mesclar células selecionadas (" + sel.length + ")", "⊡", () => {
+      const R = retangulo(t, selIni, selFim); mesclar(t, R);
+    }));
+    if (dir) mescl.push(item("Mesclar com a célula à direita", "⇥", () => mesclar(t, retangulo(t, td, dir))));
+    if (baixo) mescl.push(item("Mesclar com a célula de baixo", "⤓", () => mesclar(t, retangulo(t, td, baixo))));
+    if (p.rs > 1 || p.cs > 1) mescl.push(item("Desfazer mesclagem (dividir)", "⊞", () => dividir(t, td)));
+    if (!mescl.length) mescl.push(item("Arraste o mouse sobre as células para selecionar", "ⓘ", () => {}));
+    menu.appendChild(item("Mesclar", "⊡", null, mescl));
     menu.appendChild(item("Inserir", "⊞", null, [
       item("Inserir Linha Acima",     "⤒", () => inserirLinha(t, tr, false)),
       item("Inserir Linha Abaixo",    "⤓", () => inserirLinha(t, tr, true)),
-      item("Inserir Coluna à Esquerda","⇤", () => inserirColuna(t, idx, false)),
-      item("Inserir Coluna à Direita", "⇥", () => inserirColuna(t, idx, true))
+      item("Inserir Coluna à Esquerda","⇤", () => inserirColuna(t, idx, false, td)),
+      item("Inserir Coluna à Direita", "⇥", () => inserirColuna(t, idx, true, td))
     ]));
     menu.appendChild(item("Excluir", "⊟", null, [
       item("Excluir Tabela", "▦", () => t.remove()),
       item("Excluir Coluna", "▯", () => excluirColuna(t, idx)),
-      item("Excluir Linha",  "▭", () => tr.remove()),
+      item("Excluir Linha",  "▭", () => excluirLinha(t, tr)),
       item("Excluir Célula", "◻", () => td.remove())
     ]));
     document.body.appendChild(menu);
@@ -63006,7 +63175,34 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
   </section>
 
   <section class="card">
-    <div class="card-head"><div class="num">2</div><h3>Intimidação Sistemática — Bullying (art. 146-A)</h3></div>
+    <div class="card-head"><div class="num">2</div><h3>Violência psicológica contra a mulher (art. 147-B)</h3></div>
+
+    <div class="box box-azul">
+      <span class="lab">Características do tipo</span>
+      <ul class="plain">
+        <li><strong>Não admite forma culposa</strong>; somente <strong>dolo</strong>.</li>
+        <li><strong>Crime material:</strong> exige o resultado “<strong>dano emocional</strong>”, mas <strong>não exige laudo pericial</strong>; o dano pode ser provado por outros meios, como a palavra da vítima e testemunhas.</li>
+        <li><strong>Não é habitual:</strong> um único ato pode bastar. Por ser material e plurissubsistente, <strong>admite tentativa</strong>, segundo a doutrina majoritária.</li>
+        <li><strong>Sujeito ativo comum:</strong> qualquer pessoa, inclusive outra mulher.</li>
+        <li><strong>Sujeito passivo próprio:</strong> só a <strong>mulher</strong>. É o oposto do 147-A, que é bicomum.</li>
+        <li><strong>Não exige contexto doméstico ou familiar</strong>; pode ocorrer fora dele.</li>
+        <li><strong>Crime de forma livre:</strong> o rol de meios é exemplificativo (“ou qualquer outro meio”).</li>
+        <li><strong>Subsidiariedade expressa:</strong> só se aplica “se a conduta não constitui crime mais grave”.</li>
+        <li><strong>Não possui qualificadora.</strong></li>
+        <li><strong>Ação penal pública incondicionada:</strong> não há previsão de representação. Também é o oposto do 147-A.</li>
+        <li>Pela pena máxima de 2 anos, seria infração de <strong>menor potencial ofensivo</strong>. Porém, se praticado em <strong>violência doméstica e familiar</strong>, <strong>não se aplica a Lei 9.099/95</strong> (art. 41 da Lei Maria da Penha e Súmula 536 do STJ).</li>
+      </ul>
+    </div>
+
+    <h4>Forma majorada (incluída pela Lei 15.123/2025)</h4>
+    <div class="lei">
+      <strong>Parágrafo único.</strong> A pena é aumentada de <strong>metade</strong> se o crime é cometido com uso de <strong>inteligência artificial</strong> ou de outro recurso tecnológico que altere imagem ou som da vítima.
+    </div>
+    <p>O aumento é <strong>fixo, de metade</strong>, e não “até a metade”.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div class="num">3</div><h3>Intimidação Sistemática — Bullying (art. 146-A)</h3></div>
 
     <div class="bj-grid g2">
       <div class="bj-card">
@@ -64007,6 +64203,17 @@ d) exigência da <u>assunção da execução e da conclusão do objeto</u> pela 
         </tr>
       </tbody>
     </table>
+    <div class="box box-cinza">
+      <span class="lab">Lesão corporal leve</span>
+      <ul class="plain">
+        <li><strong>Art. 213:</strong> lesão leve e vias de fato → <strong>absorvidas</strong> (a violência é meio de execução).</li>
+        <li><strong>Art. 217-A:</strong> lesão leve → <strong>concurso material</strong> com o art. 129 (o tipo não exige violência).</li>
+        <li><strong>Qualificadora (213 e 217-A):</strong> lesão leve → <strong>não qualifica</strong> (só lesão grave/gravíssima ou morte).</li>
+        <li><strong>Consumação (217-A):</strong> qualquer ato libidinoso → <strong>consumado</strong> (dispensa conjunção carnal).</li>
+        <li><strong>Tentativa (217-A):</strong> se já houve contato libidinoso → <strong>inadmissível</strong> (STJ, Tema 1.121).</li>
+        <li><strong>Importunação sexual:</strong> vítima menor de 14 anos → <strong>não cabe desclassificação</strong> (STJ, Tema 1.121).</li>
+      </ul>
+    </div>
     </div>
   </section>
 
