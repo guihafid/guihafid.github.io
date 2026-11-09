@@ -15901,6 +15901,9 @@ body:not(.contTopoAberto) .crimVolta{margin-top:var(--contDesce,0px) !important}
 .mat_ppenal .rppWrap .box ul{margin:0;padding-left:20px;list-style:disc}
 .mat_ppenal .rppWrap .box li{margin-bottom:4px;text-align:justify;hyphens:auto;padding:0}
 .mat_ppenal .rppWrap .box li::before{content:none}
+/* balões lado a lado (modo escrever) */
+.balLado{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:stretch;margin:12px 0}
+.balLado > *{margin:0 !important;min-width:0;box-sizing:border-box}
 </style>
 
 <div id="capa"></div>
@@ -32497,7 +32500,7 @@ function matMenuTabela(art, aoTerminar){
     if (e.offsetWidth < 150) return false;
     // peça de grade ou de linha (células, cartões lado a lado, números)
     const pai = e.parentElement && getComputedStyle(e.parentElement).display;
-    if (pai && /grid|flex/.test(pai)) return false;
+    if (pai && /grid|flex/.test(pai) && !e.parentElement.classList.contains("balLado")) return false;
     // rótulo ou faixa de título: texto curto e sem blocos dentro
     const temBloco = [...e.children].some(c => /^(P|UL|OL|DIV|BLOCKQUOTE)$/.test(c.tagName));
     if (!temBloco && (e.textContent || "").trim().length < 40) return false;
@@ -32612,10 +32615,11 @@ function matMenuTabela(art, aoTerminar){
     }
     const corpo = /^P$/.test(novo.tagName) ? novo : document.createElement("p");
     const txt = document.createTextNode("Escreva aqui");
+    const onde = arguments[2];
     if (corpo === novo) novo.appendChild(txt);
     else if (novo.querySelector && [...modelo.children].some(c => c.tagName === "P")){ corpo.appendChild(txt); novo.appendChild(corpo); }
     else novo.appendChild(txt);
-    colocar(menuAlvo, novo);
+    if (onde) onde(novo); else colocar(menuAlvo, novo);
     // fora do lugar de origem o estilo pode depender do contêiner: garante o visual
     const a = getComputedStyle(modelo), b = getComputedStyle(novo);
     ["backgroundColor","borderTopColor","borderLeftColor","borderLeftWidth","borderTopWidth"].forEach(k => {
@@ -32722,6 +32726,36 @@ function matMenuTabela(art, aoTerminar){
           else cab.style.setProperty("color", forte, "important");
         }
       };
+      // balões lado a lado (ficam numa grade .balLado; no celular voltam a ficar um embaixo do outro)
+      const ladoW = x => x.parentElement && x.parentElement.classList.contains("balLado") ? x.parentElement : null;
+      const envolver = x => { let w = ladoW(x); if (w) return w;
+        w = document.createElement("div"); w.className = "balLado"; x.before(w); w.appendChild(x); return w; };
+      const avisar = () => art.dispatchEvent(new Event("input", { bubbles: true }));
+      const bAlvo = balaoAlvo;
+      const ladoItens = [
+        item("Novo balão à direita", "▭▸", () => inserirBalao(menuAlvo, bAlvo, n => { envolver(bAlvo); bAlvo.after(n); })),
+        item("Novo balão à esquerda", "◂▭", () => inserirBalao(menuAlvo, bAlvo, n => { envolver(bAlvo); bAlvo.before(n); }))
+      ];
+      const prox = bAlvo.nextElementSibling;
+      const proxOk = prox && (prox.classList.contains("balLado") || ehBalao(prox));
+      ladoItens.push(proxOk
+        ? item("Juntar com o balão de baixo", "⇉", () => {
+            const w = envolver(bAlvo);
+            if (prox.classList.contains("balLado")){ [...prox.children].forEach(c => w.appendChild(c)); prox.remove(); }
+            else w.appendChild(prox);
+            avisar();
+          })
+        : itemInativo("Juntar com o balão de baixo", "⇉"));
+      const wAtual = ladoW(bAlvo);
+      if (wAtual){
+        ladoItens.push(item("Tirar este balão do lado a lado", "⤓", () => {
+          wAtual.after(bAlvo);
+          if (wAtual.children.length < 2) wAtual.replaceWith(...wAtual.childNodes);
+          avisar();
+        }));
+        ladoItens.push(item("Desfazer lado a lado (todos)", "☰", () => { wAtual.replaceWith(...wAtual.childNodes); avisar(); }));
+      }
+      menu.appendChild(item("Balões lado a lado", "◫", null, ladoItens));
       menu.appendChild(item("Cor do balão", "🎨", null, PARES.map(([nome, fundo, forte]) =>
         item(nome, '<span style="display:inline-block;width:15px;height:15px;border-radius:3px;background:' + fundo +
              ';border:2px solid ' + forte + ';vertical-align:middle"></span>', () => { pintarBalao(fundo, forte); art.dispatchEvent(new Event("input", { bubbles: true })); }))
