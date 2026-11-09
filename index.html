@@ -15870,6 +15870,31 @@ body:not(.contTopoAberto) .crimVolta{margin-top:var(--contDesce,0px) !important}
 #guias .grupoMenu.legest{border-top:3px solid #1b5e75}
 .grupo.legest{background:#D2E6EE;border-color:#1b5e75;color:#1b5e75}
 .grupo.legest.ativo{background:#1b5e75;color:#fff;border-color:#1b5e75}
+/* Recursos no Processo Penal: prazos e efeitos */
+.mat_ppenal .rppWrap{font-family:"Segoe UI",Arial,sans-serif;color:#1f2a37;margin:8px 0 18px;overflow-x:auto}
+.mat_ppenal .rppWrap table.rpp{width:100%;table-layout:fixed;border-collapse:collapse;background:#f7f9fc;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:14px;margin:0}
+.mat_ppenal .rppWrap table.rpp th{background:#2f4a66;color:#fff;padding:12px 10px;text-align:center;font-weight:600;border:none;border-right:1px solid #4a6583}
+.mat_ppenal .rppWrap table.rpp th:last-child{border-right:none}
+.mat_ppenal .rppWrap table.rpp td{padding:11px 12px;border:none;border-top:1px solid #d5dce5;border-right:1px solid #d5dce5;vertical-align:top;line-height:1.45;text-align:justify;hyphens:auto;background:transparent}
+.mat_ppenal .rppWrap table.rpp td:last-child{border-right:none}
+.mat_ppenal .rppWrap table.rpp td.rec{font-weight:700;white-space:normal;hyphens:none;vertical-align:middle;text-align:left}
+.mat_ppenal .rppWrap table.rpp td.c{text-align:center;vertical-align:middle}
+.mat_ppenal .rppWrap table.rpp tr:nth-child(even) td{background:#eef2f7}
+.mat_ppenal .rppWrap .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;margin:2px 4px 2px 0;text-align:left}
+.mat_ppenal .rppWrap .dev{background:#dbe8f7;color:#1e4f86}
+.mat_ppenal .rppWrap .sus{background:#fbe3d3;color:#9a4a12}
+.mat_ppenal .rppWrap .nsus{background:#e4e7eb;color:#4b5563}
+.mat_ppenal .rppWrap .reg{background:#dcf1e2;color:#1d6b39}
+.mat_ppenal .rppWrap .int{background:#efe1f7;color:#6b2a8c}
+.mat_ppenal .rppWrap .ext{background:#fff2c6;color:#7a5b00}
+.mat_ppenal .rppWrap small{color:#5a6b7d;font-size:12.5px}
+.mat_ppenal .rppWrap table.rpp td:has(.tag){text-align:left}
+.mat_ppenal .rppWrap table.rpp td:has(.tag) small{display:block;text-align:justify;margin-top:2px}
+.mat_ppenal .rppWrap .box{background:#fff;border-left:4px solid #2f4a66;border-radius:6px;padding:14px 18px;margin-top:22px;font-size:14px;line-height:1.55;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.mat_ppenal .rppWrap .box h2{font-size:16px;margin:0 0 8px;color:#2f4a66;text-transform:none;letter-spacing:0;border:none;padding:0;background:none}
+.mat_ppenal .rppWrap .box ul{margin:0;padding-left:20px;list-style:disc}
+.mat_ppenal .rppWrap .box li{margin-bottom:4px;text-align:justify;hyphens:auto;padding:0}
+.mat_ppenal .rppWrap .box li::before{content:none}
 </style>
 
 <div id="capa"></div>
@@ -36119,8 +36144,15 @@ b) <b>Instrução do 2º grau ou superior</b></li>
 <div class="jur">O STJ possui entendimento firmado no sentido de ser incabível a prisão preventiva do autor de contravenção penal caso o ato seja praticado no âmbito de violência doméstica, uma vez que não existe previsão legal que autorize a segregação cautelar nas hipóteses de contravenção penal.</div>
 </section>
 <section class="lepcard bordered">
-<div class="card-head"><div class="num">3</div><h3>Envio do pedido para aplicação de MPUs pelo Delegado</h3></div>
-<ul class="plain"><li>Lei Maria da Penha: <b>48h</b></li><li>Lei Henry Borel: <b>24h</b></li></ul>
+<div class="card-head"><div class="num">3</div><h3>MPUs</h3></div>
+<ul class="plain"><li>Envio do pedido para aplicação de MPUs pelo Delegado<ul class="dash"><li>Lei Maria da Penha: <b>48h</b></li><li>Lei Henry Borel: <b>24h</b></li></ul></li></ul>
+<table class="t" style="border-collapse:collapse;width:100%">
+<tr><th colspan="2" style="background:#000;color:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">LEI MARIA DA PENHA</th></tr>
+<tr><th style="background:#f2c14e;color:#000;width:50%;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">LEGITIMADOS P/ AFASTAMENTO DO AGRESSOR DO LAR, DOMICÍLIO OU LOCAL DE CONVIVÊNCIA COM A OFENDIDA</th><th style="background:#ffff66;color:#000;width:50%;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">LEGITIMADOS P/ IMEDIATA SUBMISSÃO DO AGRESSOR À MONITORAÇÃO ELETRÔNICA</th></tr>
+<tr><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">Juiz</td><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">Juiz</td></tr>
+<tr><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">Delegado de polícia<br>quando o Município não for sede <span style="font-weight:400">de</span> comarca</td><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">Delegado <span style="font-weight:400">de</span> polícia<br>quando o Município não for sede <span style="font-weight:400">de</span> comarca</td></tr>
+<tr><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000">Policial<br>quando o Município não for sede <span style="font-weight:400">de</span> comarca<br>e não houver delegado disponível<br>no momento <span style="font-weight:400">da</span> denúncia</td><td style="background:#fff;text-align:center;vertical-align:middle;font-weight:700;border:1px solid #000"></td></tr>
+</table>
 </section>
 <section class="lepcard bordered">
 <div class="card-head"><div class="num">4</div><h3>Renúncia (retratação da vítima) — requisitos cumulativos</h3></div>
@@ -51026,15 +51058,92 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 </div>
 </div>
 
-<div class="mnemo"><span class="lbl">Prazos recursais — Processo Penal</span>Interposição / Razões</div>
-<table class="t">
-<tr><th>Recurso</th><th>Interposição</th><th>Razões</th></tr>
-<tr><td><b>RESE</b></td><td>5 dias</td><td>2 dias</td></tr>
-<tr style="background:#f6f9fc"><td><b>Apelação</b></td><td>5 dias</td><td>8 dias</td></tr>
-<tr><td><b>Embargos Infringentes e de Nulidade</b></td><td colspan="2" style="text-align:center;vertical-align:middle">10 dias (interposição e razões)</td></tr>
-<tr style="background:#f6f9fc"><td><b>Embargos de Declaração</b></td><td>2 dias</td><td>5 dias (no Jecrim)</td></tr>
-<tr><td><b>Agravo em Execução</b></td><td colspan="2" style="text-align:center;vertical-align:middle">5 dias (interposição e razões)</td></tr>
-</table>
+<div class="mnemo"><span class="lbl">Recursos no Processo Penal: prazos e efeitos</span>Quadro de revisão: CPP, LEP e Lei 9.099/95</div>
+<div class="rppWrap">
+<table class="rpp">
+    <thead>
+      <tr>
+        <th style="width:15%">Recurso</th>
+        <th style="width:11%">Interposição</th>
+        <th style="width:11%">Razões</th>
+        <th style="width:38%">Efeitos</th>
+        <th style="width:25%">Base legal / observações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="rec">RESE</td>
+        <td class="c">5 dias</td>
+        <td class="c">2 dias</td>
+        <td>
+          <span class="tag dev">Devolutivo</span>
+          <span class="tag reg">Regressivo</span>
+          <span class="tag sus">Suspensivo só nos casos legais</span>
+          <span class="tag ext">Extensivo</span><br>
+          <small>Juízo de retratação em 2 dias (art. 589). Tem efeito suspensivo só nos casos do art. 584, como a perda da fiança. O recurso contra a pronúncia suspende apenas o julgamento pelo júri (art. 584, §2º).</small>
+        </td>
+        <td>Arts. 581 a 592 do CPP.<br><small>Prazo de 20 dias contra a decisão que inclui ou exclui jurado da lista geral (art. 586, p.u.).</small></td>
+      </tr>
+      <tr>
+        <td class="rec">Apelação</td>
+        <td class="c">5 dias</td>
+        <td class="c">8 dias<br><small>(3 dias em contravenção)</small></td>
+        <td>
+          <span class="tag dev">Devolutivo</span>
+          <span class="tag sus">Suspensivo na condenação</span>
+          <span class="tag ext">Extensivo</span><br>
+          <small>Contra sentença condenatória, tem efeito suspensivo (art. 597), mas isso não impede a prisão preventiva. Contra sentença absolutória, não tem efeito suspensivo: o réu é solto (art. 596). Não há juízo de retratação. A devolução se limita à matéria impugnada (<i>tantum devolutum quantum appellatum</i>, art. 599), mas o tribunal pode reconhecer de ofício matéria favorável ao réu, como nulidade absoluta. Nulidade não arguida no recurso da acusação não pode ser reconhecida contra o réu (Súmula 160 do STF). Se só a defesa recorre, é proibida a <i>reformatio in pejus</i> (art. 617). Contra decisão do júri, a devolução se restringe aos fundamentos da interposição (Súmula 713 do STF).</small>
+        </td>
+        <td>Arts. 593 a 603 do CPP.<br><small>No Jecrim: 10 dias, com as razões (art. 82, §1º, da Lei 9.099). Assistente não habilitado: 15 dias (art. 598, p.u.).</small></td>
+      </tr>
+      <tr>
+        <td class="rec">Embargos Infringentes e de Nulidade</td>
+        <td class="c" colspan="2">10 dias<br><small>(interposição e razões)</small></td>
+        <td>
+          <span class="tag dev">Devolutivo restrito à divergência</span>
+          <span class="tag sus">Suspensivo</span>
+          <span class="tag ext">Extensivo</span><br>
+          <small>Só se discute o ponto em que houve voto vencido. O efeito suspensivo é a posição majoritária, porque o recurso impede o trânsito em julgado.</small>
+        </td>
+        <td>Art. 609, caput e p.u., do CPP.<br><small>Só a defesa pode usar. Cabem contra acórdão não unânime de 2ª instância, desfavorável ao réu. Cabem em apelação e RESE pelo próprio art. 609, cujo caput trata do julgamento desses recursos. A extensão ao agravo em execução é construção jurisprudencial, porque ele segue o rito do RESE. Pelo CPP, não cabem em habeas corpus, revisão criminal nem ações originárias. No STF, porém, o art. 333 do RISTF os admite contra decisão não unânime que julga procedente a ação penal originária (admitidos na AP 470) e que julga improcedente a revisão criminal. No Plenário, exigem pelo menos 4 votos divergentes (art. 333, p.u., do RISTF).</small></td>
+      </tr>
+      <tr>
+        <td class="rec">Embargos de Declaração</td>
+        <td class="c" colspan="2">2 dias<br><small>(5 dias no Jecrim)</small><br><small>Razões apresentadas junto com a petição. No Jecrim, podem ser opostos por escrito ou oralmente (art. 83, §1º)</small></td>
+        <td>
+          <span class="tag int">Interruptivo</span>
+          <span class="tag dev">Devolutivo ao mesmo órgão</span><br>
+          <small>Interrompem o prazo para os demais recursos. No CPP não há regra expressa: a interrupção é reconhecida pela jurisprudência, por analogia ao CPC. No Jecrim, ela está expressa no art. 83, §2º, da Lei 9.099, com a redação da Lei 13.105/2015. Excepcionalmente podem ter efeito infringente (modificativo). Nesse caso, a parte contrária deve ser ouvida.</small>
+        </td>
+        <td>Arts. 382 e 619 do CPP; art. 83 da Lei 9.099.<br><small>No CPP, cabem em caso de ambiguidade, obscuridade, contradição ou omissão. No Jecrim, cabem por obscuridade, contradição ou omissão; a "dúvida" foi retirada do art. 83 pela Lei 13.105/2015.</small></td>
+      </tr>
+      <tr>
+        <td class="rec">Agravo em Execução</td>
+        <td class="c">5 dias</td>
+        <td class="c">2 dias</td>
+        <td>
+          <span class="tag dev">Devolutivo</span>
+          <span class="tag reg">Regressivo</span>
+          <span class="tag nsus">Sem efeito suspensivo (em regra)</span>
+          <span class="tag ext">Extensivo</span><br>
+          <small>Segue o rito do RESE, inclusive com juízo de retratação. Em regra, não tem efeito suspensivo (art. 197 da LEP). A exceção é a desinternação ou liberação na medida de segurança, que só ocorre após o trânsito em julgado (art. 179 da LEP), o que dá ao agravo efeito suspensivo na prática. Pela Súmula 604 do STJ, o MP não pode usar mandado de segurança para obter efeito suspensivo (a súmula vale para qualquer recurso criminal do MP, não só para o agravo).</small>
+        </td>
+        <td>Art. 197 da LEP; Súmula 700 do STF (prazo de 5 dias).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box">
+    <h2>Resumo dos efeitos</h2>
+    <ul>
+      <li><b>Devolutivo:</b> leva a matéria ao reexame do Judiciário. Está presente, em regra, em todos os recursos. Nos embargos de declaração, parte da doutrina o nega, porque o julgamento cabe ao mesmo órgão que proferiu a decisão.</li>
+      <li><b>Suspensivo:</b> impede que a decisão produza efeitos até o julgamento do recurso.</li>
+      <li><b>Regressivo (iterativo):</b> permite que o próprio juiz reconsidere a decisão. Existe no RESE e no agravo em execução, mas não na apelação.</li>
+      <li><b>Extensivo (art. 580):</b> a decisão favorável a um corréu alcança os demais, desde que não se baseie em motivo de caráter exclusivamente pessoal.</li>
+      <li><b>Interruptivo:</b> o prazo dos outros recursos volta a correr do zero. Existe nos embargos de declaração.</li>
+    </ul>
+  </div>
+</div>
 
 <div class="mnemo"><span class="lbl">Assistente da acusação</span>Prazo para apelação supletiva/subsidiária</div>
 <table class="t">
@@ -52219,7 +52328,7 @@ A alienação do controle acionário de empresas públicas e sociedades de econo
 <div class="tablecap">Atenuante × Excludente</div>
 <table class="t">
 <tr><th>ATENUANTE</th><th>EXCLUDENTE</th></tr>
-<tr><td><span class="bl">con</span>culpa <span class="bl">con</span>corrente da vítima<br>caso fortuito <span class="bl">in</span>terno</td>
+<tr><td><span class="bl">con</span>culpa <span class="bl">con</span>corrente da vítima</td>
 <td>culpa <span class="rd">ex</span>clusiva da vítima<br>fortuito <span class="rd">ex</span>terno, culpa de <span class="rd">ter</span>ceiros</td></tr>
 </table>
 
