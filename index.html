@@ -15878,7 +15878,9 @@ body:not(.contTopoAberto) .crimVolta{margin-top:var(--contDesce,0px) !important}
 .mat_ppenal .rppWrap table.rpp td{padding:11px 12px;border:none;border-top:1px solid #d5dce5;border-right:1px solid #d5dce5;vertical-align:top;line-height:1.45;text-align:justify;hyphens:auto;background:transparent}
 .mat_ppenal .rppWrap table.rpp td:last-child{border-right:none}
 .mat_ppenal .rppWrap table.rpp td.rec{font-weight:700;white-space:normal;hyphens:none;vertical-align:middle;text-align:left}
-.mat_ppenal .rppWrap table.rpp td.c{text-align:center;vertical-align:middle}
+.mat_ppenal .rppWrap table.rpp td.c{text-align:center;vertical-align:middle;padding:11px 6px;hyphens:none}
+.mat_ppenal .rppWrap table.rpp td.rec{padding:11px 10px}
+.mat_ppenal .rppWrap table.rpp th{padding:12px 6px}
 .mat_ppenal .rppWrap table.rpp tr:nth-child(even) td{background:#eef2f7}
 .mat_ppenal .rppWrap .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;margin:2px 4px 2px 0;text-align:left}
 .mat_ppenal .rppWrap .dev{background:#dbe8f7;color:#1e4f86}
@@ -15890,6 +15892,10 @@ body:not(.contTopoAberto) .crimVolta{margin-top:var(--contDesce,0px) !important}
 .mat_ppenal .rppWrap small{color:#5a6b7d;font-size:12.5px}
 .mat_ppenal .rppWrap table.rpp td:has(.tag){text-align:left}
 .mat_ppenal .rppWrap table.rpp td:has(.tag) small{display:block;text-align:justify;margin-top:2px}
+.mat_ppenal .rppWrap ul.rppL{margin:6px 0 0;padding-left:16px;list-style:disc;color:#5a6b7d;font-size:12.5px;line-height:1.45}
+.mat_ppenal .rppWrap ul.rppL li{margin:0 0 3px;padding:0;text-align:justify;hyphens:auto}
+.mat_ppenal .rppWrap ul.rppL li::before{content:none}
+.mat_ppenal .rppWrap ul.rppL li::marker{color:#8a97a8}
 .mat_ppenal .rppWrap .box{background:#fff;border-left:4px solid #2f4a66;border-radius:6px;padding:14px 18px;margin-top:22px;font-size:14px;line-height:1.55;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .mat_ppenal .rppWrap .box h2{font-size:16px;margin:0 0 8px;color:#2f4a66;text-transform:none;letter-spacing:0;border:none;padding:0;background:none}
 .mat_ppenal .rppWrap .box ul{margin:0;padding-left:20px;list-style:disc}
@@ -51059,15 +51065,15 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
 </div>
 
 <div class="mnemo"><span class="lbl">Recursos no Processo Penal: prazos e efeitos</span>Quadro de revisão: CPP, LEP e Lei 9.099/95</div>
-<div class="rppWrap">
+<div class="rppWrap" lang="pt-BR">
 <table class="rpp">
     <thead>
       <tr>
-        <th style="width:15%">Recurso</th>
+        <th style="width:14%">Recurso</th>
         <th style="width:11%">Interposição</th>
         <th style="width:11%">Razões</th>
-        <th style="width:38%">Efeitos</th>
-        <th style="width:25%">Base legal / observações</th>
+        <th style="width:34%">Efeitos</th>
+        <th style="width:30%">Base legal / observações</th>
       </tr>
     </thead>
     <tbody>
@@ -51079,10 +51085,10 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
           <span class="tag dev">Devolutivo</span>
           <span class="tag reg">Regressivo</span>
           <span class="tag sus">Suspensivo só nos casos legais</span>
-          <span class="tag ext">Extensivo</span><br>
-          <small>Juízo de retratação em 2 dias (art. 589). Tem efeito suspensivo só nos casos do art. 584, como a perda da fiança. O recurso contra a pronúncia suspende apenas o julgamento pelo júri (art. 584, §2º).</small>
+          <span class="tag ext">Extensivo</span>
+          <ul class="rppL"><li>Juízo de retratação em 2 dias (art. 589).</li><li>Tem efeito suspensivo só nos casos do art. 584, como a perda da fiança.</li><li>O recurso contra a pronúncia suspende apenas o julgamento pelo júri (art. 584, §2º).</li></ul>
         </td>
-        <td>Arts. 581 a 592 do CPP.<br><small>Prazo de 20 dias contra a decisão que inclui ou exclui jurado da lista geral (art. 586, p.u.).</small></td>
+        <td>Arts. 581 a 592 do CPP.<ul class="rppL"><li>Prazo de 20 dias contra a decisão que inclui ou exclui jurado da lista geral (art. 586, p.u.).</li></ul></td>
       </tr>
       <tr>
         <td class="rec">Apelação</td>
@@ -51091,10 +51097,10 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
         <td>
           <span class="tag dev">Devolutivo</span>
           <span class="tag sus">Suspensivo na condenação</span>
-          <span class="tag ext">Extensivo</span><br>
-          <small>Contra sentença condenatória, tem efeito suspensivo (art. 597), mas isso não impede a prisão preventiva. Contra sentença absolutória, não tem efeito suspensivo: o réu é solto (art. 596). Não há juízo de retratação. A devolução se limita à matéria impugnada (<i>tantum devolutum quantum appellatum</i>, art. 599), mas o tribunal pode reconhecer de ofício matéria favorável ao réu, como nulidade absoluta. Nulidade não arguida no recurso da acusação não pode ser reconhecida contra o réu (Súmula 160 do STF). Se só a defesa recorre, é proibida a <i>reformatio in pejus</i> (art. 617). Contra decisão do júri, a devolução se restringe aos fundamentos da interposição (Súmula 713 do STF).</small>
+          <span class="tag ext">Extensivo</span>
+          <ul class="rppL"><li>Contra sentença condenatória, tem efeito suspensivo (art. 597), mas isso não impede a prisão preventiva.</li><li>Contra sentença absolutória, não tem efeito suspensivo: o réu é solto (art. 596).</li><li>Não há juízo de retratação.</li><li>A devolução se limita à matéria impugnada (<i>tantum devolutum quantum appellatum</i>, art. 599), mas o tribunal pode reconhecer de ofício matéria favorável ao réu, como nulidade absoluta.</li><li>Nulidade não arguida no recurso da acusação não pode ser reconhecida contra o réu (Súmula 160 do STF).</li><li>Se só a defesa recorre, é proibida a <i>reformatio in pejus</i> (art. 617).</li><li>Contra decisão do júri, a devolução se restringe aos fundamentos da interposição (Súmula 713 do STF).</li></ul>
         </td>
-        <td>Arts. 593 a 603 do CPP.<br><small>No Jecrim: 10 dias, com as razões (art. 82, §1º, da Lei 9.099). Assistente não habilitado: 15 dias (art. 598, p.u.).</small></td>
+        <td>Arts. 593 a 603 do CPP.<ul class="rppL"><li>No Jecrim: 10 dias, com as razões (art. 82, §1º, da Lei 9.099).</li><li>Assistente não habilitado: 15 dias (art. 598, p.u.).</li></ul></td>
       </tr>
       <tr>
         <td class="rec">Embargos Infringentes e de Nulidade</td>
@@ -51102,20 +51108,20 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
         <td>
           <span class="tag dev">Devolutivo restrito à divergência</span>
           <span class="tag sus">Suspensivo</span>
-          <span class="tag ext">Extensivo</span><br>
-          <small>Só se discute o ponto em que houve voto vencido. O efeito suspensivo é a posição majoritária, porque o recurso impede o trânsito em julgado.</small>
+          <span class="tag ext">Extensivo</span>
+          <ul class="rppL"><li>Só se discute o ponto em que houve voto vencido.</li><li>O efeito suspensivo é a posição majoritária, porque o recurso impede o trânsito em julgado.</li></ul>
         </td>
-        <td>Art. 609, caput e p.u., do CPP.<br><small>Só a defesa pode usar. Cabem contra acórdão não unânime de 2ª instância, desfavorável ao réu. Cabem em apelação e RESE pelo próprio art. 609, cujo caput trata do julgamento desses recursos. A extensão ao agravo em execução é construção jurisprudencial, porque ele segue o rito do RESE. Pelo CPP, não cabem em habeas corpus, revisão criminal nem ações originárias. No STF, porém, o art. 333 do RISTF os admite contra decisão não unânime que julga procedente a ação penal originária (admitidos na AP 470) e que julga improcedente a revisão criminal. No Plenário, exigem pelo menos 4 votos divergentes (art. 333, p.u., do RISTF).</small></td>
+        <td>Art. 609, caput e p.u., do CPP.<ul class="rppL"><li>Só a defesa pode usar.</li><li>Cabem contra acórdão não unânime de 2ª instância, desfavorável ao réu.</li><li>Cabem em apelação e RESE pelo próprio art. 609, cujo caput trata do julgamento desses recursos.</li><li>A extensão ao agravo em execução é construção jurisprudencial, porque ele segue o rito do RESE.</li><li>Pelo CPP, não cabem em habeas corpus, revisão criminal nem ações originárias.</li><li>No STF, porém, o art. 333 do RISTF os admite contra decisão não unânime que julga procedente a ação penal originária (admitidos na AP 470) e que julga improcedente a revisão criminal.</li><li>No Plenário, exigem pelo menos 4 votos divergentes (art. 333, p.u., do RISTF).</li></ul></td>
       </tr>
       <tr>
         <td class="rec">Embargos de Declaração</td>
         <td class="c" colspan="2">2 dias<br><small>(5 dias no Jecrim)</small><br><small>Razões apresentadas junto com a petição. No Jecrim, podem ser opostos por escrito ou oralmente (art. 83, §1º)</small></td>
         <td>
           <span class="tag int">Interruptivo</span>
-          <span class="tag dev">Devolutivo ao mesmo órgão</span><br>
-          <small>Interrompem o prazo para os demais recursos. No CPP não há regra expressa: a interrupção é reconhecida pela jurisprudência, por analogia ao CPC. No Jecrim, ela está expressa no art. 83, §2º, da Lei 9.099, com a redação da Lei 13.105/2015. Excepcionalmente podem ter efeito infringente (modificativo). Nesse caso, a parte contrária deve ser ouvida.</small>
+          <span class="tag dev">Devolutivo ao mesmo órgão</span>
+          <ul class="rppL"><li>Interrompem o prazo para os demais recursos.</li><li>No CPP não há regra expressa: a interrupção é reconhecida pela jurisprudência, por analogia ao CPC.</li><li>No Jecrim, a interrupção está expressa no art. 83, §2º, da Lei 9.099, com a redação da Lei 13.105/2015.</li><li>Excepcionalmente podem ter efeito infringente (modificativo). Nesse caso, a parte contrária deve ser ouvida.</li></ul>
         </td>
-        <td>Arts. 382 e 619 do CPP; art. 83 da Lei 9.099.<br><small>No CPP, cabem em caso de ambiguidade, obscuridade, contradição ou omissão. No Jecrim, cabem por obscuridade, contradição ou omissão; a "dúvida" foi retirada do art. 83 pela Lei 13.105/2015.</small></td>
+        <td>Arts. 382 e 619 do CPP; art. 83 da Lei 9.099.<ul class="rppL"><li>No CPP, cabem em caso de ambiguidade, obscuridade, contradição ou omissão.</li><li>No Jecrim, cabem por obscuridade, contradição ou omissão; a "dúvida" foi retirada do art. 83 pela Lei 13.105/2015.</li></ul></td>
       </tr>
       <tr>
         <td class="rec">Agravo em Execução</td>
@@ -51125,8 +51131,8 @@ Deve intimar a defesa acerca da <b>DATA</b> da audiência? <b>Não</b> é necess
           <span class="tag dev">Devolutivo</span>
           <span class="tag reg">Regressivo</span>
           <span class="tag nsus">Sem efeito suspensivo (em regra)</span>
-          <span class="tag ext">Extensivo</span><br>
-          <small>Segue o rito do RESE, inclusive com juízo de retratação. Em regra, não tem efeito suspensivo (art. 197 da LEP). A exceção é a desinternação ou liberação na medida de segurança, que só ocorre após o trânsito em julgado (art. 179 da LEP), o que dá ao agravo efeito suspensivo na prática. Pela Súmula 604 do STJ, o MP não pode usar mandado de segurança para obter efeito suspensivo (a súmula vale para qualquer recurso criminal do MP, não só para o agravo).</small>
+          <span class="tag ext">Extensivo</span>
+          <ul class="rppL"><li>Segue o rito do RESE, inclusive com juízo de retratação.</li><li>Em regra, não tem efeito suspensivo (art. 197 da LEP).</li><li>A exceção é a desinternação ou liberação na medida de segurança, que só ocorre após o trânsito em julgado (art. 179 da LEP), o que dá ao agravo efeito suspensivo na prática.</li><li>Pela Súmula 604 do STJ, o MP não pode usar mandado de segurança para obter efeito suspensivo (a súmula vale para qualquer recurso criminal do MP, não só para o agravo).</li></ul>
         </td>
         <td>Art. 197 da LEP; Súmula 700 do STF (prazo de 5 dias).</td>
       </tr>
