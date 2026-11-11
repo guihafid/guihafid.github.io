@@ -16340,6 +16340,8 @@ async function abrirPerfil(){
 #termosHafid a{color:#2F5597}
 #termosHafid li{margin-bottom:4px;text-align:justify}
 #termosHafid .cp{margin-top:18px;padding-top:10px;border-top:1px solid #e3e8ef;color:#7a889b;font-size:12px;text-align:center}
+/* imagens do material: s\u00f3 aparecem depois de baixadas (balde privado) */
+.crimMat img[src^="img/"]:not(.imgPub), .matOrigCaixa img[src^="img/"]:not(.imgPub), .modalCaixa img[src^="img/"]:not(.imgPub){visibility:hidden}
 .hafidDireitos{max-width:900px;margin:26px auto 10px;padding:12px 16px 4px;border-top:1px solid #dde3ea;
   text-align:center;font-size:11.5px;line-height:17px;color:#7a889b}
 .hafidDireitos a{color:#2F5597;cursor:pointer;text-decoration:underline;white-space:nowrap}
@@ -16467,8 +16469,12 @@ const CONT_FALTA_HTML = '<div style="padding:22px;border:1px dashed #c9a227;back
   'Não foi possível carregar o material desta seção. Verifique a internet e recarregue a página.</div>';
 function contIDB(){
   return new Promise((res, rej) => {
-    const r = indexedDB.open("hafidConteudo", 1);
-    r.onupgradeneeded = () => r.result.createObjectStore("s");
+    const r = indexedDB.open("hafidConteudo", 2);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("s")) db.createObjectStore("s");     // texto das seções
+      if (!db.objectStoreNames.contains("i")) db.createObjectStore("i");     // imagens do material
+    };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
   });
@@ -16561,14 +16567,65 @@ async function conteudoCarregar(){
   CONT_OK = Object.keys(CONT).length > 0;
   contAviso(null);
 }
+/* ---------- imagens do material ----------
+   Ficam no balde PRIVADO "material" do Supabase (só quem está logado baixa).
+   No material elas continuam escritas como src="img/xxx.webp"; ao aparecer na
+   tela, a imagem é trocada pela cópia baixada (guardada neste aparelho). */
+const CONT_IMG = {};                       // "xxx.webp" -> Promise<objectURL>
+function contImgIDB(modo, nome, blob){
+  return contIDB().then(db => new Promise(res => {
+    const tx = db.transaction("i", modo === "ler" ? "readonly" : "readwrite"), st = tx.objectStore("i");
+    if (modo === "ler"){ const rq = st.get(nome); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null); }
+    else { st.put(blob, nome); tx.oncomplete = () => res(); tx.onerror = () => res(); }
+  })).catch(() => null);
+}
+function contImg(nome){
+  if (!CONT_IMG[nome]) CONT_IMG[nome] = (async () => {
+    let b = await contImgIDB("ler", nome);
+    if (!b){
+      const { data, error } = await sb.storage.from("material").download(nome);
+      if (error || !data) throw error || new Error("sem imagem");
+      b = data; contImgIDB("gravar", nome, b);
+    }
+    return URL.createObjectURL(b);
+  })();
+  return CONT_IMG[nome];
+}
+function contImgTrocar(img){
+  const src = img.getAttribute("src") || "";
+  if (!/^img\//.test(src) || img.dataset.hsrc) return;
+  if (!img.closest(".crimMat, .matOrigCaixa, .modalCaixa")) return;   // logo e telas fixas ficam como estão
+  img.dataset.hsrc = src;
+  contImg(src.slice(4)).then(u => { img.src = u; })
+    .catch(() => { img.removeAttribute("data-hsrc"); img.classList.add("imgPub"); });   // tenta o arquivo do site
+}
+new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+  if (n.nodeType !== 1) return;
+  if (n.tagName === "IMG") contImgTrocar(n);
+  else if (n.querySelectorAll) n.querySelectorAll('img[src^="img/"]').forEach(contImgTrocar);
+}))).observe(document.documentElement, { childList: true, subtree: true });
+
 /* só para o dono: sobe o arquivo conteudo.json (o que eu te mando a cada mudança) */
 function contImportar(){
   const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = ".json,application/json";
+  inp.type = "file"; inp.accept = ".json,application/json,image/*"; inp.multiple = true;
   inp.onchange = async () => {
-    const f = inp.files && inp.files[0];
-    if (!f) return;
+    const arqs = [...(inp.files || [])];
+    const imgs = arqs.filter(a => /^image\//.test(a.type) || /\.(webp|png|jpe?g|gif|svg)$/i.test(a.name));
+    const f = arqs.find(a => /\.json$/i.test(a.name));
+    if (!f && !imgs.length) return;
     try{
+      for (let i = 0; i < imgs.length; i++){
+        contAviso("Enviando imagens… " + (i + 1) + " de " + imgs.length);
+        const { error } = await sb.storage.from("material").upload(imgs[i].name, imgs[i], { upsert: true, contentType: imgs[i].type || undefined });
+        if (error) throw error;
+        await contImgIDB("gravar", imgs[i].name, imgs[i]);
+      }
+      if (!f){
+        contAviso(null);
+        alert(imgs.length + " imagem(ns) enviada(s).");
+        return;
+      }
       contAviso("Lendo o arquivo…");
       const dados = JSON.parse(await f.text());
       if (!Array.isArray(dados.secoes)) throw new Error("Esse arquivo não é o conteudo.json do HAFID.");
@@ -16595,7 +16652,8 @@ function contImportar(){
       }
       contAviso(null);
       alert("Material atualizado: " + mudar.length + " seção(ões) enviada(s)" +
-        (apagar.length ? ", " + apagar.length + " removida(s)" : "") + ".\nA página vai recarregar.");
+        (apagar.length ? ", " + apagar.length + " removida(s)" : "") +
+        (imgs.length ? ", " + imgs.length + " imagem(ns)" : "") + ".\nA página vai recarregar.");
       location.reload();
     }catch(e){
       contAviso(null);
@@ -23693,6 +23751,99 @@ const vtChave = (d, it, i) => d.nome + "|" + (it.n || "#" + i);
 function vertTotal(c){
   return c && c.vert && c.vert.disc ? c.vert.disc.reduce((t, d) => t + d.itens.length, 0) : 0;
 }
+/* imprime o edital verticalizado como está na tela (ordem e subtópicos recolhidos),
+   com todas as disciplinas abertas; com as suas marcações ou com os quadradinhos em branco */
+function vtImprimir(corpo, nomeC, V){
+  const fundo = el("div","modalFundo");
+  const cx = el("div","modal");
+  cx.style.maxWidth = "380px";
+  cx.appendChild(el("div","modalTit","Imprimir edital verticalizado"));
+  const cp = el("div","vtCorpo");
+  cp.appendChild(el("div","vtDica","Sai na organização que está na tela. Subtópicos recolhidos não entram. " +
+    "Para gerar PDF, escolha “Salvar como PDF” na janela de impressão."));
+  cx.appendChild(cp);
+  const rod = el("div","modalRodape");
+  const fechar = () => fundo.remove();
+  const b1 = el("button","btn","Em branco");
+  const b2 = el("button","btn azulzinho","Com as minhas marcações");
+  const bx = el("button","btn","Cancelar");
+  b1.onclick = () => { fechar(); gerar(false); };
+  b2.onclick = () => { fechar(); gerar(true); };
+  bx.onclick = fechar;
+  rod.appendChild(bx); rod.appendChild(b1); rod.appendChild(b2);
+  cx.appendChild(rod); fundo.appendChild(cx); document.body.appendChild(fundo);
+
+  function gerar(comMarcas){
+    const c = corpo.cloneNode(true);
+    // linhas escondidas (subtópicos recolhidos) saem
+    c.querySelectorAll("tr").forEach(tr => { if (tr.style.display === "none") tr.remove(); });
+    c.querySelectorAll(".vtDisc").forEach(d => d.classList.remove("fechada"));
+    c.querySelectorAll(".vtSub, .vtSubVazio, .vtSeta").forEach(e => e.remove());
+    c.querySelectorAll(".vtQtd.vazio").forEach(e => e.remove());
+    c.querySelectorAll("input[type=checkbox]").forEach(ck => {
+      const sp = document.createElement("span");
+      sp.className = "ck" + (comMarcas && ck.checked ? " on" : "");
+      sp.textContent = comMarcas && ck.checked ? "✓" : "";
+      ck.replaceWith(sp);
+    });
+    if (!comMarcas){
+      c.querySelectorAll(".vtFeito").forEach(e => e.classList.remove("vtFeito"));
+      c.querySelectorAll(".vtBarras, .vtCont").forEach(e => e.remove());
+    }
+    // botões viram texto
+    c.querySelectorAll("button").forEach(b => {
+      const d = document.createElement("div");
+      d.className = b.className; d.innerHTML = b.innerHTML; b.replaceWith(d);
+    });
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const css = `
+      *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      body{font:11px/1.4 Arial,Helvetica,sans-serif;color:#1F3864;margin:0;padding:18px}
+      h1{font-size:16px;margin:0 0 2px} .sub{font-size:10.5px;color:#5a6a80;margin-bottom:10px}
+      .vtResumo{border-bottom:1px solid #d7dde7;padding-bottom:8px;margin-bottom:10px}
+      .vtTitulo{font-size:10.5px;font-weight:bold;color:#5a6a80;text-transform:uppercase;margin-bottom:4px}
+      .vtTotQ{font-weight:bold;margin-bottom:6px}
+      .vtBarras{display:flex;gap:18px}
+      .vtBarra{display:flex;gap:6px;align-items:center;font-size:10.5px}
+      .vtBRot{font-weight:bold} .vtBTrilho{width:80px;height:7px;background:#e8edf4;border-radius:4px;overflow:hidden;display:inline-block}
+      .vtBFeito{display:block;height:100%} .vtT .vtBFeito{background:#2f7d4f} .vtQ .vtBFeito{background:#2F5597} .vtR .vtBFeito{background:#b7791f}
+      .vtBNum{color:#5a6a80}
+      .vtGrupoFaixa{margin:12px 0 6px;padding:5px 9px;background:#dfe7f3;border-radius:5px;font-weight:bold;display:flex;gap:10px;align-items:center;break-after:avoid}
+      .vtDisc{border:1px solid #c9d2df;border-radius:6px;margin-bottom:10px;overflow:hidden}
+      .vtCab{display:flex;gap:8px;align-items:center;padding:6px 9px;background:#1F3864;color:#fff;font-weight:bold;font-size:11.5px;break-after:avoid}
+      .vtNomeD{flex:1} .vtEdNome{display:block;font-weight:normal;font-size:9.5px;opacity:.8}
+      .vtGrupoTag,.vtQtd{font-size:9.5px;font-weight:normal;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.2);white-space:nowrap}
+      .vtGrupoFaixa .vtQtd{background:#fff;color:#1F3864}
+      .vtCont{font-size:9.5px;font-weight:normal;white-space:nowrap}
+      table{width:100%;border-collapse:collapse;table-layout:fixed}
+      th{background:#eef2f8;color:#5a6a80;font-size:9.5px;padding:3px 5px;text-align:left;border-bottom:1px solid #d7dde7}
+      th.vtThC{width:30px;text-align:center}
+      td{padding:4px 5px;border-bottom:1px solid #eef1f6;vertical-align:top;line-height:14px}
+      tr{break-inside:avoid}
+      td.vtC{text-align:center;vertical-align:middle}
+      .ck{display:inline-block;width:12px;height:12px;border:1.3px solid #7a889b;border-radius:2px;font-size:10px;line-height:10px;text-align:center;font-weight:bold}
+      .ck.on{background:#2f7d4f;border-color:#2f7d4f;color:#fff}
+      .vtLin{display:flex;gap:6px;align-items:baseline} .vtNum{white-space:nowrap}
+      .vtN2 .vtLin{padding-left:12px} .vtN3 .vtLin{padding-left:24px} .vtN4 .vtLin{padding-left:36px}
+      .vtN0 .vtTx,.vtN1 .vtTx{font-weight:bold}
+      .vtFeito .vtTx{color:#2f7d4f}
+      .vtLink{font-size:9.5px;color:#5a6a80;margin:2px 0 0 0;display:flex;gap:4px}
+      .vtOutraRot{color:#b54708;font-weight:bold}
+      tr.vtGrupo td{background:#f3f6fb;font-weight:bold;font-size:10.5px}
+      .vtGrupoBt{display:flex;gap:6px}
+      @page{margin:12mm}
+      @media print{body{padding:0}}`;
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const html = "<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><title>Edital verticalizado — " + esc(nomeC) +
+      "</title><style>" + css + "</style></head><body><h1>Edital verticalizado — " + esc(nomeC) + "</h1>" +
+      "<div class='sub'>HAFID · impresso em " + hoje + (comMarcas ? " · com as marcações (T = teoria, Q = questões, R = revisão)" : " · T = teoria, Q = questões, R = revisão") +
+      "</div>" + c.innerHTML + "</body></html>";
+    const w = window.open("", "_blank");
+    if (!w){ alert("O navegador bloqueou a janela de impressão. Libere pop-ups para o HAFID e tente de novo."); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(() => { try{ w.focus(); w.print(); }catch(e){} }, 400);
+  }
+}
 function janelaVerticalizar(num){
   const c = DB.concursos.find(x => x.num === num);
   if (!c) return;
@@ -24115,6 +24266,10 @@ function janelaVerticalizar(num){
     rodape.appendChild(el("span","modalNota", total + " itens em " + V.disc.length +
       " disciplina(s)" + (V.em ? "  ·  verticalizado em " + dataBR(V.em) : "")));
     rodape.appendChild(bApagar); rodape.appendChild(bCol); rodape.appendChild(bOrg); rodape.appendChild(bSubs); rodape.appendChild(bTodas);
+    const bImp = el("button","btn","🖨  Imprimir");
+    bImp.title = "Imprimir (ou salvar em PDF) o edital verticalizado, na organização escolhida";
+    bImp.onclick = () => vtImprimir(corpo, nomeC, V);
+    rodape.appendChild(bImp);
     const bF = el("button","btn azulzinho","Fechar"); bF.onclick = sair;
     rodape.appendChild(bF);
   }
@@ -32199,6 +32354,8 @@ function matLinhaNoVazio(ev, art, mat, id){
 function matHtmlLimpo(art){
   const c = art.cloneNode(true);
   c.querySelectorAll("[data-enviando]").forEach(e => e.remove());   // imagem ainda subindo
+  c.querySelectorAll("img[data-hsrc]").forEach(i => { i.setAttribute("src", i.dataset.hsrc); i.removeAttribute("data-hsrc"); });
+  c.querySelectorAll("img.imgPub").forEach(i => { i.classList.remove("imgPub"); if (!i.className) i.removeAttribute("class"); });
   c.querySelectorAll(".mtSel").forEach(e => { e.classList.remove("mtSel"); if (!e.className) e.removeAttribute("class"); });
   c.querySelectorAll(".mopWrap").forEach(e => { e.removeAttribute("data-pronto"); e.removeAttribute("data-cur"); });
   c.querySelectorAll("[data-contraste]").forEach(e => {
