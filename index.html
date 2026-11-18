@@ -22878,12 +22878,105 @@ function cronoEtapasDoTexto(txt, jaTem){
 // junta as duas coisas: [{ ativ, ini, fim, bruto, etapas:[ids] }]
 function cronoMapearEdital(txt, cargo, opcoes){
   const jaTem = new Set();
+  // edital sem quadro: as datas estão no meio do texto
+  if (cronoTemProsa(txt)){
+    const L = cronoLerEdital(txt);
+    if (!L.length || L.some(l => l.ativ.length > 300)){ const p = cronoDeProsa(txt); if (p) txt = p; }
+  }
   // tira antes as linhas de outro cargo, senão a data dele "ocupa" a etapa
   return cronoDoCargo(cronoLerEdital(txt), cargo, opcoes).map(l => {
     const etapas = cronoEtapasDoTexto(l.ativ, jaTem).filter(id => !jaTem.has(id));
     etapas.forEach(id => jaTem.add(id));
     return Object.assign(l, { etapas });
   });
+}
+
+/* edital sem quadro de cronograma: as datas vêm no meio do texto
+   ("no dia 11 de outubro de 2026", "no período de 14 de julho de 2026 até 12 de agosto de 2026").
+   Cada subitem do edital (4.1, 5.10, 9.2...) que traz uma data de evento vira uma linha
+   "atividade dd/mm/aaaa [a dd/mm/aaaa]", no formato que o leitor do cronograma já entende.
+   Datas de leis, decretos, deliberações, decisões e da assinatura do edital ficam de fora. */
+const CRONO_MESES = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function cronoTemProsa(txt){
+  return /\d{1,2}[º°]?\s+de\s+(?:janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+\d{4}/i.test(String(txt || ""));
+}
+function cronoDeProsa(txt){
+  let t = String(txt || "").replace(/\s+/g, " ");
+  // "14 de julho de 2026" -> "14/7/2026"; "14 a 16 de julho de 2026" -> "14/7/2026 a 16/7/2026"
+  const MES = "(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)";
+  const nMes = m => CRONO_MESES.indexOf(cronoSemAcento(m)) + 1;
+  t = t.replace(new RegExp("(?<!\\d)(\\d{1,2})[º°]?\\s+(a|e|até)\\s+(\\d{1,2})[º°]?\\s+de\\s+" + MES + "\\s+de\\s+(\\d{4})", "gi"),
+                (x, d1, c, d2, m, a) => d1 + "/" + nMes(m) + "/" + a + " " + c + " " + d2 + "/" + nMes(m) + "/" + a)
+       .replace(new RegExp("(?<!\\d)(\\d{1,2})[º°]?\\s+de\\s+" + MES + "(?:\\s+de\\s+(\\d{4}))?", "gi"),
+                (x, d, m, a) => d + "/" + nMes(m) + (a ? "/" + a : ""));
+  // horário colado na data: "das 16h do dia 14/7/2026 às 16h do dia 16/7/2026"
+  const HORA = "(?:(?:a\\s+partir\\s+)?(?:d?[aà]s?|até\\s+[àa]s?)\\s+)?\\d{1,2}\\s*h(?:\\s*\\d{1,2}\\s*(?:min)?)?\\s+(?:do\\s+dia\\s+)?";
+  const DT = "(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{4}))?";
+  const H2 = "(?:[àa]s?\\s+)?\\d{1,2}\\s*h(?:\\s*\\d{1,2}\\s*(?:min)?)?\\s+(?:do\\s+dia\\s+)?";
+  const RX = new RegExp("(?:" + HORA + ")?(?:(?:no\\s+)?dia\\s+)?" + DT +
+    "(?:,?\\s*(?:" + H2 + ")?\\s*(?:at[ée]|a|e|[àa]s|à|ao)\\s+(?:o\\s+dia\\s+|dia\\s+)?(?:" + H2 + ")?" + DT + ")?", "gi");
+  // divide em subitens: "4.1 As inscrições..." / "5.10 O resultado..."
+  const itens = t.split(/\s(?=\d{1,2}(?:\.\d{1,2}){1,3}\.?\s+[A-ZÀ-Ú])|\s(?=[IVX]{1,5}\s*[-–]\s+[a-zà-ú])/);
+  const vistos = new Set(), out = [];
+  const iso = (a, m, d) => a + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  itens.forEach((it, k) => {
+    if (k === 0 && itens.length > 1 && !/^(?:\d{1,2}(?:\.\d{1,2}){1,3}\.?|[IVX]{1,5}\s*[-–])\s/.test(it)) return;   // preâmbulo do edital
+    const corpo = it.replace(/^(?:\d{1,2}(?:\.\d{1,2}){1,3}\.?|[IVX]{1,5}\s*[-–])\s+/, "");
+    RX.lastIndex = 0;
+    let m;
+    while ((m = RX.exec(corpo))){
+      const antes = corpo.slice(0, m.index);
+      const a1 = m[3] || m[6];
+      if (!a1) continue;
+      // data de lei, decreto, decisão, publicação, assinatura...
+      const perto = antes.slice(-90);
+      if (/(?:n\.?\s*[º°o⁰]|\bn[º°])\s*[\d.\/-]+\s*(?:[-–\/]\s*[A-Z]{2,})?\s*,?\s*(?:de|em)?\s*$/i.test(perto) ||
+          /\b(?:Lei|Decreto|Delibera[çc][ãa]o|Resolu[çc][ãa]o|Portaria|Emenda|Edi[çc][ãa]o|Contrato|Recurso Extraordin[áa]rio|julgamento|decis[õo]es|Constitui[çc][ãa]o|Instru[çc][ãa]o|fl|publicad[oa])\b[^.;]{0,60}?(?:,\s*)?(?:de|em)\s*$/i.test(perto) ||
+          /\b(?:aos|Curitiba[^,]*,?\s*em|[A-ZÀ-Ú][a-zà-ú]+\/[A-Z]{2},?\s*(?:aos|em))\s*$/.test(perto) ||
+          /\bap[óo]s\s*(?:[àa]s\s+\d{1,2}\s*h\w*\s+do\s+dia\s+|o\s+dia\s+|o\s+)?$/i.test(perto) ||
+          /\bvig[eê]ncia|\bem vigor\b|\bnascid|\bdesde\b/i.test(perto) ||
+          /(?:^|[.;]\s*)[A-ZÀ-Ú][a-zà-ú]+(?:\s[A-ZÀ-Ú][a-zà-ú]+)*(?:\s*[\/-]\s*[A-Z]{2})?\s*,\s*$/.test(perto)) continue;
+      const a0 = m[3] || (m[4] ? m[6] : "");
+      const ini = iso(a0 || a1, m[2], m[1]);
+      const fim = m[4] ? iso(m[6], m[5], m[4]) : ini;
+      const chave = ini + "|" + fim;
+      if (vistos.has(chave)) break;   // o subitem só repete uma data já vista
+      vistos.add(chave);
+      // a atividade: o começo do subitem até a data, sem o que é só ligação
+      let ativ = antes.replace(/\s*(?:,\s*)?(?:(?:no|pelo|durante\s+o)\s+per[ií]odo\s+(?:de|entre|compreendido\s+entre)|na\s+data\s+(?:prevista|prov[áa]vel)\s+de|a\s+partir\s+(?:do\s+dia|de)|at[ée]\s+o\s+(?:dia|prazo[^,]{0,30}?de)|at[ée]|no\s+dia|em|das|de|do\s+dia|dia|no)\s*$/i, "")
+                      .replace(/\s*\(\s*\w+\s*\)\s*$/, "").trim();
+      ativ = cronoRotuloProsa(ativ);
+      // prova "(domingo), no turno da tarde": guarda o turno
+      const turno = (corpo.slice(RX.lastIndex, RX.lastIndex + 60).match(/turno\s+da\s+(manh[ãa]|tarde|noite)/i) || [])[1];
+      if (!ativ) continue;
+      const d = s => s.split("-").reverse().map(Number).join("/");
+      out.push({ a: Number(ini.slice(0, 4)), s: ativ.charAt(0).toUpperCase() + ativ.slice(1) + " " + d(ini) + (fim !== ini ? " a " + d(fim) : "") +
+               (turno ? " (" + turno.toLowerCase() + ")" : "") });
+      break;                           // um evento por subitem
+    }
+  });
+  // datas de anos anteriores ao do concurso (lei citada, decisão...) não são etapas
+  const anos = out.map(l => Number(l.a)), topo = Math.max(...anos);
+  return out.filter(l => l.a >= topo - 1).map(l => l.s).join("\n");
+}
+
+// "As Provas Objetivas, de caráter..., serão realizadas" -> "Aplicação das Provas Objetivas"
+function cronoRotuloProsa(txt){
+  let a = String(txt || "").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+  if ((/pagamento[^.]{0,80}?taxa\s+de\s+inscri/i.test(a) || /\bboleto\b/i.test(a)) && !/isen[çc]/i.test(a)) return "Pagamento da taxa de inscrição";
+  const art = (a.match(/^(As|Os|O|A)\s+/) || [])[1] || "";
+  const vb = a.match(/\s*,?\s+(?:ser[áã]o?|estar[áã]o?|poder[áã]o?|dever[áã]o?|ocorrer[áã]o?|ter[áã]o?|est[áã]o|s[ãa]o|é)\s+(?:ser\s+|realizad\w*\s+e\s+)?([a-zà-ú]+)/i);
+  if (!vb || vb.index < 3) return a.replace(/^(?:As|Os|O|A)\s+/, "").replace(/[\s,:;.]+$/, "");
+  let suj = a.slice(art ? art.length + 1 : 0, vb.index).split(/\s*,\s*/)[0]
+    .replace(/\s+mencionad[oa]s?\s+no?s?\s+(?:sub)?ite[mn]s?\s+[\d.\s,e]+$/i, "").trim();
+  const v = cronoSemAcento(vb[1]);
+  const d = { "A":"da ", "As":"das ", "O":"do ", "Os":"dos " }[art] || "de ";
+  const min = suj.charAt(0).toLowerCase() + suj.slice(1);
+  if (/^realizad|^aplicad/.test(v) && /prova|exame|teste|avalia|curso|etapa|fase/i.test(suj)) suj = "Aplicação " + d + suj;
+  else if (/^solicitad|^requerid/.test(v) && /isen[çc]/i.test(suj)) suj = "Solicitação de isenção da taxa de inscrição";
+  else if (/^solicitad|^requerid/.test(v)) suj = "Solicitação " + d + min;
+  else if (/^interpost/.test(v) && !/^recurso/i.test(suj)) suj = "Recurso: " + min;
+  return suj.charAt(0).toUpperCase() + suj.slice(1);
 }
 
 /* janela para preencher / ver / alterar o cronograma de um concurso */
@@ -24730,6 +24823,11 @@ function lerEditalCompleto(txt, cargoSel){
     if (fc < 0) fc = Math.min(linhas.length, ic + 200);
     R.crono = linhas.slice(ic + 1, fc).join("\n");
   }
+  // sem anexo de cronograma (ou anexo sem datas): procura as datas no corpo do edital
+  if (!R.crono || !cronoLerEdital(R.crono).length){
+    const p = cronoDeProsa(bruto);
+    if (p) R.crono = p;
+  }
   // verticalizado + nº de questões
   if (R.conteudo){
     const v = vertLer(R.conteudo);
@@ -24949,7 +25047,7 @@ function janelaNovoConcurso(){
     if (R.matO && R.matO.length) ul.appendChild(el("li", null, "Matérias da objetiva: " + R.matO.length +
       (R.matD && R.matD.length ? " · da discursiva: " + R.matD.length : "")));
     if (R.crono){
-      const n = cronoMapearEdital(R.crono, R.cargoSel, R.cargos).filter(l => l.etapas.length).length;
+      const n = cronoMapearEdital(R.crono, R.cargoSel, R.cargos).length;
       ul.appendChild(el("li", null, "Cronograma: " + n + " etapa(s) com data"));
     }
     edRes.appendChild(el("div","edResTit", ul.children.length ? "Encontrei no edital:" : "Não achei as informações no texto."));
