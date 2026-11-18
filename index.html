@@ -424,6 +424,10 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .cronoCola .cronoColaBts{display:flex;gap:6px;margin:6px 0 0;flex-wrap:wrap}
 .cronoCola .cronoColaSub{font-size:11px;font-weight:bold;color:#1F3864;margin:9px 0 4px}
 .cronoCola .cronoColaRolo{max-height:34vh;overflow:auto;border:1px solid #dbe3ee;border-radius:4px;background:#fff}
+.cronoExtraNome{width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:4px;padding:2px 4px;font:inherit;color:inherit;background:transparent}
+.cronoExtraNome:hover,.cronoExtraNome:focus{border-color:#c9d2df;background:#fff;outline:none}
+.cronoAddEtapa{margin:8px 0 2px;font-size:12px}
+.cronoNovaTag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;background:#e3f2e8;color:#1d6b39;font-size:9.5px;font-weight:bold;vertical-align:1px}
 .cronoCola table.cronoColaTab{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
 .cronoCola table.cronoColaTab th{background:#eef2f8;color:#5a6a80;font-size:10px;font-weight:bold;
   padding:3px 5px;text-align:left;border:0;border-bottom:1px solid #dbe3ee}
@@ -22734,11 +22738,39 @@ const cronogramaDe = num => {
   if (!C[num] || typeof C[num] !== "object") C[num] = {};
   return C[num];
 };
+/* etapas do edital que não existem na lista fixa acima (TAF, exame médico,
+   avaliação psicológica, investigação social, curso de formação, resultado final...).
+   Ficam no próprio cronograma do concurso, em __extras, e as datas em dados[id]. */
+const cronoExtras = num => {
+  const d = cronogramaDe(num);
+  if (!Array.isArray(d.__extras)) d.__extras = [];
+  return d.__extras;
+};
+function etapasTodas(c){
+  const ex = ((garantirCronogramas()[c && c.num] || {}).__extras) || [];
+  return etapasDe(c).concat(ex.map(x => ({ id:x.id, rot:x.rot, tipo:"periodo", ev:x.ev || "Compromisso", extra:true })));
+}
+const cronoLimparAtiv = t => String(t || "").replace(/^[\s\-–—:;,.•·\d)]+(?=[A-Za-zÀ-ú])/, "").replace(/\s+/g, " ").trim().slice(0, 220);
+function cronoAddExtra(num, rot, ini, fim){
+  const nome = cronoLimparAtiv(rot);
+  if (!nome || !ini) return false;
+  const ex = cronoExtras(num), dados = cronogramaDe(num);
+  if (ex.some(x => x.rot === nome && (dados[x.id] || {}).ini === ini)) return false;
+  const id = "ex" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  ex.push({ id, rot: nome });
+  dados[id] = { ini, fim: fim || ini };
+  return true;
+}
+function cronoTirarExtra(num, id){
+  const d = cronogramaDe(num);
+  d.__extras = cronoExtras(num).filter(x => x.id !== id);
+  delete d[id];
+}
 // quantas etapas já foram preenchidas num concurso (a aplicação das provas conta)
 function cronoPreenchido(num){
   const dados = (garantirCronogramas())[num] || {};
   const c = DB.concursos.find(x => x.num === num) || {};
-  return etapasDe(c).filter(p => p.tipo === "prova"
+  return etapasTodas(c).filter(p => p.tipo === "prova"
     ? !!c[p.campoData]
     : ((dados[p.id] || {}).ini || (dados[p.id] || {}).fim)).length;
 }
@@ -22917,8 +22949,8 @@ function janelaCronograma(numInicial){
     cola.innerHTML = ""; cola.style.display = "";
     cola.appendChild(el("div","cronoColaRot","Colar o cronograma do edital"));
     cola.appendChild(el("div","cronoColaDica",
-      "Copie a tabela de datas do edital (do PDF ou do site) e cole abaixo. O app acha as etapas " +
-      "que existem neste cronograma; as outras ficam de fora, e o que faltar você preenche à mão."));
+      "Copie a tabela de datas do edital (do PDF ou do site) e cole abaixo. O app traz todas as etapas " +
+      "com data: as que já existem na lista e as demais do edital, como etapas novas."));
     const ta = document.createElement("textarea");
     ta.className = "cronoColaTxt"; ta.rows = 5;
     ta.placeholder = "Ex.: Período de solicitação de inscrição 20/7 a 13/8/2026 ... Aplicação da prova objetiva 1º/11/2026 ...";
@@ -22947,70 +22979,80 @@ function janelaCronograma(numInicial){
         "20/7/2026, 24 a 26/8/2026 ou 20/7 a 13/8/2026."));
       return;
     }
-    const achados = [], fora = [];
+    const achados = [], novos = [], fora = [];
     linhas.forEach(l => {
       const ids = l.etapas.filter(id => validas.has(id));
       ids.forEach(id => achados.push({ p: CRONO_PROVA.find(x => x.id === id), l }));
-      if (!ids.length) fora.push({ l, motivo: l.etapas.length
-        ? "este concurso não tem essa prova" : "não existe no cronograma do app" });
+      if (ids.length) return;
+      // etapa que não existe na lista do app: entra como etapa nova do edital
+      if (!l.etapas.length && cronoLimparAtiv(l.ativ)) novos.push({ p:{ id:null, rot:cronoLimparAtiv(l.ativ), tipo:"periodo", extra:true }, l });
+      else fora.push({ l, motivo: "este concurso não tem essa prova" });
     });
     achados.sort((a, b) => CRONO_PROVA.indexOf(a.p) - CRONO_PROVA.indexOf(b.p));
+    const todos = achados.concat(novos);
 
-    if (!achados.length){
-      res.appendChild(el("div","cronoAviso",
-        "Achei " + linhas.length + " datas, mas nenhuma corresponde às etapas deste cronograma."));
-    } else {
-      res.appendChild(el("div","cronoColaSub",
-        "Encontrei " + achados.length + (achados.length === 1 ? " etapa" : " etapas") +
-        ". Desmarque o que não quiser trazer:"));
-      const t = el("table","cronoColaTab");
-      const cab = el("tr");
-      ["", "Etapa do app", "Data", "No edital"].forEach(h => cab.appendChild(el("th", null, h)));
-      t.appendChild(cab);
-      const marcas = [];
-      achados.forEach(a => {
-        const tr = el("tr");
-        const tdC = el("td");
-        const ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = true;
-        tdC.appendChild(ck); tr.appendChild(tdC);
-        marcas.push({ ck, a });
-        tr.appendChild(el("td","cronoColaEt", a.p.rot));
-        const tdD = el("td","cronoColaDt");
-        tdD.appendChild(el("div", null, valorNovo(a.p, a.l)));
+    res.appendChild(el("div","cronoColaSub",
+      "Encontrei " + todos.length + (todos.length === 1 ? " etapa" : " etapas") +
+      (novos.length ? " (" + novos.length + " nova" + (novos.length === 1 ? "" : "s") + ", que não estava" + (novos.length === 1 ? "" : "m") + " na lista do app)" : "") +
+      ". Desmarque o que não quiser trazer:"));
+    const t = el("table","cronoColaTab");
+    const cab = el("tr");
+    ["", "Etapa", "Data", "No edital"].forEach(h => cab.appendChild(el("th", null, h)));
+    t.appendChild(cab);
+    const marcas = [];
+    todos.forEach(a => {
+      const tr = el("tr", a.p.extra ? "cronoColaNova" : null);
+      const tdC = el("td");
+      const ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = true;
+      tdC.appendChild(ck); tr.appendChild(tdC);
+      marcas.push({ ck, a });
+      const tdN = el("td","cronoColaEt", a.p.rot);
+      if (a.p.extra) tdN.appendChild(el("span","cronoNovaTag","nova"));
+      tr.appendChild(tdN);
+      const tdD = el("td","cronoColaDt");
+      tdD.appendChild(el("div", null, valorNovo(a.p, a.l)));
+      if (!a.p.extra){
         const atual = valorAtual(a.p);
         if (atual && atual !== valorNovo(a.p, a.l))
           tdD.appendChild(el("div","cronoColaTroca","substitui " + atual));
         if (a.p.tipo !== "periodo" && a.l.fim !== a.l.ini)
           tdD.appendChild(el("div","cronoColaObs","1º dia de " + a.l.bruto));
-        tr.appendChild(tdD);
-        const tdE = el("td","cronoColaOrig", a.l.ativ.length > 110 ? a.l.ativ.slice(0,110) + "…" : a.l.ativ);
-        tdE.title = a.l.ativ + " — " + a.l.bruto;
-        tr.appendChild(tdE);
-        tr.onclick = ev => { if (ev.target !== ck) ck.checked = !ck.checked; };
-        t.appendChild(tr);
-      });
-      const cxT = el("div","cronoColaRolo"); cxT.appendChild(t);
-      res.appendChild(cxT);
+      }
+      tr.appendChild(tdD);
+      const tdE = el("td","cronoColaOrig", a.l.ativ.length > 110 ? a.l.ativ.slice(0,110) + "…" : a.l.ativ);
+      tdE.title = a.l.ativ + " — " + a.l.bruto;
+      tr.appendChild(tdE);
+      tr.onclick = ev => { if (ev.target !== ck) ck.checked = !ck.checked; };
+      t.appendChild(tr);
+    });
+    const cxT = el("div","cronoColaRolo"); cxT.appendChild(t);
+    res.appendChild(cxT);
 
-      const bFaz = el("button","btn verdinho","✓  Preencher as etapas marcadas");
-      bFaz.onclick = () => {
-        const escolhidos = marcas.filter(m => m.ck.checked).map(m => m.a);
-        if (!escolhidos.length){ alert("Nenhuma etapa marcada."); return; }
-        const c = concurso(), dados = cronogramaDe(num);
-        escolhidos.forEach(({ p, l }) => {
-          if (p.tipo === "prova") c[p.campoData] = l.ini;
-          else {
-            const reg = dados[p.id] || (dados[p.id] = { ini:"", fim:"" });
-            reg.ini = l.ini;
-            reg.fim = p.tipo === "periodo" ? l.fim : "";
+    const bFaz = el("button","btn verdinho","✓  Preencher as etapas marcadas");
+    bFaz.onclick = () => {
+      const escolhidos = marcas.filter(m => m.ck.checked).map(m => m.a);
+      if (!escolhidos.length){ alert("Nenhuma etapa marcada."); return; }
+      const c = concurso(), dados = cronogramaDe(num);
+      recem = new Set();
+      escolhidos.forEach(({ p, l }) => {
+        if (p.extra){
+          if (cronoAddExtra(num, p.rot, l.ini, l.fim)){
+            const ex = cronoExtras(num); recem.add(ex[ex.length - 1].id);
           }
-        });
-        recem = new Set(escolhidos.map(a => a.p.id));
-        salvar(); fecharCola(); montar();
-      };
-      const linhaB = el("div","cronoColaBts"); linhaB.appendChild(bFaz);
-      res.appendChild(linhaB);
-    }
+          return;
+        }
+        if (p.tipo === "prova") c[p.campoData] = l.ini;
+        else {
+          const reg = dados[p.id] || (dados[p.id] = { ini:"", fim:"" });
+          reg.ini = l.ini;
+          reg.fim = p.tipo === "periodo" ? l.fim : "";
+        }
+        recem.add(p.id);
+      });
+      salvar(); fecharCola(); montar();
+    };
+    const linhaB = el("div","cronoColaBts"); linhaB.appendChild(bFaz);
+    res.appendChild(linhaB);
     if (fora.length){
       const d = document.createElement("details");
       d.className = "cronoColaFora";
@@ -23027,7 +23069,7 @@ function janelaCronograma(numInicial){
     corpo.innerHTML = "";
     const c = concurso();
     const dados = cronogramaDe(num);
-    const etapas = etapasDe(c);
+    const etapas = etapasTodas(c);
     const feitos = cronoPreenchido(num);
     selo.textContent = feitos
       ? feitos + " de " + etapas.length + " etapas preenchidas"
@@ -23053,7 +23095,19 @@ function janelaCronograma(numInicial){
     etapas.forEach(p => {
       const tr = el("tr", semDis && p.so === "D" ? "cronoForaCal" : null);
       if (semDis && p.so === "D") tr.title = "Fora do Calendário: reprovado na objetiva";
-      const tdR = el("td","esq" + (p.forte ? " cronoForte" : ""), p.rot);
+      const tdR = el("td","esq" + (p.forte ? " cronoForte" : ""), p.extra ? "" : p.rot);
+      if (p.extra){
+        const iN = document.createElement("input");
+        iN.className = "cronoExtraNome"; iN.value = p.rot;
+        iN.title = "Etapa do edital (você pode renomear)";
+        iN.onchange = () => {
+          const x = cronoExtras(num).find(e => e.id === p.id);
+          if (x && iN.value.trim()) { x.rot = iN.value.trim(); salvar(); }
+          else iN.value = p.rot;
+        };
+        iN.onkeydown = ev => { if (ev.key === "Enter") iN.blur(); };
+        tdR.appendChild(iN);
+      }
       tr.appendChild(tdR);
 
       const tdD = el("td","esq" + (recem.has(p.id) ? " cronoRecem" : ""));
@@ -23108,8 +23162,12 @@ function janelaCronograma(numInicial){
           linha.appendChild(campo("ini","dd/mm/aa"));
         }
         const x = el("button","mini","×");
-        x.title = "Limpar esta etapa";
-        x.onclick = () => { reg.ini = ""; reg.fim = ""; salvar(); montar(); };
+        x.title = p.extra ? "Tirar esta etapa do cronograma" : "Limpar esta etapa";
+        x.onclick = () => {
+          if (p.extra){ if (!confirm("Tirar a etapa \u201c" + p.rot + "\u201d do cronograma?")) return;
+            cronoTirarExtra(num, p.id); }
+          else { reg.ini = ""; reg.fim = ""; }
+          salvar(); montar(); };
         linha.appendChild(x);
         tdD.appendChild(linha);
       }
@@ -23117,6 +23175,18 @@ function janelaCronograma(numInicial){
       t.tbody.appendChild(tr);
     });
     corpo.appendChild(t);
+    const bAdd = el("button","btn cronoAddEtapa","+  Adicionar etapa do edital");
+    bAdd.title = "Para etapas que não estão na lista: TAF, exame médico, avaliação psicológica, investigação social, curso de formação, resultado final...";
+    bAdd.onclick = () => {
+      const nome = prompt("Nome da etapa (como está no edital):");
+      if (!nome || !nome.trim()) return;
+      const ex = cronoExtras(num);
+      const id = "ex" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      ex.push({ id, rot: nome.trim() });
+      cronogramaDe(num)[id] = { ini:"", fim:"" };
+      salvar(); montar();
+    };
+    corpo.appendChild(bAdd);
 
     // ---- reprovado na objetiva: as datas da discursiva continuam no calendário? ----
     if (temDiscursiva(c)){
@@ -23278,7 +23348,7 @@ function telaConcursos(){
     if (info.length) card.appendChild(el("div","ccInfo", info.join("  ·  ")));
     // próxima etapa do cronograma
     const dados = cronogramaDe(c.num);
-    const prox = etapasDe(c).map(p => {
+    const prox = etapasTodas(c).map(p => {
       const ini = p.tipo === "prova" ? c[p.campoData] : (dados[p.id] || {}).ini;
       const fim = p.tipo === "periodo" ? ((dados[p.id] || {}).fim || ini) : ini;
       return ini ? { p, ini, fim } : null;
@@ -24727,7 +24797,7 @@ function cronoAplicarTexto(c, txt, cargo, opcoes){
     if (p.tipo === "prova") c[p.campoData] = l.ini;
     else dados[id] = { ini: l.ini, fim: p.tipo === "periodo" ? l.fim : "" };
     feitas.add(id);
-  }));
+  }) || (!l.etapas.length && cronoAddExtra(c.num, l.ativ, l.ini, l.fim) && feitas.add("x" + feitas.size)));
   return feitas.size;
 }
 // PDF ou TXT -> texto (o PDF é lido com o pdf.js, baixado só quando precisa)
@@ -27979,7 +28049,7 @@ function eventosDoMes(mes){
   DB.concursos.forEach(c => {
     const dados = CR[c.num] || {};
     const semDis = escondeDatasDis(c);
-    etapasDe(c).forEach(p => {
+    etapasTodas(c).forEach(p => {
       if (p.tipo === "prova") return;           // a data da prova já entrou acima
       if (semDis && p.so === "D") return;       // reprovou na objetiva: fase discursiva some
       const reg = dados[p.id] || {};
@@ -32031,7 +32101,7 @@ let MATS = {
     { id:"cap-lai", c:"c-amar", cl:"card chapter", t:"Lei n\u00ba 12.527/2011 \u2014 Lei de Acesso \u00e0 Informa\u00e7\u00e3o (LAI)" },
     { id:"cap-1", c:"c-verde", cl:"card chapter", t:"Lei n\u00ba 9.784/1999 \u2014 Processo Administrativo Federal" },
     { id:"cap-4", c:"c-amar", cl:"card chapter", t:"Lei n\u00ba 12.846/2013 \u2014 Lei Anticorrup\u00e7\u00e3o" },
-    { id:"cap-2", c:"c-verm", cl:"card chapter", t:"Decreto-Lei n\u00ba 3.365/1941 \u2014 Interven\u00e7\u00e3o do Estado na Propriedade Privada" }
+    { id:"cap-2", c:"c-verm", cl:"card chapter", t:"Interven\u00e7\u00e3o do Estado na Propriedade Privada" }
   ]},
   crim: {
     rot:"07 - CRIMINOLOGIA", cls:"crim", est:"mat_crim", secoes:[
