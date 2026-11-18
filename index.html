@@ -22748,9 +22748,16 @@ const cronoExtras = num => {
 };
 function etapasTodas(c){
   const ex = ((garantirCronogramas()[c && c.num] || {}).__extras) || [];
-  return etapasDe(c).concat(ex.map(x => ({ id:x.id, rot:x.rot, tipo:"periodo", ev:x.ev || "Compromisso", extra:true })));
+  return etapasDe(c).concat(ex.map(x => ({ id:x.id, rot:cronoLimparAtiv(x.rot) || x.rot, tipo:"periodo", ev:x.ev || "Compromisso", extra:true })));
 }
-const cronoLimparAtiv = t => String(t || "").replace(/^[\s\-–—:;,.•·\d)]+(?=[A-Za-zÀ-ú])/, "").replace(/\s+/g, " ").trim().slice(0, 220);
+// tira "(... – horário oficial de Brasília/DF)" e o que sobra dele ("( – horário oficial de Brasília/DF)", "()")
+const cronoSemHorario = t => String(t || "")
+  .replace(/\s*[–—-]?\s*(?:conforme\s+|segundo\s+|pelo\s+)?(?:o\s+)?hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*(?:\/\s*DF|[–—-]\s*DF|\(\s*DF\s*\))?/gi, " ")
+  .replace(/\(\s*(?:[–—,;:-]\s*)*\)/g, " ")
+  .replace(/\s+([,.;)])/g, "$1").replace(/\(\s+/g, "(");
+const cronoLimparAtiv = t => cronoSemHorario(t).replace(/^[\s\-–—:;,.•·\d)]+(?=[A-Za-zÀ-ú])/, "").replace(/\s+/g, " ").trim()
+  .replace(/\s*\(?\s*(?:(?:a\s+partir\s+)?d?[aà]s?\s+)?\d{1,2}\s*h(?:\s*\d{1,2}\s*(?:min)?)?\s*(?:do\s+dia)?\s*$/i, "")
+  .replace(/[\s,;:–—(-]+$/, "").slice(0, 220);
 function cronoAddExtra(num, rot, ini, fim){
   const nome = cronoLimparAtiv(rot);
   if (!nome || !ini) return false;
@@ -22807,7 +22814,7 @@ const cronoSemAcento = s => String(s || "").normalize("NFD")
 function cronoLerEdital(txt){
   let t = String(txt || "").replace(/\s+/g, " ");
   // o que acompanha as datas e não é atividade
-  t = t.replace(/\(\s*hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*\/?\s*DF\s*\)/gi, " ")
+  t = cronoSemHorario(t.replace(/\(\s*hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*\/?\s*DF\s*\)/gi, " "))
        .replace(/\bDas?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+primeiro\s+dia\s+[àa]s?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+[uú]ltimo\s+dia\b/gi, " ")
        .replace(/\bAtividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ");
   const ano = a => a.length === 2 ? "20" + a : a;
@@ -22816,7 +22823,7 @@ function cronoLerEdital(txt){
     return isoDeData(dataDeISO(x)) === x ? x : "";
   };
   // "20/7 a 13/8/2026" · "24 a 26/8/2026" · "14 e 15/8/2026" · "2/9/2026" · "1º/11/2026"
-  const RX = /(\d{1,2})[º°]?(?:\/(\d{1,2}))?(?:\/(\d{2,4}))?\s+(?:a|e|até)\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)|(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)/g;
+  const RX = /(\d{1,2})[º°]?(?:\/(\d{1,2}))?(?:\/(\d{2,4}))?\s+(?:(?:a|até|[àa]s)\s+(?:[àa]s\s+)?\d{1,2}\s*h(?:\s*\d{1,2}\s*(?:min)?)?\s+do\s+dia|a|e|até)\s+(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)|(\d{1,2})[º°]?\/(\d{1,2})\/(\d{2,4})(?!\d)/g;
   const linhas = [];
   let ult = 0, m;
   while ((m = RX.exec(t))){
@@ -22835,7 +22842,7 @@ function cronoLerEdital(txt){
     } else {
       ini = fim = iso(ano(m[9]), Number(m[8]), m[7]);
     }
-    if (!ini || !fim || !ativ) continue;
+    if (!ini || !fim || !ativ || !cronoLimparAtiv(ativ)) continue;
     linhas.push({ ativ, ini, fim, bruto: m[0].trim() + (tu ? " (" + tu[1].toLowerCase() + ")" : ""), turno: tu ? tu[1].toLowerCase() : "" });
   }
   return linhas;
@@ -23642,7 +23649,7 @@ function telaCadastro(){
    (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
    numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
    não quebram o texto no lugar errado.                              */
-const VT_VER = 4;           // versão do leitor: subiu, os editais já colados são relidos
+const VT_VER = 5;           // versão do leitor: subiu, os editais já colados são relidos
 function vertLer(txt){
   const MAI = "A-ZÀ-ÖØ-Þ";
   const brutas = String(txt || "").replace(/\r/g, "").split("\n");
@@ -23671,6 +23678,13 @@ function vertLer(txt){
     if (g && !/:\s*\S/.test(g[1])){
       grupo = g[1].replace(/[:.\s]+$/, "").replace(/\s+/g, " ").trim();
       atual = null;            // o que vier até a próxima disciplina não é de nenhuma
+      return;
+    }
+    // "I. DIREITO CONSTITUCIONAL" / "II.DIREITO ADMINISTRATIVO": numeral romano + nome em maiúsculas, sem dois-pontos
+    const rom = l === l.toUpperCase() && l.indexOf(":") < 0 && l.trim().length < 100 &&
+      l.match(new RegExp("^\\s*([IVXL]{1,6})\\s*[.)–—-]\\s*([" + MAI + "][" + MAI + "\\s,/()\\-–—&ºª]{3,}?)\\s*\\.?\\s*$"));
+    if (rom && /[A-ZÀ-Þ]{3}/.test(rom[2]) && !/CARGO\b/.test(rom[2])){
+      atual = { nome: rom[2].replace(/\s+/g, " ").trim(), txt:[], grupo, num: 0 }; blocos.push(atual);
       return;
     }
     const m = l.match(reCab);
@@ -24827,6 +24841,14 @@ function lerEditalCompleto(txt, cargoSel){
   if (!R.crono || !cronoLerEdital(R.crono).length){
     const p = cronoDeProsa(bruto);
     if (p) R.crono = p;
+  }
+  // cabeçalho/rodapé de página que cai no meio do conteúdo ("Página 25 de 38", "6º EXAME NACIONAL ... – 2026.2")
+  if (R.conteudo){
+    const conta = {};
+    linhas.forEach(l => { const k = l.trim(); if (k.length >= 15) conta[k] = (conta[k] || 0) + 1; });
+    const ehCab = k => /^P[áa]gina\s+\d+\s*(?:de|\/)\s*\d+$/i.test(k) ||
+      (conta[k] >= 3 && k === k.toUpperCase() && /\p{Lu}{4}/u.test(k) && !/:/.test(k));
+    R.conteudo = R.conteudo.split("\n").filter(l => !ehCab(l.trim())).join("\n");
   }
   // verticalizado + nº de questões
   if (R.conteudo){
