@@ -22816,7 +22816,9 @@ function cronoLerEdital(txt){
   // o que acompanha as datas e não é atividade
   t = cronoSemHorario(t.replace(/\(\s*hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*\/?\s*DF\s*\)/gi, " "))
        .replace(/\bDas?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+primeiro\s+dia\s+[àa]s?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+[uú]ltimo\s+dia\b/gi, " ")
-       .replace(/\bAtividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ");
+       .replace(/\b(?:Itens?\s+)?Atividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ")
+       // rodapé de página do SEI que cai no meio da tabela
+       .replace(/\bEdital\b.{0,60}?\bSEI\b[\s\d.\-]+\/\s*p[áa]?g\.?\s*\d+/gi, " ");
   const ano = a => a.length === 2 ? "20" + a : a;
   const iso = (a, m, d) => {
     const x = a + "-" + String(m).padStart(2,"0") + "-" + String(d).padStart(2,"0");
@@ -22827,7 +22829,9 @@ function cronoLerEdital(txt){
   const linhas = [];
   let ult = 0, m;
   while ((m = RX.exec(t))){
-    const ativ = t.slice(ult, m.index).trim();
+    const ativ = t.slice(ult, m.index).trim()
+      .replace(/^[\s,;]*(?:at[ée]\s+)?(?:[àa]s?\s+)?\d{1,2}\s*h\s*\d{0,2}(?:\s*min(?:utos)?)?(?=\s|$)\s*/i, "")   // ", até as 21h59" é da data anterior
+      .replace(/^\d{1,2}\s+(?=\p{Lu})/u, "");                                                          // nº do item da tabela
     ult = RX.lastIndex;
     // "7/3/2027 (tarde)": o turno é desta data, não começo da próxima atividade
     const tu = /^\s*\(\s*(manh[ãa]|tarde|noite)\s*\)/i.exec(t.slice(ult));
@@ -22872,6 +22876,8 @@ function cronoEtapasDoTexto(txt, jaTem){
     if (tem(/definitiv/)) r.push("gabDefO");
     else if (tem(/consulta/)) r.push("gabPrelimO");
     else if (tem(/preliminar/)) r.push(jaTem.has("gabPrelimO") ? "gabDefO" : "gabPrelimO");
+    // "Publicação do gabarito da prova objetiva" (sem dizer qual): o primeiro é o preliminar
+    else if (tem(/objetiva/) && !jaTem.has("gabPrelimO")) r.push("gabPrelimO");
   }
   if (recurso){
     if (tem(/padrao|discursiva/) && !tem(/objetiva|gabarito/)) r.push("recursoDis");
@@ -23649,7 +23655,7 @@ function telaCadastro(){
    (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
    numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
    não quebram o texto no lugar errado.                              */
-const VT_VER = 5;           // versão do leitor: subiu, os editais já colados são relidos
+const VT_VER = 6;           // versão do leitor: subiu, os editais já colados são relidos
 function vertLer(txt){
   const MAI = "A-ZÀ-ÖØ-Þ";
   const brutas = String(txt || "").replace(/\r/g, "").split("\n");
@@ -23666,6 +23672,15 @@ function vertLer(txt){
     else linhas.push(l);
   }
   const blocos = []; let titulo = []; let atual = null; let grupo = "";
+  // disciplinas em letra normal ("Direito Civil: Lei: eficácia; ..."): só quando não há nenhuma em MAIÚSCULAS
+  const reMisto = /^\s*(\p{Lu}[^:]{2,80}?):\s*(.*)$/u;
+  const nMai = linhas.filter(l => { const m = l.match(reCab); return m && /[A-ZÀ-Þ]{3}/.test(m[2]) && m[2] === m[2].toUpperCase() && !/CARGO\b/.test(m[2]); }).length;
+  const discMista = (l, ant) => { const m = l.match(reMisto); return m && (ant === null || /[.;:)]\s*$/.test(ant)) && edNomeDisc(m[1]) &&
+    /^[\p{Lu}\d“"(]/u.test(m[2].trim()) ? m : null; };   // "Patrimônio: conceito, ..." é tópico, não disciplina
+  let modoMisto = false;
+  // (uma sobra em maiúsculas no começo da linha, como "ANSI): DDL...", não conta como disciplina)
+  { let ant = null, n = 0; linhas.forEach(l => { if (!l.trim()) return; if (discMista(l, ant)) n++; ant = l.trim(); }); modoMisto = n >= 2 && n > nMai * 3; }
+  let antM = null;
   // GRUPO I, BLOCO II, CONHECIMENTOS GERAIS/ESPECÍFICOS... numa linha só (pode vir numerada: "23.2.2 GRUPO I")
   const reGrupo = /^\s*(?:\d+(?:\.\d+)*\.?\s+)?((?:GRUPO|BLOCO|M[ÓO]DULO|EIXO|PARTE)\s+[IVXLC\d]+\b.*|CONHECIMENTOS\s+(?:GERAIS|ESPEC[ÍI]FICOS|B[ÁA]SICOS|COMPLEMENTARES)\b.*)$/;
   linhas.forEach(l => {
@@ -23689,8 +23704,12 @@ function vertLer(txt){
     }
     const m = l.match(reCab);
     const nome = m ? m[2].replace(/\s+/g, " ").trim() : "";
-    if (m && /[A-ZÀ-Þ]{3}/.test(nome) && nome === nome.toUpperCase() && !/CARGO\b/.test(nome)){
+    const mm = modoMisto && l.trim() ? discMista(l, atual ? antM : null) : null;
+    if (l.trim()) antM = l.trim();
+    if (!modoMisto && m && /[A-ZÀ-Þ]{3}/.test(nome) && nome === nome.toUpperCase() && !/CARGO\b/.test(nome)){
       atual = { nome, txt:[m[3]], grupo, num: m[1] ? +m[1] : 0 }; blocos.push(atual);
+    } else if (mm){
+      atual = { nome: mm[1].replace(/\s+/g, " ").trim(), txt:[mm[2]], grupo, num: 0, frases: 1 }; blocos.push(atual);
     } else if (atual) atual.txt.push(l);
     else titulo.push(l);
   });
@@ -23749,8 +23768,22 @@ function vertLer(txt){
       return it;
     });
     // texto antes do item 1 (ou disciplina sem numeração) vira item único
+    // disciplina em letra normal sem numeração: cada frase ("Pessoas jurídicas. Domicílio civil.") é um tópico
+    // (numeração só vale se abrir a disciplina: "capítulo 1 ao capítulo 4" não é item 1)
+    if (b.frases && aceitos.length && aceitos[0].ini > 0){ aceitos.length = 0; itens.length = 0; }
     const antes = aceitos.length ? s.slice(0, aceitos[0].ini).trim() : s;
-    if (antes) itens.unshift({ n:"", nivel:1, t: antes.replace(/[\s.;]+$/, "") });
+    if (antes && b.frases && !aceitos.length){
+      const fr = []; let ini = 0; const reF = /\.\s+(?=[\p{Lu}(“"])/gu; let mf;
+      while ((mf = reF.exec(antes))){
+        const pal = (antes.slice(ini, mf.index).match(/(\S+)$/) || [])[1] || "";
+        // abreviações não cortam: art., arts., nº., inc., Res., letra solta
+        if (/^(?:arts?|n[ºo°]?|inc|incs|al|Res|Dec|p|pp|cap|caps|Ex|ex|Sr|Sra|Dr|Dra|[\p{L}])$/u.test(pal.replace(/^[(“"]+/, ""))) continue;
+        fr.push(antes.slice(ini, mf.index)); ini = mf.index + 1;
+      }
+      fr.push(antes.slice(ini));
+      fr.map(x => x.trim().replace(/[\s.;]+$/, "")).filter(Boolean).forEach(t => itens.push({ n:"", nivel:1, t }));
+    }
+    else if (antes) itens.unshift({ n:"", nivel:1, t: antes.replace(/[\s.;]+$/, "") });
     return b.grupo ? { nome: b.nome, itens, grupo: b.grupo } : { nome: b.nome, itens };
   }).filter(d => d.itens.length);
   return { titulo: juntar(titulo), disc };
@@ -24712,6 +24745,103 @@ function edCargos(linhas, ini, fim){
   const opcoes = nomes.filter(n => !nomes.some(o => o !== n && vtNorm(n).indexOf(vtNorm(o)) >= 0));
   return { heads, opcoes };
 }
+/* edital que agrupa os cargos ("Para os cargos de A, B e C:" → CONHECIMENTOS GERAIS → CONHECIMENTOS
+   ESPECÍFICOS → um título por cargo, em letra normal: "Analista Judiciário – Área ... – JFSP").
+   Cada cargo leva os gerais do grupo dele + o bloco específico dele. */
+// rodapé de página do SEI/edital: "Edital NI 1/2026 (13630198) SEI 0032840-89.2026.4.03.8000 / pg. 18"
+const ehRodape = k => /\b(?:pg|p[áa]g|p[áa]gina)\.?\s*\d+\s*$/i.test(k) && /\bEdital\b|\bSEI\b/i.test(k);
+function edCargosGrupos(linhas, ini, fim){
+  const out = { opcoes: [], blocos: {} };
+  const ehGrupoCg = l => /^\s*Para\s+(?:os|o)\s+cargos?\s+de\b/i.test(l);
+  const ehEsp = l => /^\s*CONHECIMENTOS\s+ESPEC[ÍI]FICOS\s*:?\s*$/.test(l);
+  const ehGer = l => /^\s*CONHECIMENTOS\s+(?:GERAIS|B[ÁA]SICOS)\s*:?\s*$/.test(l);
+  const gIni = [];
+  for (let i = ini; i < fim; i++) if (ehGrupoCg(linhas[i])) gIni.push(i);
+  if (!gIni.length) return out;
+  gIni.forEach((gi, n) => {
+    const gf = n + 1 < gIni.length ? gIni[n + 1] : fim;
+    // fim do cabeçalho "Para os cargos de ...:" (pode quebrar em várias linhas)
+    let h = gi, cabTxt = "";
+    while (h < gf){ cabTxt += " " + linhas[h].trim(); if (/:\s*$/.test(linhas[h].trim())) break; h++; }
+    const e = linhas.findIndex((l, i) => i > h && i < gf && ehEsp(l));
+    if (e < 0) return;
+    const comuns = linhas.slice(h + 1, e).filter(l => !ehGer(l) && !ehRodape(l.trim()));
+    // começos de nome de cargo citados no cabeçalho ("Analista Judiciário", "Técnico Judiciário")
+    const pref = new Set(cabTxt.replace(/^\s*Para\s+(?:os|o)\s+cargos?\s+de\s+/i, "")
+      .split(/,\s+|\s+e\s+(?=\p{Lu})/u).map(x => vtNorm(x.split(/\s+[–—-]\s+/)[0]).trim()).filter(x => x.length > 3));
+    const ehTitulo = (l, antes) => {
+      const t = vtNorm(l.trim());
+      return [...pref].some(pf => t.indexOf(pf + " ") === 0) && (antes === null || /[.;:)]\s*$/.test(antes));
+    };
+    // disciplina em letra normal: "Direito Civil: ...", "Língua Portuguesa e Raciocínio Analítico: ..."
+    const ehDisc = l => { const m = l.match(/^\s*(\p{Lu}[^:]{2,80}?):\s*\S/u); return m && !ehTitulo(l, null) && edNomeDisc(m[1]); };
+    let atual = null, antes = null;
+    for (let i = e + 1; i < gf; i++){
+      const l = linhas[i];
+      if (!l.trim() || ehRodape(l.trim())) continue;
+      if (ehTitulo(l, antes)){
+        let nome = l.trim(), j = i + 1;
+        for (; j < gf; j++){
+          const lj = linhas[j];
+          if (!lj.trim() || ehRodape(lj.trim())) continue;
+          if (ehDisc(lj) || ehTitulo(lj, null) || /^\s*CONHECIMENTOS\b/.test(lj)) break;
+          nome += " " + lj.trim();
+        }
+        nome = nome.replace(/\s+/g, " ").replace(/[\s:]+$/, "");
+        if (ehRodape(nome)) nome = nome.replace(/\s*Edital\b.*$/i, "").trim();
+        atual = ["CONHECIMENTOS GERAIS"].concat(comuns, ["CONHECIMENTOS ESPECÍFICOS"]);
+        if (!(nome in out.blocos)) out.opcoes.push(nome);
+        out.blocos[nome] = atual;
+        i = j - 1; antes = null;
+        continue;
+      }
+      if (atual) atual.push(l);
+      antes = l.trim();
+    }
+  });
+  return out;
+}
+// nome de disciplina em letra normal: palavras grandes com inicial maiúscula, sem números
+function edNomeDisc(n){
+  n = n.trim();
+  if (n.length > 80 || /\d|\bn[º°]/i.test(n)) return false;
+  const ws = n.split(/[\s,/()–—-]+/).filter(w => w.length > 3);
+  return ws.length > 0 && ws.every(w => /^\p{Lu}/u.test(w));
+}
+// nome do cargo para mostrar: com letra normal, só as palavras em MAIÚSCULAS viram "Título" (siglas ficam)
+function edNomeCargo(c){
+  if (!/\p{Ll}/u.test(c)) return edTitulo(c);
+  const peq = new Set(["de","da","do","das","dos","e","em","a","o","para"]);
+  return String(c).split(/(\s+)/).map(w => {
+    if (!/^\p{Lu}{5,}$/u.test(w.replace(/[^\p{L}]/gu, "")) || w !== w.toUpperCase()) return w;
+    const b = w.toLowerCase();
+    return b.charAt(0).toUpperCase() + b.slice(1);
+  }).join("").replace(/\s(DE|DA|DO|DAS|DOS|E|EM)(?=\s)/g, (m0, x) => " " + x.toLowerCase());
+}
+// quadro de provas em linhas por código de opção ("003 Analista ... Prova Objetiva: Conhecimentos Gerais
+// Conhecimentos Específicos Prova Discursiva ... 60 24 36 1 1 ..."): devolve "Conhecimentos Gerais 24 Conhecimentos Específicos 36"
+function edQuadroDoCargo(plano, cargo){
+  const re = /(?:^|\s)(\d{3})\s+(\p{Lu}[^]{3,220}?)\s+Prova\s+Objetiva\s*:?\s*((?:Conhecimentos\s+\p{L}+\s*)+)([^\d]{0,200}?)((?:\d{1,3}\s+){2,}\d{1,3})\b/gu;
+  const sem = x => vtNorm(x).replace(/\b(jfsp|jfms|trf\d*|tj\w*|sjsp|sjms)\b/g, " ").replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(w => w.length > 1);
+  const pc = new Set(sem(cargo));
+  let melhor = null, nota = 0;
+  for (const m of plano.matchAll(re)){
+    const pr = new Set(sem(m[2]));
+    const com = [...pc].filter(w => pr.has(w)).length;
+    const j = com / (pc.size + pr.size - com);
+    if (j > nota){ nota = j; melhor = m; }
+  }
+  if (!melhor || nota < 0.5) return null;
+  const rots = melhor[3].split(/(?=Conhecimentos\s)/).map(x => x.trim()).filter(Boolean);
+  const nums = melhor[5].trim().split(/\s+/).map(Number);
+  const n = rots.length;
+  const soma = nums.slice(1, n + 1).reduce((a, b) => a + b, 0);
+  const vals = nums.length > n && nums[0] === soma ? nums.slice(1, n + 1) : nums.slice(0, n);
+  const fimL = melhor.index + melhor[0].length;
+  const dur = plano.slice(fimL, fimL + 200).match(/\b(\d{1,2})\s*h\s*(\d{2})?\b/);
+  return { txt: rots.map((r, i) => r + " " + vals[i]).join(" "),
+           tempo: dur ? dur[1] + ":" + (dur[2] || "00") : "" };
+}
 const edDoCargo = (titulo, cargo) => {
   const a = vtNorm(titulo), b = vtNorm(cargo);
   return a.indexOf(b) >= 0 || b.indexOf(a) >= 0;
@@ -24739,11 +24869,14 @@ function lerEditalCompleto(txt, cargoSel){
   if (lEd) (lEd[0].match(/[–—-]\s*([A-Z][A-Z0-9]{1,11})\b/g) || []).forEach(x => cands.add(x.replace(/^[–—-]\s*/, "")));
   [...cab.matchAll(/\(([A-Z][A-Z0-9]{1,11})\)/g)].forEach(m => cands.add(m[1]));
   [...cab.matchAll(/\s[–—-]\s([A-Z]{3,10})\b/g)].forEach(m => cands.add(m[1]));
+  // site do órgão no cabeçalho ("www.trf3.jus.br" → TRF3)
+  [...cab.matchAll(/\bwww\.([a-z][a-z0-9]{1,11})\.(?:jus|mp|gov|def|leg)\.br/gi)].forEach(m => cands.add(m[1].toUpperCase()));
   let sigla = "", maxS = 0;
   // sigla de órgão (PCPR, PF, TJSP...) vale mais que a de fundação/secretaria
   const orgao = /^(PC|PF|PRF|PM|PP|CBM|TJ|TR[FET]|MP|DP|PG|AGU|SEFAZ|ST[FJ]|TC|CGU|ABIN|SEJUS|DETRAN|POL)/;
   cands.forEach(x => {
     if (/^(SE|SEC|SAD|SDS|EDITAL|CPF|RG)/.test(x)) return;
+    if (ED_BANCAS.some(([nb, re]) => { re.lastIndex = 0; return re.test(x); })) return;   // a banca não é o órgão
     const n = (plano.match(new RegExp("\\b" + x + "\\b", "g")) || []).length + (orgao.test(x) ? 1e4 : 0);
     if (n > maxS){ maxS = n; sigla = x; }
   });
@@ -24759,10 +24892,13 @@ function lerEditalCompleto(txt, cargoSel){
   let fimC = iniC >= 0 ? linhas.findIndex((l, i) => i > iniC && /^\s*ANEXO\b/.test(l)) : -1;
   if (iniC >= 0 && fimC < 0) fimC = linhas.length;
   const CG = iniC >= 0 ? edCargos(linhas, iniC + 1, fimC) : { heads: [], opcoes: [] };
+  // cargos agrupados ("Para os cargos de ...:") com um título por cargo nos específicos
+  const CGG = iniC >= 0 && CG.opcoes.length < 2 ? edCargosGrupos(linhas, iniC + 1, fimC) : { opcoes: [] };
+  if (CGG.opcoes.length){ CG.opcoes = CGG.opcoes; CG.heads = []; }
   R.cargos = CG.opcoes;
   const cargo = CG.opcoes.length ? (CG.opcoes.find(c => cargoSel && edDoCargo(c, cargoSel)) || CG.opcoes[0]) : "";
   R.cargoSel = cargo;
-  if (cargo) R.cargo = edTitulo(cargo);
+  if (cargo) R.cargo = edNomeCargo(cargo);
   else {
     const mc = cab.match(/\bCARGOS?\s+DE\s+([^\n]{3,90})/i);
     if (mc) R.cargo = edTitulo(mc[1].replace(/\s+/g, " ").trim().replace(/[.;,]+$/, ""));
@@ -24804,6 +24940,7 @@ function lerEditalCompleto(txt, cargoSel){
         (CG.heads.some(h => linhas[h.i] === l)) ? "CARGO 0: -" : l);
     }
     R.conteudo = parte.join("\n");
+    if (CGG.opcoes.length && CGG.blocos[cargo]) R.conteudo = CGG.blocos[cargo].join("\n");
   }
   // quadro de provas: o trecho logo depois de "Nº DE QUESTÕES" (o do cargo escolhido, se houver vários)
   const reQ = /N(?:[ÚU]MERO|[^\sA-Za-z]{0,3})\s*DE\s+(?:QUEST[ÕO]ES|ITENS)/gi;
@@ -24830,12 +24967,32 @@ function lerEditalCompleto(txt, cargoSel){
     }
     R.quadro = plano.slice(cabs[k], fimQ);
   }
+  // quadro em linhas por código de opção: fica só a linha do cargo, já com os números no lugar
+  if (cargo && CGG.opcoes.length){
+    const q = edQuadroDoCargo(plano, cargo);
+    if (q){ R.quadro = q.txt; if (!R.tempoObj && q.tempo) R.tempoObj = q.tempo; }
+  }
   // cronograma: o anexo que traz "CRONOGRAMA"
   const ic = linhas.findIndex(l => /^\s*(?:ANEXO\b.*)?CRONOGRAMA/i.test(l.trim()) && l.trim() === l.trim().toUpperCase());
   if (ic >= 0){
     let fc = linhas.findIndex((l, i) => i > ic + 1 && /^\s*ANEXO\b/.test(l));
     if (fc < 0) fc = Math.min(linhas.length, ic + 200);
-    R.crono = linhas.slice(ic + 1, fc).join("\n");
+    let partes = linhas.slice(ic + 1, fc);
+    // a tabela continua depois do título do anexo seguinte (quebra de página do PDF): "10", "11 Publicação ..."
+    for (let volta = 0; volta < 3 && fc < linhas.length; volta++){
+      const reIt = /^\s*(\d{1,2})(?:\s+(?!(?:a|e|à|até)\s+\d)\p{L}|\s*$)/u;    // "8", "11 Publicação ..." (não "10 a 11/12")
+      const nums = partes.map(l => (l.match(reIt) || [])[1]).filter(Boolean).map(Number);
+      if (!nums.length) break;
+      const prox = nums[nums.length - 1] + 1;
+      let j = -1;
+      for (let k = fc + 1; k < Math.min(linhas.length, fc + 15); k++)
+        if (+((linhas[k].match(reIt) || [])[1]) === prox){ j = k; break; }
+      if (j < 0) break;
+      let f2 = linhas.findIndex((l, i) => i > j && /^\s*ANEXO\b/.test(l));
+      if (f2 < 0) f2 = Math.min(linhas.length, j + 200);
+      partes = partes.concat(linhas.slice(j, f2)); fc = f2;
+    }
+    R.crono = partes.join("\n");
   }
   // sem anexo de cronograma (ou anexo sem datas): procura as datas no corpo do edital
   if (!R.crono || !cronoLerEdital(R.crono).length){
@@ -24847,6 +25004,7 @@ function lerEditalCompleto(txt, cargoSel){
     const conta = {};
     linhas.forEach(l => { const k = l.trim(); if (k.length >= 15) conta[k] = (conta[k] || 0) + 1; });
     const ehCab = k => /^P[áa]gina\s+\d+\s*(?:de|\/)\s*\d+$/i.test(k) ||
+      /\b(?:pg|p[áa]g|p[áa]gina)\.?\s*\d+\s*$/i.test(k) && /\bEdital\b|\bSEI\b/i.test(k) ||
       (conta[k] >= 3 && k === k.toUpperCase() && /\p{Lu}{4}/u.test(k) && !/:/.test(k));
     R.conteudo = R.conteudo.split("\n").filter(l => !ehCab(l.trim())).join("\n");
   }
@@ -25052,7 +25210,7 @@ function janelaNovoConcurso(){
       const lc = el("label","edCargo");
       lc.appendChild(el("span", null, "Este edital tem " + R.cargos.length + " cargos. Qual é o seu?"));
       const sel = document.createElement("select");
-      R.cargos.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = edTitulo(c); sel.appendChild(o); });
+      R.cargos.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = edNomeCargo(c); sel.appendChild(o); });
       sel.value = R.cargoSel;
       sel.onchange = () => lerEd(sel.value);
       lc.appendChild(sel);
