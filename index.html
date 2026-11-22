@@ -17176,6 +17176,18 @@ function reprovouObjetiva(c){
    As datas da fase discursiva saem do calendário, da agenda e das próximas provas.
    Ficam guardadas: marcou "Sim" ou deixou de reprovar, voltam. */
 const escondeDatasDis = c => reprovouObjetiva(c) && !c.manterDatasReprov;
+/* reprovou na objetiva (e não quer continuar vendo): que etapas saem do calendário?
+   A fase discursiva e as etapas do edital que vêm depois da objetiva (convocações, TAF,
+   exames, resultado final...). O que ainda é da objetiva (gabarito, recursos, nota) fica. */
+function etapaForaReprov(c, p, dados){
+  if (!escondeDatasDis(c)) return false;
+  if (p.so === "D") return true;
+  if (!p.extra) return false;
+  const a = cronoSemAcento(p.rot);
+  if (/objetiva|gabarito/.test(a) && !/discursiv|redacao|estudo de caso|\bpeca|resultado final|convoca/.test(a)) return false;
+  const ini = ((dados || cronogramaDe(c.num))[p.id] || {}).ini;
+  return !!ini && !!c.dataObj && ini > c.dataObj;
+}
 function blocos(mod){
   const out = []; let cod = 1;
   DB.concursos.forEach(c => {
@@ -23193,14 +23205,15 @@ function janelaCronograma(numInicial){
     const semDis = escondeDatasDis(c);
     if (semDis)
       corpo.appendChild(el("div","cronoAviso",
-        "Você não atingiu a nota de corte da objetiva: as datas da fase discursiva (em cinza) " +
+        "Você não atingiu a nota de corte da objetiva: as datas das próximas fases (em cinza) " +
         "não aparecem no Calendário. Para continuar vendo, marque \u201cSim\u201d no fim desta janela."));
     const t = tabela(["Atividade","Datas previstas"], ["57%","43%"]);
     t.classList.add("cadZeb","tabLimpa");
     t.style.margin = "0";
     etapas.forEach(p => {
-      const tr = el("tr", semDis && p.so === "D" ? "cronoForaCal" : null);
-      if (semDis && p.so === "D") tr.title = "Fora do Calendário: reprovado na objetiva";
+      const fora = etapaForaReprov(c, p, dados);
+      const tr = el("tr", fora ? "cronoForaCal" : null);
+      if (fora) tr.title = "Fora do Calendário: reprovado na objetiva";
       const tdR = el("td","esq" + (p.forte ? " cronoForte" : ""), p.extra ? "" : p.rot);
       if (p.extra){
         const iN = document.createElement("input");
@@ -23295,10 +23308,10 @@ function janelaCronograma(numInicial){
     corpo.appendChild(bAdd);
 
     // ---- reprovado na objetiva: as datas da discursiva continuam no calendário? ----
-    if (temDiscursiva(c)){
+    if (temObjetiva(c)){
       const cxR = el("div","cronoReprov");
       cxR.appendChild(el("div","cronoReprovRot",
-        "Se eu não for aprovado na objetiva, continuar mostrando as datas da discursiva no Calendário?"));
+        "Se eu não for aprovado na objetiva, continuar mostrando as datas das próximas fases no Calendário?"));
       const op = el("div","cronoReprovOp");
       [["Sim", true], ["Não", false]].forEach(([rot, v]) => {
         const l = el("label");
@@ -23313,8 +23326,9 @@ function janelaCronograma(numInicial){
       cxR.appendChild(op);
       cxR.appendChild(el("div","cronoReprovDica",
         "Vale quando a nota de corte (Cadastro O › PROVA) fica acima da sua nota. " +
-        "Com \u201cNão\u201d, a prova discursiva, o padrão de resposta, os recursos e o resultado " +
-        "somem do Calendário e das próximas provas. As datas continuam guardadas aqui."));
+        "Com \u201cNão\u201d, a fase discursiva e as etapas do edital depois da objetiva (convocações, " +
+        "TAF, exames, resultado final...) somem do Calendário, da próxima etapa e das próximas provas. " +
+        "O que ainda é da objetiva (gabarito, recursos, nota) continua. As datas ficam guardadas aqui."));
       corpo.appendChild(cxR);
     }
 
@@ -23435,7 +23449,7 @@ function telaConcursos(){
     card.appendChild(cab);
     // provas
     const pv = el("div","ccProvas");
-    [["Objetiva", temObjetiva(c), c.dataObj, c.periodoObj], ["Discursiva", temDiscursiva(c), c.dataDis, c.periodoDis]]
+    [["Objetiva", temObjetiva(c), c.dataObj, c.periodoObj], ["Discursiva", temDiscursiva(c) && !escondeDatasDis(c), c.dataDis, c.periodoDis]]
       .forEach(([rot, tem, d, per]) => {
         if (!tem) return;
         const x = el("div","ccProva" + (d && d >= hoje ? " futura" : d ? " passada" : ""));
@@ -23454,7 +23468,7 @@ function telaConcursos(){
     if (info.length) card.appendChild(el("div","ccInfo", info.join("  ·  ")));
     // próxima etapa do cronograma
     const dados = cronogramaDe(c.num);
-    const prox = etapasTodas(c).map(p => {
+    const prox = etapasTodas(c).filter(p => !etapaForaReprov(c, p, dados)).map(p => {
       const ini = p.tipo === "prova" ? c[p.campoData] : (dados[p.id] || {}).ini;
       const fim = p.tipo === "periodo" ? ((dados[p.id] || {}).fim || ini) : ini;
       return ini ? { p, ini, fim } : null;
@@ -28329,7 +28343,7 @@ function eventosDoMes(mes){
     const semDis = escondeDatasDis(c);
     etapasTodas(c).forEach(p => {
       if (p.tipo === "prova") return;           // a data da prova já entrou acima
-      if (semDis && p.so === "D") return;       // reprovou na objetiva: fase discursiva some
+      if (semDis && etapaForaReprov(c, p, dados)) return;   // reprovou na objetiva: próximas fases somem
       const reg = dados[p.id] || {};
       const nome = c.nome || "Concurso " + c.num;
       const por = (data, sufixo) => {
