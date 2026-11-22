@@ -23437,7 +23437,8 @@ function telaConcursos(){
   }
   lista.forEach(c => {
     // todas as provas do concurso já passaram: o painel ganha um tom vermelho suave
-    const datas = [temObjetiva(c) && c.dataObj, temDiscursiva(c) && c.dataDis].filter(Boolean);
+    // reprovou na objetiva: a discursiva não conta, o concurso acaba com a objetiva
+    const datas = [temObjetiva(c) && c.dataObj, temDiscursiva(c) && !escondeDatasDis(c) && c.dataDis].filter(Boolean);
     const passou = datas.length > 0 && datas.every(d => d < hoje);
     const card = el("div","ccCard" + (passou ? " ccPassou" : ""));
     if (passou) card.title = "As provas deste concurso já passaram";
