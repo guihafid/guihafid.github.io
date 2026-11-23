@@ -341,6 +341,12 @@ input.cronoPeriodo:focus{outline:none;border-color:var(--azulEscuro);background:
 .edLista{margin:2px 0 0;padding-left:18px;line-height:17px}
 .edCargo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 8px;padding:7px 10px;
   background:#fff4dc;border:1px solid #f0d49a;border-radius:6px;font:bold 12px Arial,Helvetica,sans-serif;color:#7a4b00}
+.edRetif{border-collapse:collapse;width:100%;margin-top:4px;font:12px Arial,Helvetica,sans-serif}
+.edRetif th{text-align:left;padding:4px 6px;background:#eef3fa;color:#1F3864;border-bottom:1px solid #c9d4e3}
+.edRetif td{padding:4px 6px;border-bottom:1px solid #eef1f6;vertical-align:top;color:#1F3864}
+.edRetif td.edRRot{font-weight:bold;white-space:nowrap}
+.edRetif td.edRHoje{color:#7a869a}
+.edRetif td.edRNovo{color:#1f6f4a}
 .edCargo select{border:1px solid #c9d4e3;border-radius:4px;padding:4px 6px;font:12px Arial,Helvetica,sans-serif;color:#1F3864}
 .vtDica2{margin-top:12px}
 .vtTxt2{height:90px;min-height:70px}
@@ -17745,6 +17751,7 @@ async function enviarParaNuvem(){
     guardarCopia(JSON.parse(texto));       // copia local so DEPOIS de a nuvem aceitar
     fixarBase(pacote, gravado || carimbo);
     gravarMarca({ visto: gravado || carimbo, pendente: false, usuario: USUARIO.id });
+    agendaPublicar().catch(() => {});      // a agenda assinada acompanha as datas novas
     return true;
   }
   throw new Error("a nuvem mudou varias vezes seguidas; tento de novo depois");
@@ -18345,6 +18352,8 @@ function juntarDados(velho, novo){
   CICLO_VEIO = CRON_VEIO = false;
   const R = JSON.parse(JSON.stringify(novo || {}));
   const V = velho || {};
+  // endereço da agenda assinada: o que já está na nuvem vale (todos os aparelhos usam o mesmo)
+  if (V.agendaToken) R.agendaToken = V.agendaToken;
 
   R.concursos = juntar3("cc", V.concursos, R.concursos, CH.concurso, conta)
     .sort((x,y) => n(x.num) - n(y.num));
@@ -22828,7 +22837,8 @@ function cronoLerEdital(txt){
   // o que acompanha as datas e não é atividade
   t = cronoSemHorario(t.replace(/\(\s*hor[aá]rios?\s+oficia(?:l|is)\s+de\s+Bras[ií]lia\s*\/?\s*DF\s*\)/gi, " "))
        .replace(/\bDas?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+primeiro\s+dia\s+[àa]s?\s+\d{1,2}\s*h(?:oras?)?(?:\s*\d{1,2}\s*(?:min(?:utos)?)?)?\s+do\s+[uú]ltimo\s+dia\b/gi, " ")
-       .replace(/\b(?:Itens?\s+)?Atividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ")
+       .replace(/\b(?:Ite(?:m|ns)\s+)?Atividades?\s+Datas?\s+(?:previstas?|prov[aá]veis)\b/gi, " ")
+       .replace(/\b(?:Ite(?:m|ns)\s+)?Atividades?\s+Datas?\s*\/\s*Per[ií]odos?\s*\**/gi, " ")
        // rodapé de página do SEI que cai no meio da tabela
        .replace(/\bEdital\b.{0,60}?\bSEI\b[\s\d.\-]+\/\s*p[áa]?g\.?\s*\d+/gi, " ");
   const ano = a => a.length === 2 ? "20" + a : a;
@@ -22906,7 +22916,11 @@ function cronoMapearEdital(txt, cargo, opcoes){
   // edital sem quadro: as datas estão no meio do texto
   if (cronoTemProsa(txt)){
     const L = cronoLerEdital(txt);
-    if (!L.length || L.some(l => l.ativ.length > 300)){ const p = cronoDeProsa(txt); if (p) txt = p; }
+    if (!L.length || L.some(l => l.ativ.length > 300)){
+      const p = cronoDeProsa(txt);
+      // (atividade comprida pode ser só um item longo do quadro: a prosa só entra se achar mais datas)
+      if (p && (!L.length || cronoLerEdital(p).length > L.length)) txt = p;
+    }
   }
   // tira antes as linhas de outro cargo, senão a data dele "ocupa" a etapa
   return cronoDoCargo(cronoLerEdital(txt), cargo, opcoes).map(l => {
@@ -23583,6 +23597,12 @@ function telaCadastro(){
                     : "Verticalizar o edital: cole o conte\u00fado program\u00e1tico";
     bVt.onclick = () => janelaVerticalizar(c.num);
     bVt.style.marginRight = "5px";
+    // colar o edital (ou a retificação) neste concurso: relê tudo e você escolhe o que atualizar
+    const bRe = el("button","mini","📥");
+    bRe.title = "Colar o edital (ou uma retificação) em " + (c.nome || "este concurso");
+    bRe.onclick = () => janelaEditalNoConcurso(c.num);
+    bRe.style.marginRight = "5px";
+    tdX.appendChild(bRe);
     tdX.appendChild(bVt);
     // edital do concurso, à esquerda do cronograma
     const bEd = el("button","mini" + (c.edital ? " temEdital" : ""),"📄");
@@ -23670,7 +23690,7 @@ function telaCadastro(){
    (1, 1.1, 5.3.1...). Um número só vira item novo se continuar a
    numeração anterior: assim "arts. 240 a 241" ou "Lei nº 9.784/1999"
    não quebram o texto no lugar errado.                              */
-const VT_VER = 6;           // versão do leitor: subiu, os editais já colados são relidos
+const VT_VER = 7;           // versão do leitor: subiu, os editais já colados são relidos
 function vertLer(txt){
   const MAI = "A-ZÀ-ÖØ-Þ";
   const brutas = String(txt || "").replace(/\r/g, "").split("\n");
@@ -23699,6 +23719,13 @@ function vertLer(txt){
   // GRUPO I, BLOCO II, CONHECIMENTOS GERAIS/ESPECÍFICOS... numa linha só (pode vir numerada: "23.2.2 GRUPO I")
   const reGrupo = /^\s*(?:\d+(?:\.\d+)*\.?\s+)?((?:GRUPO|BLOCO|M[ÓO]DULO|EIXO|PARTE)\s+[IVXLC\d]+\b.*|CONHECIMENTOS\s+(?:GERAIS|ESPEC[ÍI]FICOS|B[ÁA]SICOS|COMPLEMENTARES)\b.*)$/;
   linhas.forEach(l => {
+    // linhas já separadas pelo leitor de tópicos numerados (edOutline): \u0003 grupo, \u0001 nome \u0002 conteúdo
+    if (l.charAt(0) === "\u0003"){ grupo = l.slice(1).trim(); atual = null; return; }
+    if (l.charAt(0) === "\u0001"){
+      const k = l.indexOf("\u0002");
+      atual = { nome: l.slice(1, k).trim(), txt:[l.slice(k + 1)], grupo, num: 0 }; blocos.push(atual);
+      return;
+    }
     // "22.2.3 CARGO 1: AGENTE DE POLÍCIA": começa outro cargo, zera o grupo
     if (/^\s*(?:[\d.]+\s*)?CARGO\s+\d+\s*[:–—-]/.test(l)){ grupo = ""; atual = null; return; }
     let g = l.trim().length < 90 && l === l.toUpperCase() ? l.match(reGrupo) : null;
@@ -24763,6 +24790,86 @@ function edCargos(linhas, ini, fim){
 /* edital que agrupa os cargos ("Para os cargos de A, B e C:" → CONHECIMENTOS GERAIS → CONHECIMENTOS
    ESPECÍFICOS → um título por cargo, em letra normal: "Analista Judiciário – Área ... – JFSP").
    Cada cargo leva os gerais do grupo dele + o bloco específico dele. */
+/* linha que se repete em quase toda página ("Versão atualizada conforme retificação ... de 2026", rodapé com
+   o nº da página) é cabeçalho/rodapé: sai, junto com o nº de página que vem logo depois dela */
+function edSemRodape(linhas){
+  const chave = l => l.trim().replace(/\d+/g, "#");
+  const conta = {};
+  linhas.forEach(l => { const k = chave(l); if (k.length >= 50) conta[k] = (conta[k] || 0) + 1; });
+  const out = linhas.slice();
+  for (let i = 0; i < out.length; i++){
+    if ((conta[chave(out[i])] || 0) < 10) continue;
+    out[i] = "";
+    let j = i + 1; while (j < out.length && !out[j].trim()) j++;
+    if (j < out.length && /^\s*\d{1,3}\s*$/.test(out[j])) out[j] = "";
+  }
+  return out;
+}
+/* objetos de avaliação em tópicos numerados por nível (modelo Cebraspe/Quadrix):
+   "20.2.2 CONHECIMENTOS GERAIS (PARA TODOS OS CARGOS)"          → grupo
+   "20.2.2.1 LÍNGUA PORTUGUESA: 1 Compreensão ..."               → disciplina
+   "20.2.3.2.1 TÉCNICO ... – ESPECIALIDADE: AGENTE SOCIAL (CARGO 200): 1 ..." → cargo (e a disciplina dele)
+   Cada cargo leva o que é de todos + o que está nos ramos dele (pelo número do tópico). */
+function edOutline(linhas, ini, fim){
+  const txt = linhas.slice(ini, fim).filter(l => !ehRodape(l.trim())).join(" ").replace(/\s+/g, " ");
+  const re = /(?:^|\s)(\d+(?:\.\d+){2,})\s+(?=[\p{Lu}(][^\p{Ll}]{3})/gu;
+  const ms = [...txt.matchAll(re)];
+  if (ms.length < 3) return null;
+  const nos = [];
+  ms.forEach((m, k) => {
+    const ini2 = m.index + m[0].length, fim2 = k + 1 < ms.length ? ms[k + 1].index : txt.length;
+    const seg = txt.slice(ini2, fim2).trim();
+    // o título vai até a primeira palavra com minúscula
+    const tok = seg.split(" "); let n = 0;
+    while (n < tok.length && !/\p{Ll}/u.test(tok[n])) n++;
+    let run = tok.slice(0, n).join(" "), corpo = tok.slice(n).join(" ");
+    const dp = run.lastIndexOf(":");
+    if (dp >= 0 && /^\s*(?:\d|$)/.test(run.slice(dp + 1))){ corpo = (run.slice(dp + 1) + " " + corpo).trim(); run = run.slice(0, dp); }
+    else if (dp < 0){ const mm = run.match(/^(.*?)\s+(\d+(?:\.\d+)*)$/); if (mm && corpo){ run = mm[1]; corpo = mm[2] + " " + corpo; } }
+    run = run.replace(/\s+/g, " ").trim();
+    if (!/\p{Lu}{3}/u.test(run)) return;
+    const cargo = /\(CARGO\s+\d+\)/i.test(run);
+    nos.push({ num: m[1], tit: run, corpo: corpo.trim(), cargo, disc: dp >= 0 && !!corpo.trim() });
+  });
+  const discs = nos.filter(x => x.disc);
+  if (discs.length < 3) return null;
+  const cargos = nos.filter(x => x.cargo);
+  const desc = (a, b) => b.indexOf(a + ".") === 0;          // b está dentro do ramo a
+  const temCargo = num => cargos.some(c => c.num === num || desc(num, c.num));
+  const limpa = t => t.replace(/\s*\(PARA\s[^)]*\)\s*/gi, " ").replace(/\s+/g, " ").trim();
+  const nomeGrupo = t => /^CONHECIMENTOS\s+GERAIS/.test(t) ? "CONHECIMENTOS GERAIS" :
+    /^CONHECIMENTOS\s+ESPEC[ÍI]FICOS/.test(t) ? "CONHECIMENTOS ESPECÍFICOS" :
+    /^CONHECIMENTOS\s+B[ÁA]SICOS/.test(t) ? "CONHECIMENTOS BÁSICOS" : limpa(t);
+  const opcoes = cargos.map(c => c.tit);
+  return {
+    opcoes, nDisc: discs.length,
+    conteudo(cargoEsc){
+      const cx = cargos.find(c => c.tit === cargoEsc);
+      // um tópico vale para o cargo se nenhum ramo acima dele for de OUTRO cargo
+      const vale = no => {
+        if (!cx) return !no.cargo || cargos.length < 2;
+        const pref = no.num.split(".").map((_, k, a) => a.slice(0, k + 1).join("."));
+        return pref.every(pn => !temCargo(pn) || pn === cx.num || desc(pn, cx.num));
+      };
+      const out = []; let gAtual = "";
+      nos.forEach(no => {
+        if (!vale(no)) return;
+        if (no.disc){
+          let nome = limpa(no.tit);
+          if (no.cargo){
+            const me = no.tit.match(/ESPECIALIDADE\s*:\s*(.+?)\s*\(CARGO/i);
+            nome = me ? me[1].trim() : nome.replace(/\s*\(CARGO\s+\d+\)/i, "");
+          }
+          out.push("\u0001" + nome + "\u0002" + no.corpo);
+        } else {
+          const g = nomeGrupo(no.tit);
+          if (g !== gAtual){ out.push("\u0003" + g); gAtual = g; }
+        }
+      });
+      return out.join("\n");
+    }
+  };
+}
 // rodapé de página do SEI/edital: "Edital NI 1/2026 (13630198) SEI 0032840-89.2026.4.03.8000 / pg. 18"
 const ehRodape = k => /\b(?:pg|p[áa]g|p[áa]gina)\.?\s*\d+\s*$/i.test(k) && /\bEdital\b|\bSEI\b/i.test(k);
 function edCargosGrupos(linhas, ini, fim){
@@ -24825,7 +24932,13 @@ function edNomeDisc(n){
 }
 // nome do cargo para mostrar: com letra normal, só as palavras em MAIÚSCULAS viram "Título" (siglas ficam)
 function edNomeCargo(c){
-  if (!/\p{Ll}/u.test(c)) return edTitulo(c);
+  // "(CARGO 200)" é só o código do edital; sigla entre parênteses continua sigla: "(TDAS)"
+  if (!/\p{Ll}/u.test(c)){
+    const sig = [...String(c).matchAll(/\((\p{Lu}{2,6})\)/gu)].map(m => m[1]);
+    let t = edTitulo(String(c).replace(/\s*\(CARGO\s+\d+\)/gi, ""));
+    sig.forEach(x => { t = t.replace(new RegExp("\\(" + x.toLowerCase() + "\\)", "i"), "(" + x + ")"); });
+    return t;
+  }
   const peq = new Set(["de","da","do","das","dos","e","em","a","o","para"]);
   return String(c).split(/(\s+)/).map(w => {
     if (!/^\p{Lu}{5,}$/u.test(w.replace(/[^\p{L}]/gu, "")) || w !== w.toUpperCase()) return w;
@@ -24874,7 +24987,7 @@ function edTempo(plano, qual, cargo, opcoes){
 }
 function lerEditalCompleto(txt, cargoSel){
   const bruto = String(txt || "").replace(/\r/g, "");
-  const linhas = bruto.split("\n");
+  const linhas = edSemRodape(bruto.split("\n"));
   const plano = bruto.replace(/\s+/g, " ");
   const cab = linhas.slice(0, 40).join("\n");
   const R = {};
@@ -24886,6 +24999,14 @@ function lerEditalCompleto(txt, cargoSel){
   [...cab.matchAll(/\s[–—-]\s([A-Z]{3,10})\b/g)].forEach(m => cands.add(m[1]));
   // site do órgão no cabeçalho ("www.trf3.jus.br" → TRF3)
   [...cab.matchAll(/\bwww\.([a-z][a-z0-9]{1,11})\.(?:jus|mp|gov|def|leg)\.br/gi)].forEach(m => cands.add(m[1].toUpperCase()));
+  // sigla do órgão escrita entre parênteses na linha do órgão: "SECRETARIA DE ... (Sedes/DF)" → SEDES/DF
+  let siglaOrg = "";
+  linhas.slice(0, 20).some(l => {
+    if (!/SECRETARIA|TRIBUNAL|POL[ÍI]CIA|MINIST[ÉE]RIO|DEFENSORIA|PROCURADORIA|PREFEITURA|C[ÂA]MARA|ASSEMBL|UNIVERSIDADE|INSTITUTO|AG[ÊE]NCIA|CONSELHO|DEPARTAMENTO|FUNDA[ÇC][ÃA]O|EMPRESA|COMPANHIA/.test(l)) return false;
+    const m = l.match(/\(([A-Z][A-Za-z]{2,11})(?:\s*\/\s*([A-Z]{2}))?\)\s*$/);
+    if (m){ siglaOrg = m[1].toUpperCase() + (m[2] ? "/" + m[2] : ""); return true; }
+    return false;
+  });
   let sigla = "", maxS = 0;
   // sigla de órgão (PCPR, PF, TJSP...) vale mais que a de fundação/secretaria
   const orgao = /^(PC|PF|PRF|PM|PP|CBM|TJ|TR[FET]|MP|DP|PG|AGU|SEFAZ|ST[FJ]|TC|CGU|ABIN|SEJUS|DETRAN|POL)/;
@@ -24896,6 +25017,7 @@ function lerEditalCompleto(txt, cargoSel){
     if (n > maxS){ maxS = n; sigla = x; }
   });
   const ano = ((lEd && lEd[0].match(/(20\d\d)/)) || cab.match(/\b(20\d\d)\b/) || [])[1];
+  if (siglaOrg && !orgao.test(sigla)) sigla = siglaOrg;
   if (sigla) R.nome = sigla + (ano ? " " + ano : "");
   // UF: nome do estado no cabeçalho
   const cabN = vtNorm(cab);
@@ -24910,6 +25032,9 @@ function lerEditalCompleto(txt, cargoSel){
   // cargos agrupados ("Para os cargos de ...:") com um título por cargo nos específicos
   const CGG = iniC >= 0 && CG.opcoes.length < 2 ? edCargosGrupos(linhas, iniC + 1, fimC) : { opcoes: [] };
   if (CGG.opcoes.length){ CG.opcoes = CGG.opcoes; CG.heads = []; }
+  // objetos de avaliação numerados em níveis ("20.2.2.1 LÍNGUA PORTUGUESA: 1 ...", "20.2.3.2.1 ... (CARGO 200): 1 ...")
+  const OUT = iniC >= 0 && CG.opcoes.length < 2 && !CGG.opcoes.length ? edOutline(linhas, iniC, fimC) : null;
+  if (OUT && OUT.opcoes.length >= 2){ CG.opcoes = OUT.opcoes; CG.heads = []; }
   R.cargos = CG.opcoes;
   const cargo = CG.opcoes.length ? (CG.opcoes.find(c => cargoSel && edDoCargo(c, cargoSel)) || CG.opcoes[0]) : "";
   R.cargoSel = cargo;
@@ -24956,6 +25081,7 @@ function lerEditalCompleto(txt, cargoSel){
     }
     R.conteudo = parte.join("\n");
     if (CGG.opcoes.length && CGG.blocos[cargo]) R.conteudo = CGG.blocos[cargo].join("\n");
+    if (OUT && OUT.nDisc >= 3) R.conteudo = OUT.conteudo(cargo);
   }
   // quadro de provas: o trecho logo depois de "Nº DE QUESTÕES" (o do cargo escolhido, se houver vários)
   const reQ = /N(?:[ÚU]MERO|[^\sA-Za-z]{0,3})\s*DE\s+(?:QUEST[ÕO]ES|ITENS)/gi;
@@ -25081,17 +25207,158 @@ function cronoDoCargo(linhas, cargo, opcoes){
     return !cita.length || cita.some(c => edDoCargo(c, cargo));
   });
 }
-function cronoAplicarTexto(c, txt, cargo, opcoes){
+function cronoAplicarTexto(c, txt, cargo, opcoes, retif){
   const validas = new Set(etapasDe(c).map(p => p.id));
   const feitas = new Set(), dados = cronogramaDe(c.num);
+  // retificação: etapa do edital que já estava aqui (mesmo nome) só troca de data, não duplica
+  const usados = new Set();
+  const moverExtra = l => {
+    if (!retif) return false;
+    const nome = cronoLimparAtiv(l.ativ);
+    const x = cronoExtras(c.num).find(e => e.rot === nome && !usados.has(e.id));
+    if (!x) return false;
+    usados.add(x.id); dados[x.id] = { ini: l.ini, fim: l.fim || l.ini };
+    return true;
+  };
   cronoMapearEdital(txt, cargo, opcoes).forEach(l => l.etapas.forEach(id => {
     if (!validas.has(id) || feitas.has(id)) return;
     const p = CRONO_PROVA.find(x => x.id === id);
     if (p.tipo === "prova") c[p.campoData] = l.ini;
     else dados[id] = { ini: l.ini, fim: p.tipo === "periodo" ? l.fim : "" };
     feitas.add(id);
-  }) || (!l.etapas.length && cronoAddExtra(c.num, l.ativ, l.ini, l.fim) && feitas.add("x" + feitas.size)));
+  }) || (!l.etapas.length && (moverExtra(l) || cronoAddExtra(c.num, l.ativ, l.ini, l.fim)) && feitas.add("x" + feitas.size)));
   return feitas.size;
+}
+/* ===================== colar o edital num concurso que já existe =====================
+   Serve para a retificação: lê o edital de novo e mostra, item por item, o que mudaria.
+   Você escolhe o que trazer. O que você já marcou no verticalizado continua marcado. */
+function janelaEditalNoConcurso(num){
+  const c = DB.concursos.find(x => x.num === num); if (!c) return;
+  const fundo = el("div","modalFundo");
+  const cx = el("div","modal");
+  cx.appendChild(el("div","modalTit","Colar edital  —  " + (c.nome || "Concurso " + num)));
+  cx.appendChild(el("div","modalSub",
+    "Para retificação ou edital novo deste concurso. Cole o texto ou anexe o PDF: o app mostra o que mudou " +
+    "e você escolhe o que atualizar. O que você já marcou como estudado no verticalizado continua marcado."));
+  const box = el("div","edBox");
+  const ta = document.createElement("textarea");
+  ta.className = "edTxt"; ta.placeholder = "Cole aqui o texto do edital...";
+  box.appendChild(ta);
+  const linha = el("div","edLinha");
+  const arq = document.createElement("input");
+  arq.type = "file"; arq.accept = ".pdf,.txt,application/pdf,text/plain"; arq.style.display = "none";
+  const bAnexar = el("button","btn","📎  Anexar PDF ou TXT");
+  bAnexar.onclick = () => arq.click();
+  const bLer = el("button","btn azulzinho","🔎  Ler o edital");
+  linha.appendChild(bAnexar); linha.appendChild(arq); linha.appendChild(bLer);
+  box.appendChild(linha);
+  const res = el("div","edRes");
+  box.appendChild(res);
+  cx.appendChild(box);
+  const rodape = el("div","modalRodape");
+  const bAplicar = el("button","btn","Atualizar o concurso");
+  const bFechar = el("button","btn","Cancelar");
+  bAplicar.disabled = true;
+  rodape.appendChild(el("span","modalNota","Nada muda até você clicar em Atualizar."));
+  rodape.appendChild(bFechar); rodape.appendChild(bAplicar);
+  cx.appendChild(rodape);
+  fundo.appendChild(cx);
+  document.body.appendChild(fundo);
+  const fechar = () => { if (fundo.parentNode) document.body.removeChild(fundo); document.removeEventListener("keydown", tecla); };
+  const tecla = ev => { if (ev.key === "Escape") fechar(); };
+  document.addEventListener("keydown", tecla);
+  fundo.onclick = ev => { if (ev.target === fundo) fechar(); };
+  bFechar.onclick = fechar;
+  ta.focus();
+
+  const paraHora = v => {
+    const t = String(v || "").trim(); if (!t) return "";
+    const p = t.split(":");
+    if (p.length === 1 && !isNaN(p[0])) return String(p[0]).padStart(2,"0") + ":00:00";
+    return p.map(x => String(x || "0").padStart(2,"0")).concat(["00"]).slice(0,3).join(":");
+  };
+  const curta = h => String(h || "").replace(/^0?(\d+):(\d\d)(?::00)?$/, "$1:$2");
+  let R = null, itens = [];
+  arq.onchange = async () => {
+    const f = arq.files && arq.files[0]; if (!f) return;
+    res.textContent = "Lendo " + f.name + "...";
+    try { ta.value = await edLerArquivo(f); ler(); }
+    catch (e){ res.textContent = "Não consegui ler o arquivo: " + (e.message || e) + ". Tente colar o texto."; }
+    arq.value = "";
+  };
+  ta.addEventListener("paste", () => setTimeout(() => ler(), 0));
+  bLer.onclick = () => ler();
+
+  function ler(cargo){
+    res.innerHTML = ""; itens = []; bAplicar.disabled = true;
+    if (!ta.value.trim()) return;
+    R = lerEditalCompleto(ta.value, cargo || c.cargo || "");
+    if (R.cargos && R.cargos.length > 1){
+      const lc = el("label","edCargo");
+      lc.appendChild(el("span", null, "Este edital tem " + R.cargos.length + " cargos. Qual é o seu?"));
+      const sel = document.createElement("select");
+      R.cargos.forEach(x => { const o = document.createElement("option"); o.value = x; o.textContent = edNomeCargo(x); sel.appendChild(o); });
+      sel.value = R.cargoSel; sel.onchange = () => ler(sel.value);
+      lc.appendChild(sel); res.appendChild(lc);
+    }
+    // cada item: o que está hoje × o que o edital traz; marcado quando muda (nome/UF/cargo só se estavam vazios)
+    const add = (rot, hoje, novo, marcar, aplicar) => {
+      if (novo == null || novo === "") return;
+      itens.push({ rot, hoje: hoje == null || hoje === "" ? "—" : String(hoje), novo: String(novo), marcar, aplicar });
+    };
+    const dif = (a, b) => String(a || "").trim() !== String(b || "").trim();
+    add("Nome", c.nome, R.nome, !c.nome, () => c.nome = R.nome);
+    add("UF", c.uf, R.uf, !c.uf, () => c.uf = R.uf);
+    add("Cargo", c.cargo, R.cargo, !c.cargo, () => c.cargo = R.cargo);
+    add("Banca", c.banca, R.banca, !c.banca, () => c.banca = R.banca);
+    add("Estilo", c.estilo, R.estilo, !c.estilo, () => { c.estilo = R.estilo; c.ce = R.estilo.toUpperCase().indexOf("CERTO") >= 0; });
+    add("Questões da objetiva", c.questoes, R.questoes, dif(c.questoes, R.questoes), () => c.questoes = n(R.questoes));
+    add("Tempo da objetiva", curta(c.tempoObj), R.tempoObj, dif(curta(c.tempoObj), R.tempoObj), () => c.tempoObj = paraHora(R.tempoObj));
+    add("Tempo da discursiva", curta(c.tempoDis), R.tempoDis, dif(curta(c.tempoDis), R.tempoDis), () => c.tempoDis = paraHora(R.tempoDis));
+    add("Link do edital", c.edital, R.link, dif(c.edital, R.link), () => c.edital = R.link);
+    if (R.vert){
+      const nI = R.vert.disc.reduce((t, d) => t + d.itens.length, 0);
+      const hoje = c.vert && c.vert.disc ? c.vert.disc.length + " disciplinas, " + vertTotal(c) + " itens" : "";
+      add("Edital verticalizado", hoje, R.vert.disc.length + " disciplinas, " + nI + " itens", true, () => {
+        const marcas = (c.vert && c.vert.marcas) || {};
+        c.vert = Object.assign({}, c.vert || {}, R.vert, { marcas });
+      });
+    }
+    if (R.matO && R.matO.length && temObjetiva(c))
+      add("Matérias da objetiva", (c.matO || []).length + " matéria(s)", R.matO.length + " matéria(s)", !(c.matO || []).length,
+        () => c.matO = R.matO.slice());
+    if (R.matD && R.matD.length && temDiscursiva(c))
+      add("Matérias da discursiva", (c.matD || []).length + " matéria(s)", R.matD.length + " matéria(s)", !(c.matD || []).length,
+        () => c.matD = R.matD.slice());
+    if (R.crono){
+      const nC = cronoMapearEdital(R.crono, R.cargoSel, R.cargos).length;
+      if (nC) add("Cronograma", cronoPreenchido(c.num) + " etapa(s) com data", nC + " data(s) no edital — as que mudaram são atualizadas",
+        true, () => { garantirCronogramas(); cronoAplicarTexto(c, R.crono, R.cargoSel, R.cargos, true); });
+    }
+    if (!itens.length){ res.appendChild(el("div","edResTit","Não achei as informações no texto.")); return; }
+    res.appendChild(el("div","edResTit","Encontrei no edital — marque o que quer atualizar:"));
+    const tab = el("table","edRetif");
+    const th = el("tr"); ["","Item","Hoje","No edital"].forEach(t => th.appendChild(el("th", null, t))); tab.appendChild(th);
+    itens.forEach(it => {
+      const tr = el("tr");
+      const td0 = el("td"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = it.marcar;
+      cb.onchange = () => { it.marcar = cb.checked; bAplicar.disabled = !itens.some(x => x.marcar); };
+      td0.appendChild(cb); tr.appendChild(td0);
+      tr.appendChild(el("td","edRRot", it.rot));
+      tr.appendChild(el("td","edRHoje", it.hoje));
+      tr.appendChild(el("td","edRNovo", it.novo));
+      tab.appendChild(tr);
+    });
+    res.appendChild(tab);
+    bAplicar.disabled = !itens.some(x => x.marcar);
+  }
+  bAplicar.onclick = () => {
+    const feitos = itens.filter(x => x.marcar);
+    if (!feitos.length) return;
+    feitos.forEach(x => x.aplicar());
+    salvar(); render(); fechar();
+    avisoTec("Concurso atualizado: " + feitos.map(x => x.rot.toLowerCase()).join(", ") + ".");
+  };
 }
 // PDF ou TXT -> texto (o PDF é lido com o pdf.js, baixado só quando precisa)
 let edPdfJs = null;
@@ -28427,6 +28694,47 @@ function textoICS(lista){
   return L.join("\r\n");                    // o formato exige quebra de linha dupla
 }
 
+/* ---------- agenda assinável: um .ics fixo no Storage do Supabase ----------
+   A cada envio para a nuvem, se as datas mudaram, o app regrava o arquivo
+   agenda/<sua conta>/<código>.ics. O iPhone/Google assinam esse endereço e
+   buscam sozinhos. O código é sorteado uma vez e viaja com os seus dados,
+   para todos os aparelhos usarem o mesmo endereço. */
+const AGENDA_BALDE = "agenda";
+const agendaCaminho = () => (USUARIO && DB.agendaToken) ? USUARIO.id + "/" + DB.agendaToken + ".ics" : "";
+function agendaLink(){
+  const c = agendaCaminho(); if (!c) return "";
+  try { return sb.storage.from(AGENDA_BALDE).getPublicUrl(c).data.publicUrl; } catch (e) { return ""; }
+}
+function agendaCriarToken(){
+  if (DB.agendaToken) return DB.agendaToken;
+  const a = new Uint8Array(12); crypto.getRandomValues(a);
+  DB.agendaToken = [...a].map(x => x.toString(16).padStart(2, "0")).join("");
+  return DB.agendaToken;
+}
+let agendaEnviando = false;
+async function agendaPublicar(forcar){
+  const caminho = agendaCaminho();
+  if (!caminho || agendaEnviando) return false;
+  const texto = textoICS(todosOsEventos());
+  const marca = texto.replace(/^DTSTAMP:.*$/gm, "");          // o carimbo muda sempre; o resto, só com data nova
+  const chave = "cs_agenda_" + caminho;
+  let ultima = ""; try { ultima = localStorage.getItem(chave) || ""; } catch (e) {}
+  if (!forcar && ultima === String(marca.length) + ":" + hashTexto(marca)) return true;
+  agendaEnviando = true;
+  try {
+    const { error } = await sb.storage.from(AGENDA_BALDE).upload(caminho,
+      new Blob([texto], { type: "text/calendar" }),
+      { upsert: true, contentType: "text/calendar; charset=utf-8", cacheControl: "300" });
+    if (error) throw error;
+    try { localStorage.setItem(chave, String(marca.length) + ":" + hashTexto(marca)); } catch (e) {}
+    return true;
+  } finally { agendaEnviando = false; }
+}
+function hashTexto(t){
+  let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
 function exportarAgenda(soFuturos){
   let lista = todosOsEventos();
   const hoje = hojeISO();
@@ -28451,17 +28759,36 @@ function janelaExportarAgenda(){
   const corpo = el("div","confDigita");
 
   /* ---- assinatura: a agenda busca sozinha, sem você exportar nada ---- */
-  const linkAgenda = (NUV.dono && NUV.gist)
-    ? "https://gist.githubusercontent.com/" + NUV.dono + "/" + NUV.gist +
-      "/raw/" + AGENDA_ARQ
-    : "";
+  const linkAgenda = agendaLink();
   const cxAss = el("div","assinaAgenda");
   cxAss.appendChild(el("div","rot","Automático — assine uma vez e esqueça"));
-  if (!linkAgenda){
+  const situacao = el("div","p miudo");
+  if (!USUARIO){
     cxAss.appendChild(el("div","p",
-      "Para isso é preciso ter a sincronização ligada, no ☁ da barra de cima. " +
-      "É ela que mantém um endereço fixo com a sua agenda sempre atualizada."));
+      "Para isso é preciso entrar na sua conta: é ela que mantém um endereço fixo " +
+      "com a sua agenda sempre atualizada."));
+  } else if (!linkAgenda){
+    cxAss.appendChild(el("div","p",
+      "Crie o endereço da sua agenda uma vez. Depois de assinado, cada data nova que " +
+      "você cadastrar aqui aparece sozinha no seu calendário."));
+    const bCriar = el("button","btn verdinho","Criar o endereço da minha agenda");
+    bCriar.onclick = async () => {
+      bCriar.disabled = true; bCriar.textContent = "Criando…";
+      agendaCriarToken(); salvar();
+      try { await agendaPublicar(true); fechar(); janelaExportarAgenda(); }
+      catch (e){
+        delete DB.agendaToken; salvar();
+        bCriar.disabled = false; bCriar.textContent = "Criar o endereço da minha agenda";
+        situacao.textContent = "Não consegui criar agora (" + (e.message || e) + "). " +
+          "Se a mensagem fala em bucket ou policy, falta preparar o espaço da agenda no Supabase.";
+      }
+    };
+    cxAss.appendChild(bCriar);
+    cxAss.appendChild(situacao);
   } else {
+    // ao abrir, confere se o arquivo está em dia com as datas daqui
+    agendaPublicar(true).then(() => situacao.textContent = "Agenda atualizada agora há pouco.")
+      .catch(e => situacao.textContent = "Não consegui atualizar a agenda agora (" + (e.message || e) + ").");
     cxAss.appendChild(el("div","p",
       "Este é o endereço da sua agenda. Assinando ele, cada data nova que você " +
       "cadastrar aqui aparece sozinha no seu calendário, sem exportar nada."));
@@ -28506,10 +28833,10 @@ function janelaExportarAgenda(){
       "verde acima — o Calendário abre já perguntando se quer assinar.";
     cxAss.appendChild(comoAss);
     cxAss.appendChild(el("div","p miudo",
-      "Deu “não foi possível conectar usando SSL” no iPhone? Ele costuma se perder " +
-      "no redirecionamento do endereço. Duas saídas: use o botão verde em vez de " +
-      "digitar o endereço à mão, ou assine no Google Agenda e ponha a sua conta " +
-      "Google no iPhone — aí o calendário chega por ela, sem esse problema."));
+      "Assinou antes um endereço que começa com gist.githubusercontent.com? Ele parou de ser " +
+      "atualizado: apague essa assinatura (no iPhone: Ajustes › Calendário › Contas › " +
+      "Calendários Assinados) e assine este novo."));
+    cxAss.appendChild(situacao);
     cxAss.appendChild(el("div","p miudo",
       "A agenda releva o endereço de tempos em tempos: o iPhone dá para pôr de hora " +
       "em hora, e o Google costuma levar de algumas horas até um dia. Para ver uma " +
