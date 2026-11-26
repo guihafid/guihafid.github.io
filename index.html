@@ -20414,11 +20414,14 @@ function aplicarJuris(dados){
 function importarDoTec(mod){
   const fundo = el("div","modalFundo");
   const caixa = el("div","modalCaixa");
-  caixa.appendChild(el("h3", null, "Importar questões do TEC"));
+  const doClaude = mod === "O";
+  caixa.appendChild(el("h3", null, doClaude ? "Importar erros do simulado (Claude)" : "Importar questões do TEC"));
   caixa.appendChild(el("p","dica",
-    "Cole abaixo o que a extensão do Chrome copiou. Cada questão vira uma linha " +
-    "com Status \"Pendente\" e Data da Revisão em branco. Questões cujo número já " +
-    "existe neste caderno são ignoradas."));
+    (doClaude ? "Cole abaixo o bloco CADERNO DE ERROS que o Claude gerou na correção. "
+              : "Cole abaixo o que a extensão do Chrome copiou. ") + "Cada questão vira uma linha " +
+    "com Status \"Pendente\" e Data da Revisão em branco. " +
+    (doClaude ? "Se a mesma questão do mesmo simulado já estiver no caderno, ela é ignorada."
+              : "Questões cujo número já existe neste caderno são ignoradas.")));
   const ta = document.createElement("textarea");
   ta.className = "modalTexto";
   ta.placeholder = '[{"sim":"06","mat":"01- Legislação Penal","q":"1796699", …}]';
@@ -20440,7 +20443,8 @@ function importarDoTec(mod){
   confirmar.onclick = () => {
     let dados;
     try{ dados = JSON.parse(ta.value.trim()); }
-    catch(e){ alert("Não consegui ler o texto colado. Copie de novo pela extensão."); return; }
+    catch(e){ alert(doClaude ? "Não consegui ler o texto colado. Copie de novo o bloco inteiro que o Claude gerou (de [ até ])."
+                             : "Não consegui ler o texto colado. Copie de novo pela extensão."); return; }
     if (!Array.isArray(dados)) dados = [dados];
 
     const r = aplicarDoTec(dados, mod);
@@ -20828,8 +20832,16 @@ function telaCaderno(mod){
       naoApaga: "Os cadernos de erros dos simulados <b>não</b> são apagados." }));
     tela.appendChild(barra);
   } else {
-    // simulados (objetiva / discursiva): só o botão de limpar, à direita
+    // simulados (objetiva / discursiva): importar do Claude (só objetiva) e limpar, à direita
     const barra = el("div","barraImportar");
+    if (mod === "O"){
+      const bc = el("button","btnImportar","Importar do Claude");
+      bc.title = "Cole aqui o bloco CADERNO DE ERROS que o Claude gerou na correção do simulado";
+      bc.onclick = () => importarDoTec("O");
+      barra.appendChild(bc);
+      barra.appendChild(el("span","dicaImportar",
+        "cole o bloco que o Claude gera depois de corrigir o simulado"));
+    }
     barra.appendChild(el("span","flex"));
     const qual = mod === "D" ? "discursiva" : "objetiva";
     barra.appendChild(botaoLimparCaderno({ nome: "Caderno de erros dos simulados (" + qual + ")",
