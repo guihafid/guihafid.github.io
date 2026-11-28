@@ -17979,7 +17979,8 @@ function faltandoNaNuvem(copia, nuvem, base){
   const nomes = { cc:"concurso(s)", kO:"questão(ões) no caderno de erros",
     kD:"questão(ões) no caderno de erros", kT:"questão(ões) do TEC",
     ju:"julgado(s)", te:"tese(s)", su:"súmula(s)", cn:"conteúdo(s)",
-    se:"atividade(s) de estudo", ev:"evento(s) do calendário" };
+    se:"atividade(s) de estudo", ev:"evento(s) do calendário",
+    sc:"simulado(s) do Claude" };
   const la = {};
   trilhas(nuvem).forEach(([id, lista, ch]) =>
     (Array.isArray(lista) ? lista : []).forEach(x => { la[id + ch(x)] = 1; }));
@@ -18246,7 +18247,8 @@ const CH = {
   juris:  j => String(j.temaUrl || [j.data, j.mat, j.tese].join("|")),
   conteudo: c => String([c.data, c.mat, c.tema].join("|")),
   evento: e => String([e.data, e.titulo].join("|")),
-  concurso: c => String(c.num)
+  concurso: c => String(c.num),
+  simc: x => String(x.sim || "")
 };
 
 /* todas as listas de registros, com a chave que identifica cada linha */
@@ -18262,7 +18264,8 @@ function trilhas(D){
     ["su", D.sumulas,         CH.juris],
     ["cn", D.cadConteudo,     CH.conteudo],
     ["se", E.sessoes,         CH.sessao],
-    ["ev", E.eventos,         CH.evento]
+    ["ev", E.eventos,         CH.evento],
+    ["sc", D.simClaude,       CH.simc]
   ];
 }
 /* a fotografia das marcas: como estava tudo na última vez que este aparelho
@@ -18380,6 +18383,7 @@ function juntarDados(velho, novo){
   R.teses       = juntar3("te", V.teses,       R.teses,       CH.juris, conta);
   R.sumulas     = juntar3("su", V.sumulas,     R.sumulas,     CH.juris, conta);
   R.cadConteudo = juntar3("cn", V.cadConteudo, R.cadConteudo, CH.conteudo, conta);
+  R.simClaude   = juntar3("sc", V.simClaude,   R.simClaude,   CH.simc, conta);
 
   // estudo: sessões e eventos se juntam; as guias Ciclo e Cronograma vêm
   // junto; só o cronômetro fica com este aparelho
@@ -19993,6 +19997,119 @@ function telaPainel(mod){
 }
 
 /* ===================== TELA: evolução ===================== */
+/* ===================== TELA: Simulados do Claude ===================== */
+let simCSel = "";   // matéria escolhida na aba (só jeito de olhar; não é dado)
+function telaSimClaude(){
+  garantirCadernos();
+  const tela = document.getElementById("tela");
+  tela.appendChild(el("div","tituloAba","SIMULADOS DO CLAUDE"));
+  tela.appendChild(el("div","subAba",
+    "Cada simulado entra sozinho quando o Claude importa a correção (botão Importar do Claude). Tudo calculado."));
+  const L = DB.simClaude.slice().sort((a,b) => String(a.data).localeCompare(String(b.data)) || a.sim.localeCompare(b.sim));
+  if (!L.length){ tela.appendChild(el("div","vazioAviso",
+    "Nenhum simulado do Claude ainda. Na correção, o Claude importa o resumo junto com o caderno de erros.")); return; }
+
+  const soma = lista => lista.reduce((t,x) => ({ questoes:t.questoes+x.questoes, acertos:t.acertos+x.acertos,
+    anuladas:t.anuladas+(x.anuladas||0) }), { questoes:0, acertos:0, anuladas:0 });
+  const pinta = (tr, p) => { const td = el("td"); pintaSit(td, situacao(p)); tr.appendChild(td); };
+
+  // ---- por matéria ----
+  tela.appendChild(el("div","secao","DESEMPENHO POR MATÉRIA"));
+  const tm = tabela(["Matéria","Simulados","Questões","% Geral","% Últimos 3","Tendência","Situação"],
+    [230,80,80,80,90,110,110]);
+  const mats = [...new Set(L.map(x => x.mat))];
+  const ordem = matsVisiveis();
+  mats.sort((a,b) => (ordem.indexOf(a)+1 || 999) - (ordem.indexOf(b)+1 || 999) || a.localeCompare(b));
+  mats.forEach(m => {
+    const da = L.filter(x => x.mat === m), g = pctSimC(soma(da));
+    const ult = da.slice(-3), ant = da.slice(0, -3);
+    const pu = pctSimC(soma(ult));
+    let tend = "—";
+    if (da.length >= 2){
+      const base = ant.length ? pctSimC(soma(ant)) : pctSimC(da[0]);
+      const ref  = ant.length ? pu : pctSimC(da[da.length-1]);
+      const d = (ref - base) * 100;
+      tend = d >= 3 ? "↑ subindo" : d <= -3 ? "↓ caindo" : "= estável";
+    }
+    const tr = el("tr");
+    const tdm = el("td","esq", m || "— sem matéria —");
+    tdm.style.background = corMat(m); tdm.style.fontWeight = "bold"; tdm.style.color = "#1F3864";
+    tdm.style.cursor = "pointer"; tdm.title = "Ver só esta matéria abaixo";
+    tdm.onclick = () => { simCSel = m; render(); };
+    tr.appendChild(tdm);
+    [da.length, soma(da).questoes, pct1(g), pct1(pu), tend].forEach(v => tr.appendChild(el("td", null, String(v))));
+    pinta(tr, g);
+    tm.tbody.appendChild(tr);
+  });
+  const tot = soma(L), trT = el("tr","tot");
+  ["Total Geral", L.length, tot.questoes, pct1(pctSimC(tot)), "", ""].forEach((v,k) =>
+    trT.appendChild(el("td", k ? null : "esq", String(v))));
+  pinta(trT, pctSimC(tot));
+  tm.tbody.appendChild(trT);
+  tela.appendChild(tm);
+
+  // ---- seletor ----
+  if (simCSel && !mats.includes(simCSel)) simCSel = "";
+  const cx = el("div","selMat");
+  cx.appendChild(el("span",null,"Matéria:  "));
+  const sel = document.createElement("select");
+  [""].concat(mats).forEach(m => { const o = document.createElement("option");
+    o.value = m; o.textContent = m || "Todas as matérias"; sel.appendChild(o); });
+  sel.value = simCSel;
+  sel.onchange = () => { simCSel = sel.value; render(); };
+  cx.appendChild(sel);
+  tela.appendChild(cx);
+  const V = simCSel ? L.filter(x => x.mat === simCSel) : L;
+
+  // ---- curva ----
+  tela.appendChild(linhaChart("% de acerto — " + (simCSel || "todas as matérias"),
+    V.map(x => dataBR(x.data).slice(0,5) + " " + (x.tema || x.sim).slice(0,14)),
+    V.map(pctSimC), pct1,
+    { porFaixa:true, cor:"#7030A0", sub:"Cada ponto é um simulado, em ordem de data." }));
+
+  // ---- assuntos mais fracos ----
+  tela.appendChild(el("div","secao","ASSUNTOS COM MENOR % DE ACERTO"));
+  const ag = {};
+  V.forEach(x => (x.itens || []).forEach(i => {
+    const k = x.mat + "¦" + i.assunto;
+    const a = ag[k] || (ag[k] = { mat:x.mat, assunto:i.assunto, questoes:0, acertos:0, sims:0 });
+    a.questoes += i.questoes; a.acertos += i.acertos; a.sims++;
+  }));
+  const fracos = Object.values(ag).filter(a => a.questoes).map(a => Object.assign(a, { p: a.acertos / a.questoes }))
+    .sort((a,b) => a.p - b.p || b.questoes - a.questoes).slice(0, 15);
+  if (!fracos.length) tela.appendChild(el("div","vazioAviso","Os simulados lançados ainda não trazem acertos por assunto."));
+  else {
+    const ta = tabela(["Assunto","Matéria","Simulados","Questões","Acertos","% Acerto","Situação"],
+      [330,180,75,75,70,80,110]);
+    fracos.forEach(a => { const tr = el("tr");
+      [a.assunto, a.mat, a.sims, a.questoes, a.acertos, pct1(a.p)].forEach((v,k) =>
+        tr.appendChild(el("td", k < 2 ? "esq" : null, String(v))));
+      pinta(tr, a.p); ta.tbody.appendChild(tr); });
+    tela.appendChild(ta);
+  }
+
+  // ---- lista de simulados ----
+  tela.appendChild(el("div","secao","SIMULADOS LANÇADOS"));
+  const ts = tabela(["Data","Código","Matéria","Tema","Questões","Acertos","Erros","Anuladas","Em branco","Chutes","Tempo","% Acerto","Situação",""],
+    [70,80,150,200,62,58,50,62,66,54,54,66,96,30]);
+  V.slice().reverse().forEach(x => {
+    const tr = el("tr");
+    [dataBR(x.data), x.sim, x.mat, x.tema, x.questoes, x.acertos, x.erros, x.anuladas, x.branco,
+     x.chutes, x.tempo, pct1(pctSimC(x))].forEach((v,k) =>
+      tr.appendChild(el("td", (k === 2 || k === 3) ? "esq" : null, String(v ?? ""))));
+    pinta(tr, pctSimC(x));
+    const tdx = el("td"), bx = el("button","secundario","×");
+    bx.title = "Apagar este simulado (o caderno de erros não muda)";
+    bx.onclick = () => {
+      if (!confirm("Apagar o simulado " + x.sim + " (" + (x.tema || x.mat) + ") desta aba?\nAs questões no caderno de erros continuam lá.")) return;
+      DB.simClaude = DB.simClaude.filter(y => y !== x); salvar(); render();
+    };
+    tdx.appendChild(bx); tr.appendChild(tdx);
+    ts.tbody.appendChild(tr);
+  });
+  tela.appendChild(ts);
+}
+
 function telaEvolucao(mod){
   const tela = document.getElementById("tela");
   tela.appendChild(el("div","tituloAba",
@@ -20141,6 +20258,35 @@ function normalizarMat(bruto){
 }
 
 /* ---------- grava no caderno as questões que vieram do TEC ---------- */
+/* ---------- resumo de cada simulado do Claude (acertos e erros) ----------
+   Vem no mesmo bloco do caderno de erros, como um objeto com "tipo":"resumo".
+   Um registro por simulado; o código ("sim") identifica e evita repetir.   */
+function aplicarResumoClaude(resumos){
+  garantirCadernos();
+  const L = DB.simClaude, n = v => Math.max(0, parseInt(v, 10) || 0);
+  let novos = 0, repetidos = 0;
+  resumos.forEach(r => {
+    const sim = String(r.sim ?? "").trim();
+    if (!sim) return;
+    if (L.some(x => x.sim === sim)){ repetidos++; return; }
+    L.push({
+      sim, data: r.data || new Date().toISOString().slice(0,10),
+      mat: normalizarMat(r.mat) || String(r.mat || ""),
+      tema: String(r.tema || ""),
+      questoes: n(r.questoes), acertos: n(r.acertos), erros: n(r.erros),
+      anuladas: n(r.anuladas), branco: n(r.branco), chutes: n(r.chutes),
+      tempo: String(r.tempo || ""),
+      itens: (Array.isArray(r.itens) ? r.itens : []).map(i => ({
+        assunto: String(i.assunto || ""), questoes: n(i.questoes), acertos: n(i.acertos) }))
+    });
+    novos++;
+  });
+  if (novos){ salvar(); render(); }
+  return { novos, repetidos };
+}
+// % de um registro ou de uma soma: anuladas contam como ponto, como na banca
+const pctSimC = r => r.questoes ? (r.acertos + (r.anuladas || 0)) / r.questoes : "";
+
 function aplicarDoTec(dados, mod){
   mod = mod || "T";
   if (!Array.isArray(dados)) dados = [dados];
@@ -20417,7 +20563,7 @@ function importarDoTec(mod){
   const doClaude = mod === "O";
   caixa.appendChild(el("h3", null, doClaude ? "Importar erros do simulado (Claude)" : "Importar questões do TEC"));
   caixa.appendChild(el("p","dica",
-    (doClaude ? "Cole abaixo o bloco CADERNO DE ERROS que o Claude gerou na correção. "
+    (doClaude ? "Cole abaixo o bloco CADERNO DE ERROS que o Claude gerou na correção (o resumo do simulado, se vier, vai para a aba Simulados do Claude). "
               : "Cole abaixo o que a extensão do Chrome copiou. ") + "Cada questão vira uma linha " +
     "com Status \"Pendente\" e Data da Revisão em branco. " +
     (doClaude ? "Se a mesma questão do mesmo simulado já estiver no caderno, ela é ignorada."
@@ -20447,11 +20593,17 @@ function importarDoTec(mod){
                              : "Não consegui ler o texto colado. Copie de novo pela extensão."); return; }
     if (!Array.isArray(dados)) dados = [dados];
 
+    const resumos = doClaude ? dados.filter(d => d && d.tipo === "resumo") : [];
+    dados = dados.filter(d => !(d && d.tipo === "resumo"));
+    const rs = resumos.length ? aplicarResumoClaude(resumos) : null;
     const r = aplicarDoTec(dados, mod);
     const novas = r.novas, repetidas = r.repetidas, semMat = r.semMat;
 
     sair();
-    let aviso = novas + " questão(ões) importada(s).";
+    let aviso = "";
+    if (rs) aviso += rs.novos ? "Simulado lançado em Simulados do Claude.\n"
+                              : "Este simulado já estava em Simulados do Claude (resumo ignorado).\n";
+    aviso += novas + " questão(ões) importada(s).";
     if (repetidas) aviso += "\n" + repetidas + " já estava(m) no caderno e foi(ram) ignorada(s).";
     if (semMat) aviso += "\n" + semMat + " sem matéria reconhecida — escolha na coluna Matéria.";
     alert(aviso);
@@ -21158,6 +21310,7 @@ function garantirCadernos(){
   if (!DB.caderno) DB.caderno = {};
   if (!Array.isArray(DB.caderno.T)) DB.caderno.T = [];
   if (!Array.isArray(DB.cadConteudo)) DB.cadConteudo = [];
+  if (!Array.isArray(DB.simClaude)) DB.simClaude = [];
   if (!Array.isArray(DB.matNovas)) DB.matNovas = [];
   if (!DB.matNome || typeof DB.matNome !== "object") DB.matNome = {};
   // gaveta -> nome da matéria na lista da Configuração (quem manda no nome e na ordem)
@@ -34906,6 +35059,7 @@ const ABAS_SIM = [
   { id:"painelO",  nome:"Painel",           cls:"obj", fn:() => telaPainel("O") },
   { id:"evoO",     nome:"Evolução",         cls:"obj", fn:() => telaEvolucao("O") },
   { id:"cadO",     nome:"Caderno de Erros", cls:"obj", fn:() => telaCaderno("O") },
+  { id:"simC",     nome:"Simulados do Claude", cls:"obj", fn:() => telaSimClaude() },
   { grupo:"DISCURSIVA", cls:"dis" },
   { id:"gradeD",   nome:"Cadastro D",       cls:"dis", fn:() => telaGrade("D") },
   { id:"despD",    nome:"Desempenho D",     cls:"dis", fn:() => telaDesempenho("D") },
@@ -36023,6 +36177,7 @@ function montarCapa(){
      ["painelO","Painel"],
      ["evoO","Evolução"],
      ["cadO","Caderno de erros"],
+     ["simC","Simulados do Claude"],
      ["gradeD","Discursiva"],
      ["cadastro","Cadastro de concursos"],
      ["provas","Desempenho em prova"]]);
